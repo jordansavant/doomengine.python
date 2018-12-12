@@ -8,12 +8,12 @@ black = 0, 0, 0
 
 screen = pygame.display.set_mode(size)
 
-ball = pygame.image.load("intro_ball.gif")
+ball = pygame.image.load("resources/intro_ball.gif")
 ballrect = ball.get_rect()
 
 while 1:
     for event in pygame.event.get():
-        if event.type == pygame.QUIT: sys.exit()
+        if event.type == pygame.QUIT: sys.exit(0)
 
     ballrect = ballrect.move(speed)
     if ballrect.left < 0 or ballrect.right > width:
