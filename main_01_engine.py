@@ -5,7 +5,6 @@ from engine.event_listener import EventListener
 display = Display(640, 480)
 listener = EventListener()
 
-while 1:
+while True:
     listener.update()
-
     display.draw()
