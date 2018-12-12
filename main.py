@@ -1,6 +1,10 @@
-import pygame
+import pygame, bsp
 from engine.display import Display
 from engine.event_listener import EventListener
+
+# =============================================================
+# https://www.cs.utah.edu/~jsnider/SeniorProj/BSP1/default.html
+# =============================================================
 
 display = Display(640, 480)
 listener = EventListener()
@@ -22,6 +26,8 @@ def mode_swap():
 
 # register callback function for changing the render mode
 listener.onKeyUp(pygame.K_RETURN, mode_swap)
+
+bsp = bsp.BSP(lines)
 
 while True:
     listener.update()
