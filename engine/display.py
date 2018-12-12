@@ -9,6 +9,16 @@ class Display(object):
         pygame.init()
         self.screen = pygame.display.set_mode(self.size)
     
-    def draw(self):
+    def start(self):
         self.screen.fill(self.bg)
+    
+    def end(self):
         pygame.display.flip()
+
+    def drawLine(self, line, color, width):
+        # line(Surface, color, start_pos, end_pos, width=1) -> Rect
+        pygame.draw.line(self.screen, color, line[0], line[1], width)
+
+    def drawLines(self, lines, color, width):
+        # lines(Surface, color, closed, pointlist, width=1) -> Rect
+        pygame.draw.line(self.screen, color, False, lines, width)
