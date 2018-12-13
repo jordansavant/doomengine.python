@@ -2,9 +2,6 @@ import pygame, bsp
 from engine.display import Display
 from engine.event_listener import EventListener
 
-# =============================================================
-# https://www.cs.utah.edu/~jsnider/SeniorProj/BSP1/default.html
-# =============================================================
 
 display = Display(640, 480)
 listener = EventListener()
