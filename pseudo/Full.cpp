@@ -690,12 +690,12 @@ void BuildBspTree(NODE * CurrentNode, POLYGON * PolyList)
                     // stick polytest at the beginning of the front list
                     polyTest-> Next=FrontList;
                     FrontList=polyTest;	
-                break;
+                    break;
                 case CP_BACK:
                     // stick polytest at the beginning of the back list
                     polyTest-> Next=BackList;
                     BackList=polyTest;	
-                break;
+                    break;
                 case CP_SPANNING:
                     // create two new polygons from the split line
                     FrontSplit=new POLYGON;
@@ -710,7 +710,7 @@ void BuildBspTree(NODE * CurrentNode, POLYGON * PolyList)
                     // put the back poly in the beginning of the back list
                     BackSplit-> Next=BackList;
                     BackList=BackSplit;
-                break;
+                    break;
                 default:
                     break;
             }

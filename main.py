@@ -1,13 +1,11 @@
-import pygame, bsp
+import pygame
 from engine.display import Display
 from engine.event_listener import EventListener
 from engine import defs
+from engine import bsp
 
-print("\n\n\n")
+print("\n")
 
-
-display = Display(1280, 720)
-listener = EventListener()
 
 # Lines
 poly1 = [
@@ -35,6 +33,15 @@ for idx, val in enumerate(poly1):
         lineDef.asLeaf(lineDefs[-1], lineDefs[0])
         lineDefs[-1].nextLineDef = lineDef
         lineDefs.append(lineDef)
+
+solidBsp = bsp.SolidBSPNode(lineDefs)
+print(solidBsp);
+exit();
+
+
+display = Display(1280, 720)
+listener = EventListener()
+
     
 
 # render mode ops

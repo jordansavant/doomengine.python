@@ -7,6 +7,7 @@ class LineDef(object):
         self.end = []
         self.previousLineDef = None
         self.nextLineDef = None
+        # TODO: get normals and stuff calculated here
 
     def asRoot(self, startX, startY, endX, endY):
         self.start = [startX, startY]
@@ -21,5 +22,3 @@ class LineDef(object):
         self.start = [preLineDef.end[0], preLineDef.end[1]]
         self.end = [rootLineDef.start[0], rootLineDef.start[1]]
         self.previousLineDef = preLineDef
-
-        
