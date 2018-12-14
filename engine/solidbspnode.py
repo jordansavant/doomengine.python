@@ -1,10 +1,14 @@
 class SolidBSPNode(object):
     def __init__(self, lineDefs):
         self.splitter = None # LineDef
+        self.splitterIndex = None
         self.front = None # Self
         self.back =  None # Self
         self.isLeaf = False
         self.isSolid = False
+
+        if len(lineDefs) == 0: # leaf
+            return
 
         # get splitter line
         self.splitterIndex = self.selectBestSplitter(lineDefs)
@@ -32,6 +36,27 @@ class SolidBSPNode(object):
                     splits = self.splitLine(self.splitter, lineDef)
                     frontList.append(splits.front)
                     backList.append(splits.back)
+        
+        # all lines have been split and put into front or back list
+        if len(frontList) == 0:
+            # create an empty leaf node
+            self.front = SolidBSPNode([])
+            self.front.isLeaf = True
+            self.front.isSolid = False
+        else:
+            # create our recursive front
+            self.front = SolidBSPNode(frontList)
+        
+        if len(backList) == 0:
+            # create a solid back node
+            self.back = SolidBSPNode([])
+            self.back.isLeaf = True
+            self.back.isSolid = True
+        else:
+            # create our recursive back
+            self.back = SolidBSPNode(backList)
+
+
 
     def splitLine(self, splitterLineDef, lineDef):
         # TODO, make this a thing
@@ -50,16 +75,24 @@ class SolidBSPNode(object):
 
     def selectBestSplitter(self, lineDefs):
         # TODO, make this smarter
-        return 0;
+        return 0
+
+    def render(self, depth = 0):
+        s = "{}{}".format(" " * depth, self)
+        if self.back:
+            s += "{}BACK {}: {}".format(" " * depth, depth, self.back.render(depth+1))
+        if self.front:
+            s += "{}FRNT {}: {}".format(" " * depth, depth, self.front.render(depth+1))
+        return s
 
     def __str__(self):
-        s = ""
-        if self.back:
-            s += "\n"
-            s += self.back
-        if self.front:
-            s += "\n"
-            s += self.front
-        return "self.splitterIndex: {}\nself.isLeaf: {}\nself.isSolid: {}".format(self.splitterIndex, self.isLeaf, self.isSolid)
+        if self.splitter:
+            return "isLeaf: {} - isSolid: {} - splitter: {}, {}\n".format(
+                self.isLeaf, self.isSolid, self.splitter.start, self.splitter.end
+            )
+        else:
+            return "isLeaf: {} - isSolid: {}\n".format(
+                self.isLeaf, self.isSolid
+            )
 
 

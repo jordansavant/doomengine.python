@@ -9,7 +9,7 @@ print("\n")
 
 # Lines
 poly1 = [
-    [50, 50], [500, 50], [500, 300], [200, 300]
+    [50, 50], [500, 50], [500, 300]#, [200, 300]
 ]
 
 # Line Defs
@@ -35,8 +35,8 @@ for idx, val in enumerate(poly1):
         lineDefs.append(lineDef)
 
 solidBsp = SolidBSPNode(lineDefs)
-print(solidBsp);
-exit();
+print(solidBsp.render())
+exit()
 
 
 display = Display(1280, 720)
