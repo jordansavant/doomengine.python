@@ -36,9 +36,17 @@ class SolidBSPNode(object):
     def splitLine(self, splitterLineDef, lineDef):
         # TODO, make this a thing
         return {
-            front: #TODO,
-            back: #TODO
+            front: None,#TODO,
+            back: None#TODO
         }
+    
+    def classifyLine(self, splitterLineDef, lineDef):
+        # 1 = back
+        # 2 = front
+        # 3 = co planar
+        # 4 = spanning
+        # TODO: complete
+        return 1
 
     def selectBestSplitter(self, lineDefs):
         # TODO, make this smarter
