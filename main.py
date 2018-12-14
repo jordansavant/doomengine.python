@@ -1,8 +1,8 @@
 import pygame
 from engine.display import Display
-from engine.event_listener import EventListener
-from engine import defs
-from engine import bsp
+from engine.eventlistener import EventListener
+from engine.linedef import LineDef
+from engine.solidbspnode import SolidBSPNode
 
 print("\n")
 
@@ -15,7 +15,7 @@ poly1 = [
 # Line Defs
 lineDefs = []
 for idx, val in enumerate(poly1):
-    lineDef = defs.LineDef()
+    lineDef = LineDef()
 
     # first point, connect to second point
     if idx == 0:
@@ -34,7 +34,7 @@ for idx, val in enumerate(poly1):
         lineDefs[-1].nextLineDef = lineDef
         lineDefs.append(lineDef)
 
-solidBsp = bsp.SolidBSPNode(lineDefs)
+solidBsp = SolidBSPNode(lineDefs)
 print(solidBsp);
 exit();
 
