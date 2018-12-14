@@ -38,6 +38,25 @@ struct POLYGON
 // 1,0,0,1,2,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,
 // 1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,
 // 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+//
+// { , , ,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//  , ,2, , , , , , , , ,3, , , , , , , , ,
+//  ,2, , , , , , , , , , ,3, , , , , , , ,
+// 1, , , , , , , , , , , , ,1,1,1,1,1, ,1,
+//  ,1, , , , , , , , , , , , , , , ,1, ,1,
+//  ,1, , , , , , , , , , , , , , , ,1,1,1,
+//  ,1,1, , , , ,1, , , , , , , , , , ,3,1,
+//  ,2, , , , , ,1, , , , , , , ,1, , , ,1,
+// 1, , , , , , ,1, , , , , , , ,1, , , ,1,
+//  ,1, , , , ,1,2, , , ,1, , , ,1, , , ,1,
+//  ,1, , , ,1,2, , , , ,1,1, , , , , , ,1,
+//  ,1, , , ,1, , , , , ,3,1, , , , , , ,1,
+//  ,1, ,1,1,2, , , , , , ,1, , , , , , ,1,
+// 1,2, , , , , , ,1, , , ,1,1,1,1, , , ,1, 
+// 1, , , ,1,1, , , , , , , , , ,1, , , ,1,
+// 1, , ,1,2, , , , , , , , , , ,1, , , ,1,
+// 1, , ,1, , , , , , , , , , , ,1, , , ,1,
+// 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 // One entry in the array represents 1 unit squared of 3D World Space
 // so when a 1 is encountered with zeros all around it 4 polygons are
 // created for the four walls of a cube all facing outwards.
@@ -79,11 +98,13 @@ void InitPolygons(void)
             if (BSPMAP[offset]!=0)
             {
                 if (BSPMAP[offset]==2)// North East Wall
-                {	
-                    VERTLIST[0][0]=D3DLVERTEX(D3DVECTOR(x-10.5f,3.0f,(20.0f-y)-0.5f),RGB_MAKE( 255, 255, 255),0,0,0);
-                    VERTLIST[0][1]=D3DLVERTEX(D3DVECTOR(x-9.5f,3.0f,(20.0f-y)+0.5f),RGB_MAKE( 255, 255, 255),0,1,0);
-                    VERTLIST[0][2]=D3DLVERTEX(D3DVECTOR(x-9.5f,0.0f,(20.0f-y)+0.5f),RGB_MAKE( 255, 255, 255),0,1,1);
-                    VERTLIST[0][3]=D3DLVERTEX(D3DVECTOR(x-10.5f,0.0f,(20.0f-y)-0.5f),RGB_MAKE( 255, 255, 255),0,0,1);
+                {
+                    // well all this time i thought he was doing a DOOM engine but he was doing a QUAKE engine in 3D... because these polygons are 3D..
+                    // Each "wall" is four vertices
+                    VERTLIST[0][0]=D3DLVERTEX(D3DVECTOR(x -10.5f, 3.0f, (20.0f - y) - 0.5f), RGB_MAKE( 255, 255, 255), 0, 0, 0);
+                    VERTLIST[0][1]=D3DLVERTEX(D3DVECTOR(x -9.5f,  3.0f, (20.0f - y) + 0.5f), RGB_MAKE( 255, 255, 255), 0, 1, 0);
+                    VERTLIST[0][2]=D3DLVERTEX(D3DVECTOR(x -9.5f,  0.0f, (20.0f - y) + 0.5f), RGB_MAKE( 255, 255, 255), 0, 1, 1);
+                    VERTLIST[0][3]=D3DLVERTEX(D3DVECTOR(x -10.5f, 0.0f, (20.0f - y) - 0.5f), RGB_MAKE( 255, 255, 255), 0, 0, 1);
                     direction[0]=1;
                 }
                 if (BSPMAP[offset]==3)// North West Wall
@@ -101,11 +122,11 @@ void InitPolygons(void)
                     {
                         if (BSPMAP[offset-1]==0)// if theres nothing to the left add a left facing wall
                         {
-                        VERTLIST[0][0]=D3DLVERTEX(D3DVECTOR(x-10.5f,3.0f,(20.0f-y)+0.5f),RGB_MAKE(255,255,255),0,0,0);
-                        VERTLIST[0][1]=D3DLVERTEX(D3DVECTOR(x-10.5f,3.0f,(20.0f-y)-0.5f),RGB_MAKE(255,255,255),0,1,0);
-                        VERTLIST[0][2]=D3DLVERTEX(D3DVECTOR(x-10.5f,0.0f,(20.0f-y)-0.5f),RGB_MAKE(255,255,255),0,1,1);
-                        VERTLIST[0][3]=D3DLVERTEX(D3DVECTOR(x-10.5f,0.0f,(20.0f-y)+0.5f),RGB_MAKE(255,255,255),0,0,1);
-                        direction[0]=1;
+                            VERTLIST[0][0]=D3DLVERTEX(D3DVECTOR(x-10.5f,3.0f,(20.0f-y)+0.5f),RGB_MAKE(255,255,255),0,0,0);
+                            VERTLIST[0][1]=D3DLVERTEX(D3DVECTOR(x-10.5f,3.0f,(20.0f-y)-0.5f),RGB_MAKE(255,255,255),0,1,0);
+                            VERTLIST[0][2]=D3DLVERTEX(D3DVECTOR(x-10.5f,0.0f,(20.0f-y)-0.5f),RGB_MAKE(255,255,255),0,1,1);
+                            VERTLIST[0][3]=D3DLVERTEX(D3DVECTOR(x-10.5f,0.0f,(20.0f-y)+0.5f),RGB_MAKE(255,255,255),0,0,1);
+                            direction[0]=1;
                         }
                     }
                     if (x < 19)
