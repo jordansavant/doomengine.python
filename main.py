@@ -1,4 +1,4 @@
-import pygame
+import pygame, engine
 from engine.display import Display
 from engine.eventlistener import EventListener
 from engine.linedef import LineDef
@@ -9,10 +9,10 @@ print("\n")
 
 # Lines
 poly1 = [
-    [50, 50], [500, 50], [500, 300]#, [200, 300]
+    [50, 50], [100, 50], [75, 75], [100, 100], [50, 100]#, [200, 300]
 ]
 
-# Line Defs
+# Line Defs built Clockwise
 lineDefs = []
 for idx, val in enumerate(poly1):
     lineDef = LineDef()
@@ -35,13 +35,16 @@ for idx, val in enumerate(poly1):
         lineDefs.append(lineDef)
 
 solidBsp = SolidBSPNode(lineDefs)
+testPoint = [60, 75]
 print(solidBsp.render())
-exit()
+
+
+for lineDef in lineDefs:
+    print(lineDef.start, lineDef.end, lineDef.cross, engine.mathdef.pointBehindSegment(testPoint, lineDef.start, lineDef.end))
 
 
 display = Display(1280, 720)
 listener = EventListener()
-
     
 
 # render mode ops
@@ -64,5 +67,6 @@ while True:
     if mode == 0:
         for lineDef in lineDefs:
             display.drawLine([lineDef.start, lineDef.end], (0, 0, 255), 2)
+        display.drawPoint(testPoint, (0, 0, 255), 2)
 
     display.end()

@@ -64,7 +64,7 @@ class SolidBSPNode(object):
             front: None,#TODO,
             back: None#TODO
         }
-    
+
     def classifyLine(self, splitterLineDef, lineDef):
         # 1 = back
         # 2 = front

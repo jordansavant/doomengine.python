@@ -22,3 +22,6 @@ class Display(object):
     def drawLines(self, lines, color, width):
         # lines(Surface, color, closed, pointlist, width=1) -> Rect
         pygame.draw.line(self.screen, color, False, lines, width)
+
+    def drawPoint(self, pos, color, width):
+        pygame.draw.circle(self.screen, color, pos, width)
