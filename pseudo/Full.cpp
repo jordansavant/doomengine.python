@@ -235,7 +235,9 @@ POLYGON * AddPolygon(POLYGON* Parent, D3DLVERTEX *Vertices, WORD NOV)
     // So if its is a square on a 2D plane built in X and Y coords, the Cross is a Z vector
     // https://www.opengl.org/discussion_boards/showthread.php/159259-How-to-Calculate-Polygon-Normal
     // Hello there
-    // Well its quite simple. Take any three vertices make sure that you are following a consistent winding order; either clockwise or anti clockwise. Create two new vectors by subtracting the second vertex from the first and then the third from the first. Then do a simple cross product between the two new vectors.
+    // Well its quite simple. Take any three vertices make sure that you are following a consistent winding
+    // order; either clockwise or anti clockwise. Create two new vectors by subtracting the second vertex
+    // from the first and then the third from the first. Then do a simple cross product between the two new vectors.
     // Here is the pseudocode.
     // Code :
     // Vector GetNormal(Vector v1, Vector v2, Vector v3)

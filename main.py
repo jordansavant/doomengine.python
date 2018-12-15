@@ -40,7 +40,7 @@ print(solidBsp.render())
 
 
 for lineDef in lineDefs:
-    print(lineDef.start, lineDef.end, lineDef.cross, engine.mathdef.pointBehindSegment(testPoint, lineDef.start, lineDef.end))
+    print(lineDef.start, lineDef.end, lineDef.normals, lineDef.mid, lineDef.cross, engine.mathdef.pointBehindSegment(testPoint, lineDef.start, lineDef.end))
 
 
 display = Display(1280, 720)
@@ -67,6 +67,14 @@ while True:
     if mode == 0:
         for lineDef in lineDefs:
             display.drawLine([lineDef.start, lineDef.end], (0, 0, 255), 2)
+            mx = lineDef.mid[0]
+            my = lineDef.mid[1]
+            n1x = lineDef.normals[0][0] * 10
+            n1y = lineDef.normals[0][1] * 10
+            n2x = lineDef.normals[1][0] * 10
+            n2y = lineDef.normals[1][1] * 10
+            display.drawLine([ [mx, my] , [mx + n1x, my + n1y] ], (0, 255, 255), 2)
+            display.drawLine([ [mx, my] , [mx + n2x, my + n2y] ], (255, 0, 255), 2)
         display.drawPoint(testPoint, (0, 0, 255), 2)
 
     display.end()
