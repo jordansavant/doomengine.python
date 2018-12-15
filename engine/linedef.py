@@ -1,5 +1,6 @@
 from engine.mathdef import crossProductLine
 from engine.mathdef import normalize
+from engine.mathdef import pointBehindSegment
 
 # A polygon is a collection of lines, each line has a direction
 # All lines should be connected, meaning one should start where the last one ends
@@ -60,4 +61,8 @@ class LineDef(object):
         dy = self.end[1] - self.start[1]
         self.normals.append(normalize(-dy, dx)) # First normal is the one facing in (if we are Clockwise)
         self.normals.append(normalize(dy, -dx)) # Second normal is the one facing out (if we are Clockwise)
+
+    def isPointBehind(self, a, b):
+        # If it is behind and we are facing left CW
+        return pointBehindSegment([a, b], self.start, self.end) and self.facing == 1
 

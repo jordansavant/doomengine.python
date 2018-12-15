@@ -29,13 +29,14 @@ class SolidBSPNode(object):
                     # Front
                     frontList.append(lineDef)
                 elif d == 3:
-                    # Same Plane
-                    frontList.append(lineDef)
-                else:
                     # Spanning
+                    # TODO: left off here
                     splits = self.splitLine(self.splitter, lineDef)
-                    frontList.append(splits.front)
-                    backList.append(splits.back)
+                    # frontList.append(splits['front'])
+                    # backList.append(splits['back'])
+                else:
+                    # co planar
+                    backList.append(lineDef)
         
         # all lines have been split and put into front or back list
         if len(frontList) == 0:
@@ -61,16 +62,33 @@ class SolidBSPNode(object):
     def splitLine(self, splitterLineDef, lineDef):
         # TODO, make this a thing
         return {
-            front: None,#TODO,
-            back: None#TODO
+            'front': None,#TODO,
+            'back': None#TODO
         }
 
+    # if all points behind, we would put whole poly in back list
+    # if all points ahead, we would put whole poly in front list
+    # if overlap, split and put into both
     def classifyLine(self, splitterLineDef, lineDef):
+        points = [lineDef.start, lineDef.end]
+        backCounter = 0
+        frontCounter = 0
+        for point in points:
+            if splitterLineDef.isPointBehind(point[0], point[1]):
+                backCounter += 1
+            else:
+                frontCounter +=1
+        if backCounter != 0 and frontCounter != 0:
+            return 3
+        if backCounter:
+            return 1
+        if frontCounter:
+            return 2
+
         # 1 = back
         # 2 = front
-        # 3 = co planar
-        # 4 = spanning
-        # TODO: complete
+        # 3 = spanning
+        # 4 = co planar TODO our math is not checking for 0
         return 1
 
     def selectBestSplitter(self, lineDefs):
