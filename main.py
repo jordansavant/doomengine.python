@@ -9,38 +9,81 @@ print("\n")
 
 # Lines
 poly1 = [
-    [50, 50], [100, 50], [75, 75], [100, 100], [50, 100]#, [200, 300]
+    [50,  50],
+    [100, 50],
+    [75,  75],
+    [100, 100],
+    [50,  100]#, [200, 300]
+]
+# Directions (1 = CW and outward facing, 0 = CCW and inward facing)
+poly1D = [ 
+    1,
+    1,
+    1,
+    1,
+    1
+]
+
+# Lines
+poly2 = [
+    [30,  30],
+    [300, 20],
+    [400, 300],
+    [30, 200]
+]
+# Directions (1 = CW and outward facing, 0 = CW and inward facing)
+# Since I built poly2 CCW, direction should still be 1
+poly2D = [ 
+    0,
+    0,
+    0,
+    0
+]
+
+polys = [
+    poly1,
+    poly2
+]
+polyDs = [
+    poly1D,
+    poly2D
 ]
 
 # Line Defs built Clockwise
-lineDefs = []
-for idx, val in enumerate(poly1):
-    lineDef = LineDef()
+allLineDefs = []
+for i, v in enumerate(polys):
+    polyL = polys[i]
+    polyD = polyDs[i]
+    lineDefs = []
+    for idx, val in enumerate(polyL):
+        lineDef = LineDef()
 
-    # first point, connect to second point
-    if idx == 0:
-        lineDef.asRoot(poly1[idx][0], poly1[idx][1], poly1[idx + 1][0], poly1[idx + 1][1])
-        lineDefs.append(lineDef)
+        # first point, connect to second point
+        if idx == 0:
+            lineDef.asRoot(polyL[idx][0], polyL[idx][1], polyL[idx + 1][0], polyL[idx + 1][1], polyD[idx])
+            lineDefs.append(lineDef)
+            allLineDefs.append(lineDef)
 
-    # some point in the middle
-    elif idx < len(poly1) - 1:
-        lineDef.asChild(lineDefs[-1], poly1[idx + 1][0], poly1[idx + 1][1])
-        lineDefs[-1].nextLineDef = lineDef
-        lineDefs.append(lineDef)
-    
-    # final point, final line, connects back to first point
-    elif idx == len(poly1) - 1:
-        lineDef.asLeaf(lineDefs[-1], lineDefs[0])
-        lineDefs[-1].nextLineDef = lineDef
-        lineDefs.append(lineDef)
+        # some point in the middle
+        elif idx < len(polyL) - 1:
+            lineDef.asChild(lineDefs[-1], polyL[idx + 1][0], polyL[idx + 1][1], polyD[idx])
+            lineDefs.append(lineDef)
+            allLineDefs.append(lineDef)
+        
+        # final point, final line, connects back to first point
+        elif idx == len(polyL) - 1:
+            lineDef.asLeaf(lineDefs[-1], lineDefs[0], polyD[idx])
+            lineDefs.append(lineDef)
+            allLineDefs.append(lineDef)
 
-solidBsp = SolidBSPNode(lineDefs)
+solidBsp = SolidBSPNode(allLineDefs)
 testPoint = [60, 75]
 print(solidBsp.render())
 
 
-for lineDef in lineDefs:
-    print(lineDef.start, lineDef.end, lineDef.normals, lineDef.mid, lineDef.cross, engine.mathdef.pointBehindSegment(testPoint, lineDef.start, lineDef.end))
+for lineDef in allLineDefs:
+    isBehind = engine.mathdef.pointBehindSegment(testPoint, lineDef.start, lineDef.end) and lineDef.facing == 1
+    print(lineDef.start, lineDef.end, lineDef.facing, isBehind, lineDef.normals)
 
 
 display = Display(1280, 720)
@@ -65,16 +108,23 @@ while True:
 
     # render the polygons
     if mode == 0:
-        for lineDef in lineDefs:
-            display.drawLine([lineDef.start, lineDef.end], (0, 0, 255), 2)
+        for lineDef in allLineDefs:
+            display.drawLine([lineDef.start, lineDef.end], (0, 0, 255), 1)
+            ln = 7
             mx = lineDef.mid[0]
             my = lineDef.mid[1]
-            n1x = lineDef.normals[0][0] * 10
-            n1y = lineDef.normals[0][1] * 10
-            n2x = lineDef.normals[1][0] * 10
-            n2y = lineDef.normals[1][1] * 10
-            display.drawLine([ [mx, my] , [mx + n1x, my + n1y] ], (0, 255, 255), 2)
-            display.drawLine([ [mx, my] , [mx + n2x, my + n2y] ], (255, 0, 255), 2)
+            nx = lineDef.normals[lineDef.facing][0] * ln
+            ny = lineDef.normals[lineDef.facing][1] * ln
+            if lineDef.facing == 1:
+                display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (0, 255, 255), 1)
+            else:
+                display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
+            # n1x = lineDef.normals[0][0] * ln
+            # n1y = lineDef.normals[0][1] * ln
+            # n2x = lineDef.normals[1][0] * ln
+            # n2y = lineDef.normals[1][1] * ln
+            # display.drawLine([ [mx, my] , [mx + n1x, my + n1y] ], (0, 255, 255), 2)
+            # display.drawLine([ [mx, my] , [mx + n2x, my + n2y] ], (255, 0, 255), 2)
         display.drawPoint(testPoint, (0, 0, 255), 2)
 
     display.end()

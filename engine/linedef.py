@@ -9,29 +9,29 @@ class LineDef(object):
         self.start = []
         self.end = []
         self.normal = None
-        self.previousLineDef = None
-        self.nextLineDef = None
         self.cross = None
+        self.facing = None
         self.mid = []
         self.dir = []
         self.normals = []
         # TODO: get normals and stuff calculated here
 
-    def asRoot(self, startX, startY, endX, endY):
+    def asRoot(self, startX, startY, endX, endY, facing):
         self.start = [startX, startY]
         self.end = [endX, endY]
+        self.facing = facing
         self.setup()
     
-    def asChild(self, preLineDef, endX, endY):
+    def asChild(self, preLineDef, endX, endY, facing):
         self.start = [preLineDef.end[0], preLineDef.end[1]]
         self.end = [endX, endY]
-        self.previousLineDef = preLineDef
+        self.facing = facing
         self.setup()
     
-    def asLeaf(self, preLineDef, rootLineDef):
+    def asLeaf(self, preLineDef, rootLineDef, facing):
         self.start = [preLineDef.end[0], preLineDef.end[1]]
         self.end = [rootLineDef.start[0], rootLineDef.start[1]]
-        self.previousLineDef = preLineDef
+        self.facing = facing
         self.setup()
 
     def setup(self):
@@ -41,6 +41,7 @@ class LineDef(object):
         self.setNormals()
 
     def setCross(self):
+        # TODO: unused
         self.cross = crossProductLine(self.start, self.end)
 
     def setMid(self):
@@ -49,6 +50,7 @@ class LineDef(object):
         self.mid.append((self.start[1] + self.end[1]) / 2)
 
     def setDir(self):
+        # TODO: unused
         # -(b.y-a.y),(b.x-a.x)
         self.dir.append(-(self.end[1] - self.start[1]))
         self.dir.append(self.end[0] - self.start[0])
@@ -56,14 +58,6 @@ class LineDef(object):
     def setNormals(self):
         dx = self.end[0] - self.start[0]
         dy = self.end[1] - self.start[1]
-        self.normals.append(normalize(-dy, dx)) # First normal is the one facing in (since we are Clockwise)
-        self.normals.append(normalize(dy, -dx)) # Second normal is the one facing out (since we are Clockwise)
-
-    def getFace(self):
-        return
-        # a connected polygon is a series of vertices, connected as lines
-        # as they form the polygon, there is the "solid" interior and
-        # the "empty" exterior
-        # can we determine the outward face of a line knowing its start
-        # and end?
+        self.normals.append(normalize(-dy, dx)) # First normal is the one facing in (if we are Clockwise)
+        self.normals.append(normalize(dy, -dx)) # Second normal is the one facing out (if we are Clockwise)
 
