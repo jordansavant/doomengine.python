@@ -1,3 +1,4 @@
+import random
 from engine import linedef
 from engine import display
 
@@ -33,10 +34,10 @@ class SolidBSPNode(object):
                     frontList.append(lineDef)
                 elif d == 3:
                     # Spanning
-                    # TODO: left off here
+                    # first element is behind, second is in front
                     splits = self.splitLine(self.splitter, lineDef)
-                    # frontList.append(splits['front'])
-                    # backList.append(splits['back'])
+                    backList.append(splits[0])
+                    frontList.append(splits[1])
                 else:
                     # co planar
                     backList.append(lineDef)
@@ -63,11 +64,17 @@ class SolidBSPNode(object):
 
 
     def splitLine(self, splitterLineDef, lineDef):
-        # TODO, make this a thing
-        return {
-            'front': None,#TODO,
-            'back': None#TODO
-        }
+        # first element is behind, second is in front, use facing from parent
+        splits = splitterLineDef.split(lineDef)
+
+        splitBehind = splits[0]
+        splitBehindDef = linedef.LineDef()
+        splitBehindDef.asRoot(splitBehind[0][0], splitBehind[0][1], splitBehind[1][0], splitBehind[1][1], lineDef.facing)
+
+        splitFront = splits[1]
+        splitFrontDef = linedef.LineDef()
+        splitFrontDef.asRoot(splitFront[0][0], splitFront[0][1], splitFront[1][0], splitFront[1][1], lineDef.facing)
+        return [splitBehindDef, splitFrontDef]
 
     # if all points behind, we would put whole poly in back list
     # if all points ahead, we would put whole poly in front list
@@ -82,7 +89,7 @@ class SolidBSPNode(object):
     def draw(self, display, depth = 0):
         # draw self
         if self.isLeaf == False:
-            display.drawLine([self.splitter.start, self.splitter.end], (0, 0, 255), 1)
+            display.drawLine([self.splitter.start, self.splitter.end], self.splitter.drawColor, 1)
         if self.back:
             self.back.draw(display, depth + 1)
         if self.front:

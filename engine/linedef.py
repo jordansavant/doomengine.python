@@ -1,3 +1,4 @@
+import random
 from engine.mathdef import crossProductLine
 from engine.mathdef import normalize
 from engine.mathdef import pointBehindSegment
@@ -15,6 +16,7 @@ class LineDef(object):
         self.mid = []
         self.dir = []
         self.normals = []
+        self.drawColor = (random.randint(10, 255), random.randint(10, 255), random.randint(50, 255))
         # TODO: get normals and stuff calculated here
 
     def asRoot(self, startX, startY, endX, endY, facing):
@@ -92,18 +94,38 @@ class LineDef(object):
         return 1
 
     def split(self, other):
-        # first find c which is the vector between our starting points
-        a = self.dir
-        b = other.dir
-        c = [other.start[0] - self.start[0], other.start[1] - self.start[1]]
-        # then find t which is dot products of the normal of our line's vectors (dirs)
-        # t = (c . b) / (a . b)
-        # (c . b) = cX * bX + cY * bY
-        # (a . b) = aX * bX + aY * bY
-        t = (c[0] * b[0] + c[1] * b[1]) / (a[0] * b[0] + a[1] * b[1])
-        # multiply t by vector a and add it to a
-        at = [a[0] * t, a[1] * t]
-        i = [at[0] + self.start[0], at[1] + self.start[1]]
-        print (a, b)
-        print (c, at, i)
+        # get the intersecting point
+        intersection = self.findIntersection(other)
+        if intersection:
+            # create a line from other start to intersection and return that as front??
+            splitA = [other.start, intersection]
+            splitB = [intersection, other.end]
+            aBehind = self.isPointBehind(other.start[0], other.start[1])
+            # return them with position 0 behind and position 1 in front
+            if aBehind:
+                return [splitA, splitB]
+            else:
+                return [splitB, splitA]
+        return None
+
+    def findIntersection(self, other):
+        s1 = self.start
+        e1 = self.end
+        s2 = other.start
+        e2 = other.end
+
+        a1 = e1[1] - s1[1]
+        b1 = s1[0] - e1[0]
+        c1 = a1 * s1[0] + b1 * s1[1]
+ 
+        a2 = e2[1] - s2[1]
+        b2 = s2[0] - e2[0]
+        c2 = a2 * s2[0] + b2 * s2[1]
+ 
+        delta = a1 * b2 - a2 * b1
+        # if lines are parallel, the result will be delta = 0
+        if delta != 0:
+            return [(b2 * c1 - b1 * c2) / delta, (a1 * c2 - a2 * c1) / delta]
+        return None
+
 

@@ -91,9 +91,14 @@ ray1 = allLineDefs[0]
 ray2 = allLineDefs[6]
 print ([ray1.start, ray1.end], [ray2.start, ray2.end])
 splits = ray1.split(ray2)
+print (splits)
 
 display = Display(1280, 720)
 listener = EventListener()
+
+
+
+font = pygame.font.Font(None, 36)
     
 
 # render mode ops
@@ -135,5 +140,11 @@ while True:
 
     if mode == 1:
         solidBsp.draw(display)
+
+
+    mx, my = pygame.mouse.get_pos()
+    text = font.render("{}, {}".format(mx, my), 1, (50, 50, 50))
+    textpos = text.get_rect(centerx = display.width / 2, centery = display.height/2)
+    display.drawText(text, textpos)
 
     display.end()

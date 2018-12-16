@@ -25,3 +25,6 @@ class Display(object):
 
     def drawPoint(self, pos, color, width):
         pygame.draw.circle(self.screen, color, pos, width)
+    
+    def drawText(self, text, textpos):
+        self.screen.blit(text, textpos)
