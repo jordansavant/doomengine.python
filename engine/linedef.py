@@ -66,17 +66,27 @@ class LineDef(object):
 
     def isPointBehind(self, a, b):
         # If it is behind and we are facing left CW
-        return pointBehindSegment([a, b], self.start, self.end) and self.facing == 1
+        beh = pointBehindSegment([a, b], self.start, self.end) # true, false or none (for on the same plane)
+        if beh != None:
+            if self.facing == 1:
+                return beh
+            return not beh
+        return None
 
     def classifyLine(self, testLine):
         points = [testLine.start, testLine.end]
         backCounter = 0
         frontCounter = 0
         for point in points:
-            if self.isPointBehind(point[0], point[1]):
+            result = self.isPointBehind(point[0], point[1])
+            if result == True:
                 backCounter += 1
-            else:
+            if result == False:
                 frontCounter +=1
+            # if result == None:
+                # co planar, no counters
+
+        print(frontCounter, backCounter)
         # spanning
         if backCounter != 0 and frontCounter != 0:
             return 3
@@ -128,4 +138,5 @@ class LineDef(object):
             return [(b2 * c1 - b1 * c2) / delta, (a1 * c2 - a2 * c1) / delta]
         return None
 
-
+    def __str__(self):
+        return "[{}->{}]".format(self.start, self.end)

@@ -35,6 +35,7 @@ class SolidBSPNode(object):
                 elif d == 3:
                     # Spanning
                     # first element is behind, second is in front
+                    print ("{} sees span for {}".format(self.splitter, lineDef))
                     splits = self.splitLine(self.splitter, lineDef)
                     backList.append(splits[0])
                     frontList.append(splits[1])
@@ -86,10 +87,32 @@ class SolidBSPNode(object):
         # TODO, make this smarter
         return 0
 
+    def inEmpty(self, testPoint):
+        # recurse the tree until we find a leaf node
+        if self.isLeaf:
+            return self.isSolid == False
+        beh = self.splitter.isPointBehind(testPoint[0], testPoint[1])
+        if beh:
+            return self.back.inEmpty(testPoint)
+        else:
+            return self.front.inEmpty(testPoint)
+
     def draw(self, display, depth = 0):
         # draw self
         if self.isLeaf == False:
+            
+            ln = 7
+            mx = self.splitter.mid[0]
+            my = self.splitter.mid[1]
+            nx = self.splitter.normals[self.splitter.facing][0] * ln
+            ny = self.splitter.normals[self.splitter.facing][1] * ln
+            if self.splitter.facing == 1:
+                display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (0, 255, 255), 1)
+            else:
+                display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
+            
             display.drawLine([self.splitter.start, self.splitter.end], self.splitter.drawColor, 1)
+
         if self.back:
             self.back.draw(display, depth + 1)
         if self.front:

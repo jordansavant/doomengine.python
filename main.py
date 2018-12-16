@@ -76,22 +76,15 @@ for i, v in enumerate(polys):
             allLineDefs.append(lineDef)
 
 solidBsp = SolidBSPNode(allLineDefs)
-testPoint = [60, 75]
+testPoint = [60, 20]
 print(solidBsp.toText())
 
 
 for lineDef in allLineDefs:
-    isBehind = engine.mathdef.pointBehindSegment(testPoint, lineDef.start, lineDef.end) and lineDef.facing == 1
-    print(lineDef.start, lineDef.end, lineDef.facing, isBehind, lineDef.normals)
+    isBehind = lineDef.isPointBehind(testPoint[0], testPoint[1])
+    print(lineDef.start, lineDef.end, lineDef.facing, isBehind)
 
-
-# testing ray intersection
-print("ray test")
-ray1 = allLineDefs[0]
-ray2 = allLineDefs[6]
-print ([ray1.start, ray1.end], [ray2.start, ray2.end])
-splits = ray1.split(ray2)
-print (splits)
+print(solidBsp.inEmpty(testPoint))
 
 display = Display(1280, 720)
 listener = EventListener()
@@ -107,7 +100,6 @@ max_modes = 3
 def mode_swap():
     global mode
     mode = (mode + 1) % max_modes
-    print(mode)
 
 # register callback function for changing the render mode
 listener.onKeyUp(pygame.K_UP, mode_swap)
@@ -130,21 +122,18 @@ while True:
                 display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (0, 255, 255), 1)
             else:
                 display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
-            # n1x = lineDef.normals[0][0] * ln
-            # n1y = lineDef.normals[0][1] * ln
-            # n2x = lineDef.normals[1][0] * ln
-            # n2y = lineDef.normals[1][1] * ln
-            # display.drawLine([ [mx, my] , [mx + n1x, my + n1y] ], (0, 255, 255), 2)
-            # display.drawLine([ [mx, my] , [mx + n2x, my + n2y] ], (255, 0, 255), 2)
-        display.drawPoint(testPoint, (0, 0, 255), 2)
 
     if mode == 1:
         solidBsp.draw(display)
 
+    display.drawPoint(testPoint, (0, 0, 255), 2)
 
     mx, my = pygame.mouse.get_pos()
     text = font.render("{}, {}".format(mx, my), 1, (50, 50, 50))
     textpos = text.get_rect(centerx = display.width / 2, centery = display.height/2)
     display.drawText(text, textpos)
+
+    inEmpty = solidBsp.inEmpty([mx, my])
+    display.drawPoint([mx, my], (0,255,255) if inEmpty else (255, 0, 0), 4)
 
     display.end()
