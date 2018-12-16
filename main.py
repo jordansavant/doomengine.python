@@ -62,8 +62,19 @@ for i, v in enumerate(polygons):
             allLineDefs.append(lineDef)
 
 solidBsp = SolidBSPNode(allLineDefs)
-print(solidBsp.toText())
+# print(solidBsp.toText())
 
+
+# TESTING WALL DRAWING
+wallTest = allLineDefs[0]
+camPoint = [80, 200]
+camDir = engine.mathdef.normalize(10, -30)
+
+dist1X = camPoint[0] - wallTest.start[0]
+dist1Y = camPoint[1] - wallTest.start[1]
+dist2X = wallTest.end[0] - camPoint[0]
+dist2Y = wallTest.end[1] - camPoint[1]
+print(dist1X, dist1Y)
 
 # testPoint = [60, 20]
 # for lineDef in allLineDefs:
@@ -107,14 +118,18 @@ while True:
             else:
                 display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
 
+    mx, my = pygame.mouse.get_pos()
+
     # render the tree
     if mode == 1:
         solidBsp.drawSegs(display)
+    if mode == 2:
+        solidBsp.drawFaces(display, mx, my)
 
-    # display.drawPoint(testPoint, (0, 0, 255), 2)
+    display.drawLine([ camPoint, [camPoint[0] + camDir[0] * 10, camPoint[1] + camDir[1] * 10] ], (175, 175, 175), 1)
+    display.drawPoint(camPoint, (255, 255, 255), 2)
 
     # draw our position information
-    mx, my = pygame.mouse.get_pos()
     text = font.render("{}, {}".format(mx, my), 1, (50, 50, 50))
     textpos = text.get_rect(centerx = display.width / 2, centery = display.height/2)
     display.drawText(text, textpos)

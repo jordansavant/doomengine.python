@@ -131,6 +131,20 @@ class SolidBSPNode(object):
         if self.front:
             self.front.drawSegs(display, depth + 1)
 
+    def drawFaces(self, display, posA, posB, depth = 0):
+        # draw self
+        if self.isLeaf == False:
+            behind = self.splitter.isPointBehind(posA, posB)
+            if not behind:
+                display.drawLine([self.splitter.start, self.splitter.end], (255, 0, 0), 1)
+            else:
+                display.drawLine([self.splitter.start, self.splitter.end], (60, 0, 0), 1)
+
+        if self.back:
+            self.back.drawFaces(display, posA, posB, depth + 1)
+        if self.front:
+            self.front.drawFaces(display, posA, posB, depth + 1)
+
     def toText(self, depth = 0):
         s = "{}\n".format(self)
         if self.back:
