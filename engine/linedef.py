@@ -10,11 +10,8 @@ class LineDef(object):
     def __init__(self):
         self.start = []
         self.end = []
-        self.normal = None
-        self.cross = None
         self.facing = None
         self.mid = []
-        self.dir = []
         self.normals = []
         self.drawColor = (random.randint(10, 255), random.randint(10, 255), random.randint(50, 255))
         # TODO: get normals and stuff calculated here
@@ -38,25 +35,13 @@ class LineDef(object):
         self.setup()
 
     def setup(self):
-        self.setMid()
-        self.setCross()
-        self.setDir()
+        self.setMidpoint()
         self.setNormals()
 
-    def setCross(self):
-        # TODO: unused
-        self.cross = crossProductLine(self.start, self.end)
-
-    def setMid(self):
+    def setMidpoint(self):
         # (a.x+b.x)/2,(a.y+b.y)/2
         self.mid.append((self.start[0] + self.end[0]) / 2)
         self.mid.append((self.start[1] + self.end[1]) / 2)
-
-    def setDir(self):
-        # TODO: unused
-        # -(b.y-a.y),(b.x-a.x)
-        self.dir.append(self.end[0] - self.start[0])
-        self.dir.append(-(self.end[1] - self.start[1]))
     
     def setNormals(self):
         dx = self.end[0] - self.start[0]
@@ -74,6 +59,10 @@ class LineDef(object):
         return None
 
     def classifyLine(self, testLine):
+        # 1 = back
+        # 2 = front
+        # 3 = spanning
+        # 4 = co planar
         points = [testLine.start, testLine.end]
         backCounter = 0
         frontCounter = 0
@@ -86,7 +75,6 @@ class LineDef(object):
             # if result == None:
                 # co planar, no counters
 
-        print(frontCounter, backCounter)
         # spanning
         if backCounter != 0 and frontCounter != 0:
             return 3
@@ -96,12 +84,7 @@ class LineDef(object):
         # front
         if frontCounter:
             return 2
-
-        # 1 = back
-        # 2 = front
-        # 3 = spanning
-        # 4 = co planar TODO our math is not checking for 0
-        return 1
+        return 4
 
     def split(self, other):
         # get the intersecting point
@@ -139,4 +122,4 @@ class LineDef(object):
         return None
 
     def __str__(self):
-        return "[{}->{}]".format(self.start, self.end)
+        return "[{}->{}:{}]".format(self.start, self.end, self.facing)

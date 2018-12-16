@@ -5,7 +5,6 @@ from engine import display
 class SolidBSPNode(object):
     def __init__(self, lineDefs):
         self.splitter = None # LineDef
-        self.splitterIndex = None
         self.front = None # Self
         self.back =  None # Self
         self.isLeaf = False
@@ -15,8 +14,8 @@ class SolidBSPNode(object):
             return
 
         # get splitter line
-        self.splitterIndex = self.selectBestSplitter(lineDefs)
-        self.splitter = lineDefs[self.splitterIndex]
+        splitterIndex = self.selectBestSplitter(lineDefs)
+        self.splitter = lineDefs[splitterIndex]
 
         # iterate the lineDefs and figure out which side of the splitter they are on
         frontList = []
@@ -35,13 +34,12 @@ class SolidBSPNode(object):
                 elif d == 3:
                     # Spanning
                     # first element is behind, second is in front
-                    print ("{} sees span for {}".format(self.splitter, lineDef))
                     splits = self.splitLine(self.splitter, lineDef)
                     backList.append(splits[0])
                     frontList.append(splits[1])
-                else:
-                    # co planar
-                    backList.append(lineDef)
+                else: # d == 4
+                    # co planar, choose a list to put it in
+                    frontList.append(lineDef)
         
         # all lines have been split and put into front or back list
         if len(frontList) == 0:
@@ -61,8 +59,6 @@ class SolidBSPNode(object):
         else:
             # create our recursive back
             self.back = SolidBSPNode(backList)
-
-
 
     def splitLine(self, splitterLineDef, lineDef):
         # first element is behind, second is in front, use facing from parent
@@ -97,7 +93,7 @@ class SolidBSPNode(object):
         else:
             return self.front.inEmpty(testPoint)
 
-    def draw(self, display, depth = 0):
+    def drawSegs(self, display, depth = 0):
         # draw self
         if self.isLeaf == False:
             
@@ -114,26 +110,22 @@ class SolidBSPNode(object):
             display.drawLine([self.splitter.start, self.splitter.end], self.splitter.drawColor, 1)
 
         if self.back:
-            self.back.draw(display, depth + 1)
+            self.back.drawSegs(display, depth + 1)
         if self.front:
-            self.front.draw(display, depth + 1)
+            self.front.drawSegs(display, depth + 1)
 
     def toText(self, depth = 0):
-        s = "{}{}".format(" " * depth, self)
+        s = "{}\n".format(self)
         if self.back:
-            s += "{}BACK {}: {}".format(" " * depth, depth, self.back.toText(depth+1))
+            s += "{}BACK {}: {}".format(" " * (depth+1), depth, self.back.toText(depth+1))
         if self.front:
-            s += "{}FRNT {}: {}".format(" " * depth, depth, self.front.toText(depth+1))
+            s += "{}FRNT {}: {}".format(" " * (depth+1), depth, self.front.toText(depth+1))
         return s
 
     def __str__(self):
         if self.splitter:
-            return "isLeaf: {} - isSolid: {} - splitter: {}, {}\n".format(
-                self.isLeaf, self.isSolid, self.splitter.start, self.splitter.end
-            )
+            return "splitter: {}".format(self.splitter)
         else:
-            return "isLeaf: {} - isSolid: {}\n".format(
-                self.isLeaf, self.isSolid
-            )
+            return "isLeaf: {} - isSolid: {}".format(self.isLeaf, self.isSolid)
 
 
