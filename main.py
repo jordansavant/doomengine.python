@@ -6,7 +6,6 @@ from engine.solidbspnode import SolidBSPNode
 
 print("\n")
 
-
 # Lines
 poly1 = [
     [50,  50],
@@ -78,13 +77,20 @@ for i, v in enumerate(polys):
 
 solidBsp = SolidBSPNode(allLineDefs)
 testPoint = [60, 75]
-print(solidBsp.render())
+print(solidBsp.toText())
 
 
 for lineDef in allLineDefs:
     isBehind = engine.mathdef.pointBehindSegment(testPoint, lineDef.start, lineDef.end) and lineDef.facing == 1
     print(lineDef.start, lineDef.end, lineDef.facing, isBehind, lineDef.normals)
 
+
+# testing ray intersection
+print("ray test")
+ray1 = allLineDefs[0]
+ray2 = allLineDefs[6]
+print ([ray1.start, ray1.end], [ray2.start, ray2.end])
+splits = ray1.split(ray2)
 
 display = Display(1280, 720)
 listener = EventListener()
@@ -99,7 +105,7 @@ def mode_swap():
     print(mode)
 
 # register callback function for changing the render mode
-listener.onKeyUp(pygame.K_RETURN, mode_swap)
+listener.onKeyUp(pygame.K_UP, mode_swap)
 
 while True:
     listener.update()
@@ -126,5 +132,8 @@ while True:
             # display.drawLine([ [mx, my] , [mx + n1x, my + n1y] ], (0, 255, 255), 2)
             # display.drawLine([ [mx, my] , [mx + n2x, my + n2y] ], (255, 0, 255), 2)
         display.drawPoint(testPoint, (0, 0, 255), 2)
+
+    if mode == 1:
+        solidBsp.draw(display)
 
     display.end()

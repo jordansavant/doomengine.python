@@ -1,3 +1,6 @@
+from engine import linedef
+from engine import display
+
 class SolidBSPNode(object):
     def __init__(self, lineDefs):
         self.splitter = None # LineDef
@@ -70,37 +73,27 @@ class SolidBSPNode(object):
     # if all points ahead, we would put whole poly in front list
     # if overlap, split and put into both
     def classifyLine(self, splitterLineDef, lineDef):
-        points = [lineDef.start, lineDef.end]
-        backCounter = 0
-        frontCounter = 0
-        for point in points:
-            if splitterLineDef.isPointBehind(point[0], point[1]):
-                backCounter += 1
-            else:
-                frontCounter +=1
-        if backCounter != 0 and frontCounter != 0:
-            return 3
-        if backCounter:
-            return 1
-        if frontCounter:
-            return 2
-
-        # 1 = back
-        # 2 = front
-        # 3 = spanning
-        # 4 = co planar TODO our math is not checking for 0
-        return 1
+        return splitterLineDef.classifyLine(lineDef)
 
     def selectBestSplitter(self, lineDefs):
         # TODO, make this smarter
         return 0
 
-    def render(self, depth = 0):
+    def draw(self, display, depth = 0):
+        # draw self
+        if self.isLeaf == False:
+            display.drawLine([self.splitter.start, self.splitter.end], (0, 0, 255), 1)
+        if self.back:
+            self.back.draw(display, depth + 1)
+        if self.front:
+            self.front.draw(display, depth + 1)
+
+    def toText(self, depth = 0):
         s = "{}{}".format(" " * depth, self)
         if self.back:
-            s += "{}BACK {}: {}".format(" " * depth, depth, self.back.render(depth+1))
+            s += "{}BACK {}: {}".format(" " * depth, depth, self.back.toText(depth+1))
         if self.front:
-            s += "{}FRNT {}: {}".format(" " * depth, depth, self.front.render(depth+1))
+            s += "{}FRNT {}: {}".format(" " * depth, depth, self.front.toText(depth+1))
         return s
 
     def __str__(self):
