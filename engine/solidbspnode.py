@@ -1,4 +1,3 @@
-import random
 from engine import linedef
 from engine import display
 
@@ -28,8 +27,8 @@ class SolidBSPNode(object):
                 if d == 1:
                     # Behind
                     backList.append(lineDef)
-                elif d == 2:
-                    # Front
+                elif d == 2 or d == 4:
+                    # Front or coplanar
                     frontList.append(lineDef)
                 elif d == 3:
                     # Spanning
@@ -37,9 +36,6 @@ class SolidBSPNode(object):
                     splits = self.splitLine(self.splitter, lineDef)
                     backList.append(splits[0])
                     frontList.append(splits[1])
-                else: # d == 4
-                    # co planar, choose a list to put it in
-                    frontList.append(lineDef)
         
         # all lines have been split and put into front or back list
         if len(frontList) == 0:
@@ -80,8 +76,29 @@ class SolidBSPNode(object):
         return splitterLineDef.classifyLine(lineDef)
 
     def selectBestSplitter(self, lineDefs):
-        # TODO, make this smarter
-        return 0
+        # compare each line to each other line
+        # classify where the line falls and increment number
+        best = 99999
+        splitterIndex = 0
+        for idxA, lineDefA, in enumerate(lineDefs):
+            fronts = 0
+            backs = 0
+            splits = 0
+            for idxB, lineDefB, in enumerate(lineDefs):
+                if lineDefA != lineDefB:
+                    d = self.classifyLine(lineDefA, lineDefB)
+                    if d == 1: #back
+                        backs += 1
+                    elif d == 2 or d == 4: # front or coplanar
+                        fronts += 1
+                    elif d == 3: # spanning
+                        splits += 1
+                    # make splits more costly
+                    score = abs(fronts - backs) + (splits * 8)
+                    if score < best:
+                        best = score
+                        splitterIndex = idxA
+        return splitterIndex
 
     def inEmpty(self, testPoint):
         # recurse the tree until we find a leaf node
@@ -97,7 +114,7 @@ class SolidBSPNode(object):
         # draw self
         if self.isLeaf == False:
             
-            ln = 7
+            ln = 4
             mx = self.splitter.mid[0]
             my = self.splitter.mid[1]
             nx = self.splitter.normals[self.splitter.facing][0] * ln

@@ -9,6 +9,15 @@ print("\n")
 # Lines, each vertex connects to the next one in CW fashion
 # third element is direction its facing, when CW facing 1 = left
 polygons = [
+    # open room
+    [
+        # x, y, facing
+        [30,  30, 0],
+        [300, 20, 0],
+        [400, 300, 0],
+        [30, 200, 0]
+    ],
+    # inner col
     [
         # x, y, facing
         [50,  50, 1],
@@ -17,12 +26,12 @@ polygons = [
         [100, 100, 1],
         [50,  100, 1]
     ],
+    # inner room
     [
-        # x, y, facing
-        [30,  30, 0],
-        [300, 20, 0],
-        [400, 300, 0],
-        [30, 200, 0]
+        [55, 55, 0],
+        [70, 55, 0],
+        [70, 95, 0],
+        [55, 95, 0],
     ]
 ]
 
