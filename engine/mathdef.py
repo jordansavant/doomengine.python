@@ -18,3 +18,17 @@ def normalize(a, b):
         length = math.sqrt(a * a + b * b)
         return [a / length, b / length]
     return [a, b]
+
+def perp2d(a, b):
+    return [-b, a]
+
+def rotate2d(x, y, rads):
+    cos = math.cos(rads)
+    sin = math.sin(rads)
+
+    return [(x * cos) - (y * sin), (x * sin) + (y * cos)]
+
+def distance2d(x1, y1, x2, y2):
+    x = x1 - x2
+    y = y1 - y2
+    return math.sqrt(x*x  + y*y)
