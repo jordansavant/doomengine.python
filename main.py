@@ -95,11 +95,11 @@ def mode_down():
 listener.onKeyUp(pygame.K_DOWN, mode_down)
 def on_left():
     global camDir
-    camDir = engine.mathdef.rotate2d(camDir[0], camDir[1], -math.pi / 4 / 3200)
+    camDir = engine.mathdef.rotate2d(camDir[0], camDir[1], -math.pi / 4 / 800)
 listener.onKeyHold(pygame.K_LEFT, on_left)
 def on_right():
     global camDir
-    camDir = engine.mathdef.rotate2d(camDir[0], camDir[1], math.pi / 4 / 3200)
+    camDir = engine.mathdef.rotate2d(camDir[0], camDir[1], math.pi / 4 / 800)
 listener.onKeyHold(pygame.K_RIGHT, on_right)
 def on_a():
     global camDir
@@ -117,6 +117,17 @@ def on_s():
     global camDir
     camPoint[1] += .05
 listener.onKeyHold(pygame.K_s, on_s)
+
+fpvpX = 500
+fpvpY = 100
+fpvpW = 500
+fpvpH = 300
+fpvp = [
+        [fpvpX, fpvpY],
+        [fpvpX + fpvpW, fpvpY],
+        [fpvpX + fpvpW, fpvpY + fpvpH],
+        [fpvpX, fpvpY + fpvpH],
+]
 
 while True:
     listener.update()
@@ -145,39 +156,74 @@ while True:
     if mode == 2:
         solidBsp.drawFaces(display, mx, my)
 
+    # render our viewport for 2D
+    display.drawLines(fpvp, (100, 100, 100), 1, True)
 
-    #perpWallDist = (mapX - posX + (1 - stepX) / 2) / rayDirX;
+
     camDir = engine.mathdef.normalize(camDir[0], camDir[1])
     camR = engine.mathdef.rotate2d(camDir[0], camDir[1], math.pi / 4)
     camL = engine.mathdef.rotate2d(camDir[0], camDir[1], - (math.pi / 4))
-    # camPerp = engine.mathdef.perp2d(camDir[0], camDir[1])
+
+    # compare the wall's left edge to the cameras left edge, repeat for right
+    leftSideDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], wallTest.start[0], wallTest.start[1])
+    leftSideDirection = [wallTest.start[0] - camPoint[0], wallTest.start[1] - camPoint[1]]
+    leftSideRadians = engine.mathdef.toRadians(leftSideDirection[0], leftSideDirection[1])
+    leftCameraRadians = engine.mathdef.toRadians(camL[0], camL[1])
+
+    rightSideDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], wallTest.end[0], wallTest.end[1])
+    rightSideDirection = [wallTest.end[0] - camPoint[0], wallTest.end[1] - camPoint[1]]
+    rightSideRadians = engine.mathdef.toRadians(rightSideDirection[0], rightSideDirection[1])
+    rightCameraRadians = engine.mathdef.toRadians(camR[0], camR[1])
+
+    leftIntersection = engine.mathdef.intersection2d(camPoint, [camPoint[0] + camL[0], camPoint[1] + camL[1]], wallTest.start, wallTest.end)
+    rightIntersection = engine.mathdef.intersection2d(camPoint, [camPoint[0] + camR[0], camPoint[1] + camR[1]], wallTest.start, wallTest.end)
+    leftIntersectionDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], leftIntersection[0], leftIntersection[1])
+    rightIntersectionDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], rightIntersection[0], rightIntersection[1])
+
+    print(wallTest.start, leftIntersection, rightIntersection, wallTest.end)
+
+    lensWidth = fpvpW
+    leftHeight = 1 / leftIntersectionDistance
+    rightHeight = 1 / rightIntersectionDistance
+
+    wall = [
+        [fpvpX, fpvpY + (fpvpH / 2) - 5000 * leftHeight],
+        [fpvpX, fpvpY + (fpvpH / 2) + 5000 * leftHeight],
+        [fpvpX + fpvpW, fpvpY + (fpvpH / 2) + 5000 * rightHeight],
+        [fpvpX + fpvpW, fpvpY + (fpvpH / 2) - 5000 * rightHeight],
+    ]
+    display.drawLines(wall, (255, 255, 0), 1, True)
+
+
+
     # we can create intersection points on the screen with our fov to clip the frame
-    dist1 = engine.mathdef.distance2d(camPoint[0], camPoint[1], wallTest.start[0], wallTest.start[1])
-    dist2 = engine.mathdef.distance2d(camPoint[0], camPoint[1], wallTest.end[0], wallTest.end[1])
-    h = 1 # height of "wall"
-    perpWallDist1 = dist1 / 2 # / rayDirX
-    lineHeight1 = h / perpWallDist1
-    perpWallDist2 = dist2 / 2 # / rayDirX
-    lineHeight2 = h / perpWallDist2
-    # print (dist1, dist2, lineHeight1, lineHeight2)
+    # dist1 = engine.mathdef.distance2d(camPoint[0], camPoint[1], wallTest.start[0], wallTest.start[1])
+    # dist2 = engine.mathdef.distance2d(camPoint[0], camPoint[1], wallTest.end[0], wallTest.end[1])
+
+    # h = 1 # height of "wall"
+    # perpWallDist1 = dist1 / 2 # / rayDirX
+    # lineHeight1 = h / perpWallDist1
+    # perpWallDist2 = dist2 / 2 # / rayDirX
+    # lineHeight2 = h / perpWallDist2
+    # # print (dist1, dist2, lineHeight1, lineHeight2)
+
     ll = 40
     display.drawLine([ camPoint, [camPoint[0] + camDir[0] * ll, camPoint[1] + camDir[1] * ll] ], (175, 175, 175), 1)
-    # display.drawLine([ camPoint, [camPoint[0] + camPerp[0] * ll, camPoint[1] + camPerp[1] * ll] ], (0, 175, 175), 1)
     display.drawLine([ camPoint, [camPoint[0] + camR[0] * ll, camPoint[1] + camR[1] * ll] ], (255, 0, 0), 1)
     display.drawLine([ camPoint, [camPoint[0] + camL[0] * ll, camPoint[1] + camL[1] * ll] ], (255, 0, 0), 1)
     display.drawPoint(camPoint, (255, 255, 255), 2)
 
-    wallOffsetX = 500
-    wallOffsetY = 500
+    # wallOffsetX = 500
+    # wallOffsetY = 500
 
-    # build lines
-    wall = [
-        [wallOffsetX,           wallOffsetY - 5000 * lineHeight1],
-        [wallOffsetX,           wallOffsetY + 5000 * lineHeight1],
-        [wallOffsetX + 400,     wallOffsetY + 5000 * lineHeight2],
-        [wallOffsetX + 400,     wallOffsetY - 5000 * lineHeight2],
-    ]
-    display.drawLines(wall, (255, 255, 0), 1, True)
+    # # build lines
+    # wall = [
+    #     [wallOffsetX,           wallOffsetY - 5000 * lineHeight1],
+    #     [wallOffsetX,           wallOffsetY + 5000 * lineHeight1],
+    #     [wallOffsetX + 400,     wallOffsetY + 5000 * lineHeight2],
+    #     [wallOffsetX + 400,     wallOffsetY - 5000 * lineHeight2],
+    # ]
+    # display.drawLines(wall, (255, 255, 0), 1, True)
 
     # draw our position information
     text = font.render("{}, {}".format(mx, my), 1, (50, 50, 50))

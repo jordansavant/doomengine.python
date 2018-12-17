@@ -1,6 +1,7 @@
 import random
 from engine.mathdef import crossProductLine
 from engine.mathdef import normalize
+from engine.mathdef import intersection2d
 from engine.mathdef import pointBehindSegment
 
 # A polygon is a collection of lines, each line has a direction
@@ -102,24 +103,7 @@ class LineDef(object):
         return None
 
     def findIntersection(self, other):
-        s1 = self.start
-        e1 = self.end
-        s2 = other.start
-        e2 = other.end
-
-        a1 = e1[1] - s1[1]
-        b1 = s1[0] - e1[0]
-        c1 = a1 * s1[0] + b1 * s1[1]
- 
-        a2 = e2[1] - s2[1]
-        b2 = s2[0] - e2[0]
-        c2 = a2 * s2[0] + b2 * s2[1]
- 
-        delta = a1 * b2 - a2 * b1
-        # if lines are parallel, the result will be delta = 0
-        if delta != 0:
-            return [(b2 * c1 - b1 * c2) / delta, (a1 * c2 - a2 * c1) / delta]
-        return None
+        return intersection2d(self.start, self.end, other.start, other.end)
 
     def __str__(self):
         return "[{}->{}:{}]".format(self.start, self.end, self.facing)
