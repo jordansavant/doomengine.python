@@ -165,12 +165,14 @@ while True:
     camL = engine.mathdef.rotate2d(camDir[0], camDir[1], - (math.pi / 4))
 
     # compare the wall's left edge to the cameras left edge, repeat for right
-    leftSideDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], wallTest.start[0], wallTest.start[1])
+    leftSide = [wallTest.start[0], wallTest.start[1]]
+    leftSideDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], leftSide[0], leftSide[1])
     leftSideDirection = [wallTest.start[0] - camPoint[0], wallTest.start[1] - camPoint[1]]
     leftSideRadians = engine.mathdef.toRadians(leftSideDirection[0], leftSideDirection[1])
     leftCameraRadians = engine.mathdef.toRadians(camL[0], camL[1])
 
-    rightSideDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], wallTest.end[0], wallTest.end[1])
+    rightSide = [wallTest.end[0], wallTest.end[1]]
+    rightSideDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], rightSide[0], rightSide[1])
     rightSideDirection = [wallTest.end[0] - camPoint[0], wallTest.end[1] - camPoint[1]]
     rightSideRadians = engine.mathdef.toRadians(rightSideDirection[0], rightSideDirection[1])
     rightCameraRadians = engine.mathdef.toRadians(camR[0], camR[1])
@@ -180,7 +182,49 @@ while True:
     leftIntersectionDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], leftIntersection[0], leftIntersection[1])
     rightIntersectionDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], rightIntersection[0], rightIntersection[1])
 
-    print(wallTest.start, leftIntersection, rightIntersection, wallTest.end)
+    # Two things we need to determine:
+    # 1. Is the wall visible in the camera?
+    # 2. At what distance do we draw
+    leftInX = (leftSide[0] <= leftIntersection[0] and leftIntersection[0] <= rightSide[0])
+    leftInY = (leftSide[1] <= leftIntersection[1] and leftIntersection[1] <= rightSide[1])
+    print(leftSide, rightSide, leftInX, leftInY, leftIntersection)
+
+
+
+
+    # p' = P * V * M * p
+    # p' is output (screen coords)
+    # p = world coords
+    # M = identity matrix (world offset?)
+    # so p' = P * V * p
+    # V = view matrix (translation and rotation of camera)
+    #   R = view rotation
+    #   T = view translation
+    #   p' = P * R * T * p
+    # P = projection matrix, can be computed offline, dependent on FoV and near/far clipping planes which are hard coded (90deg)
+    '''
+    function S3Proj(x,y,z)
+     local c, s, a, b = S3.cosMy, S3.sinMy, S3.termA, S3.termB
+     local px = 0.9815 * c * x+0.9815 * s *z+0.9815 * a
+     local py = 1.7321 * y - 1.7321 * S3.ey
+     local pz = s * x - z * c - b - 0.2
+     local pw = x * s - z * c - b
+     local ndcx, ndcy = px / abs(pw), py / abs(pw)
+     return 120 + ndcx * 120, 68 - ndcy * 68, pz
+    end
+    '''
+    '''
+    FOR SX=0,127 DO
+     ...
+     LOCAL T=SX/127
+     VX = V.X0 * (1-T) + V.X1 * T
+     VY = V.Y0 * (1-T) + V.Y1 * T
+    '''
+    # Once a ray hits a wall, we want to find the position of the foot of the wall
+    # on the screen. We can do this with SH/2 + K/TDIST, where SH is the screen
+    # height, and K is some constant. Intuitively, as TDIST gets bigger (further
+    # away), the foot of the wall shrinks toward the horizon. Similarly the
+    # position of the top of the wall is SH/2 - K/TDIST.
 
     lensWidth = fpvpW
     leftHeight = 1 / leftIntersectionDistance
