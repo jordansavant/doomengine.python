@@ -1,4 +1,4 @@
-import pygame, engine, math
+import pygame, engine, math, time
 from engine.display import Display
 from engine.eventlistener import EventListener
 from engine.linedef import LineDef
@@ -66,7 +66,7 @@ solidBsp = SolidBSPNode(allLineDefs)
 
 
 # TESTING WALL DRAWING
-wallTest = allLineDefs[0]
+wallTest = allLineDefs[4]
 camPoint = [90, 150]
 camDirRads = 0
 camDir = engine.mathdef.toVector(camDirRads)
@@ -96,31 +96,33 @@ def mode_down():
 listener.onKeyUp(pygame.K_DOWN, mode_down)
 def on_left():
     global camDir, camDirRads
-    camDirRads += -math.pi / 4 / 800
-    #camDir = engine.mathdef.rotate2d(camDir[0], camDir[1], -math.pi / 4 / 800)
+    camDirRads = camDirRads - 0.1
     camDir = engine.mathdef.toVector(camDirRads)
 listener.onKeyHold(pygame.K_LEFT, on_left)
 def on_right():
     global camDir, camDirRads
-    camDirRads += math.pi / 4 / 800
-    #camDir = engine.mathdef.rotate2d(camDir[0], camDir[1], math.pi / 4 / 800)
+    camDirRads = camDirRads + 0.1
     camDir = engine.mathdef.toVector(camDirRads)
 listener.onKeyHold(pygame.K_RIGHT, on_right)
 def on_a():
-    global camDir
-    camPoint[0] -= .05
+    global camPoint
+    camPoint[0] = camPoint[0] + math.sin(camDirRads)
+    camPoint[1] = camPoint[1] - math.cos(camDirRads)
 listener.onKeyHold(pygame.K_a, on_a)
 def on_d():
-    global camDir
-    camPoint[0] += .05
+    global camPoint
+    camPoint[0] = camPoint[0] - math.sin(camDirRads)
+    camPoint[1] = camPoint[1] + math.cos(camDirRads)
 listener.onKeyHold(pygame.K_d, on_d)
 def on_w():
-    global camDir
-    camPoint[1] -= .05
+    global camPoint
+    camPoint[0] = camPoint[0] + math.cos(camDirRads)
+    camPoint[1] = camPoint[1] + math.sin(camDirRads)
 listener.onKeyHold(pygame.K_w, on_w)
 def on_s():
-    global camDir
-    camPoint[1] += .05
+    global camPoint
+    camPoint[0] = camPoint[0] - math.cos(camDirRads)
+    camPoint[1] = camPoint[1] - math.sin(camDirRads)
 listener.onKeyHold(pygame.K_s, on_s)
 
 fpvpX = 500
@@ -134,62 +136,55 @@ fpvp = [
         [fpvpX, fpvpY + fpvpH],
 ]
 
+tdBounds = [
+    [500 + 4, 40],
+    [500 + 103, 40],
+    [500 + 103, 149],
+    [500 + 4, 149]
+]
+
+pjBounds = [
+    [500 + 109, 40],
+    [500 + 208, 40],
+    [500 + 208, 149],
+    [500 + 109, 149]
+]
+
+fpBounds = [
+    [500 + 214, 40],
+    [500 + 315, 40],
+    [500 + 315, 149],
+    [500 + 214, 149]
+]
 
 
+def inBoundPoint(point, bounds):
+    point2 = point.copy()
+    point2[0] += bounds[0][0]
+    point2[1] += bounds[0][1]
+    return point2
 
-# p' = P * V * M * p
-# p' is output (screen coords)
-# p = world coords
-# M = identity matrix (world offset?)
-# so p' = P * V * p
-# V = view matrix (translation and rotation of camera)
-#   R = view rotation
-#   T = view translation
-#   p' = P * R * T * p
-# P = projection matrix, can be computed offline, dependent on FoV and near/far clipping planes which are hard coded (90deg)
-'''
-function S3Proj(x,y,z)
-    # c = cosMy = camera rotation ?
-    # s = sinMy = camera rotation ?
-    # a = termA = camera translation ?
-    # b = termB = camera translation ?
-    # x, y, z are the point to project (z is used for z-depth buffer for drawing walls, we can ignore (or do we ignore y?))
-    # 
-    # ndcx = screen x
-    # ndcy = screen y return
-    local c, s, a, b = S3.cosMy, S3.sinMy, S3.termA, S3.termB
-    local px = 0.9815 * c * x + 0.9815 * s *z + 0.9815 * a
-    local py = 1.7321 * y - 1.7321 * S3.ey
-    local pz = s * x - z * c - b - 0.2
-    local pw = x * s - z * c - b
-    local ndcx, ndcy = px / abs(pw), py / abs(pw)
-    return 120 + ndcx * 120, 68 - ndcy * 68, pz
-end
-'''
+def inBoundLine(line, bounds):
+    line2 = []
+    line2.append(line[0].copy())
+    line2.append(line[1].copy())
+    line2[0][0] += bounds[0][0]
+    line2[0][1] += bounds[0][1]
+    line2[1][0] += bounds[0][0]
+    line2[1][1] += bounds[0][1]
+    return line2
 
-'''
-function S3SetCam(ex,ey,ez,yaw)
- S3.ex,S3.ey,S3.ez,S3.yaw=ex,ey,ez,yaw
- -- Precompute some factors we will need often:
- S3.cosMy,S3.sinMy=cos(-yaw),sin(-yaw)
- S3.termA=-ex*S3.cosMy-ez*S3.sinMy
- S3.termB=ex*S3.sinMy-ez*S3.cosMy
-end
-'''
+def fncross(x1, y1, x2, y2):
+    return x1 * y2 - y1 * x2
 
+def intersect(x1, y1, x2, y2, x3, y3, x4, y4):
+    x = fncross(x1, y1, x2, y2)
+    y = fncross(x3, y3, x4, y4)
+    det = fncross(x1 - x2, y1 - y2, x3 - x4, y3 - y4)
+    x = fncross(x, x1 - x2, y, x3 - x4) / det
+    y = fncross(x, y1 - y2, y, y3 - y4) / det
+    return [x, y]
 
-def s3proj(x, y, z, cameraCos, cameraSin, cameraX, cameraY, cameraZ, screenW, screenH):
-    termA = - cameraX * cameraCos - cameraZ * cameraSin
-    termB = cameraX * cameraSin - cameraZ * cameraCos
-    px = 0.9815 * cameraCos * x + 0.9815 * cameraSin * z + 0.9815 * termA
-    py = 1.7321 * y - 1.7321 * 0 # S3.ey
-    pz = cameraSin * x - z * cameraCos - termB - 0.2
-    pw = x * cameraSin - z * cameraCos - termB
-    ndcx = px / abs(pw)
-    ndcy = py / abs(pw)
-    halfW = screenW / 2
-    halfH = screenH / 2
-    return [halfW + ndcx * halfW, halfH - ndcy * halfH, pz]
 
 while True:
     listener.update()
@@ -218,141 +213,130 @@ while True:
     if mode == 2:
         solidBsp.drawFaces(display, mx, my)
 
-    # render our viewport for 2D
-    display.drawLines(fpvp, (100, 100, 100), 1, True)
-
-
-    camDir = engine.mathdef.normalize(camDir[0], camDir[1])
-    camR = engine.mathdef.rotate2d(camDir[0], camDir[1], math.pi / 4)
-    camL = engine.mathdef.rotate2d(camDir[0], camDir[1], - (math.pi / 4))
-
-    # compare the wall's left edge to the cameras left edge, repeat for right
-    leftSide = [wallTest.start[0], wallTest.start[1]]
-    leftSideDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], leftSide[0], leftSide[1])
-    leftSideDirection = [wallTest.start[0] - camPoint[0], wallTest.start[1] - camPoint[1]]
-    leftSideRadians = engine.mathdef.toRadians(leftSideDirection[0], leftSideDirection[1])
-    leftSideRadiansPPi = leftSideRadians + math.pi
-    leftCameraRadians = engine.mathdef.toRadians(camL[0], camL[1])
-    leftCameraRadiansPPi = leftCameraRadians + math.pi
-
-    rightSide = [wallTest.end[0], wallTest.end[1]]
-    rightSideDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], rightSide[0], rightSide[1])
-    rightSideDirection = [wallTest.end[0] - camPoint[0], wallTest.end[1] - camPoint[1]]
-    rightSideRadians = engine.mathdef.toRadians(rightSideDirection[0], rightSideDirection[1])
-    rightSideRadiansPPi = rightSideRadians + math.pi
-    rightCameraRadians = engine.mathdef.toRadians(camR[0], camR[1])
-    rightCameraRadiansPPi = rightCameraRadians + math.pi
-
-    leftIntersection = engine.mathdef.intersection2d(camPoint, [camPoint[0] + camL[0], camPoint[1] + camL[1]], wallTest.start, wallTest.end)
-    rightIntersection = engine.mathdef.intersection2d(camPoint, [camPoint[0] + camR[0], camPoint[1] + camR[1]], wallTest.start, wallTest.end)
-    leftIntersectionDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], leftIntersection[0], leftIntersection[1])
-    rightIntersectionDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], rightIntersection[0], rightIntersection[1])
-
-    # Two things we need to determine:
-    # 1. Is the wall visible in the camera?
-    # 2. At what distance do we draw
-    leftInX = (leftSide[0] <= leftIntersection[0] and leftIntersection[0] <= rightSide[0])
-    leftInY = (leftSide[1] <= leftIntersection[1] and leftIntersection[1] <= rightSide[1])
-    rightInX = (leftSide[0] <= rightIntersection[0] and rightIntersection[0] <= rightSide[0])
-    leftInY = (leftSide[1] <= leftIntersection[1] and leftIntersection[1] <= rightSide[1])
-    leftInRadians = leftCameraRadiansPPi >= leftSideRadiansPPi and leftCameraRadiansPPi <= rightSideRadiansPPi
-    rightInRadians = rightCameraRadiansPPi >= leftSideRadiansPPi and rightCameraRadiansPPi <= rightSideRadiansPPi
-
-
-    # print(leftSide, rightSide, leftInX, rightInX, leftIntersection, "|", leftCameraRadiansPPi, leftSideRadiansPPi, "|", rightCameraRadiansPPi, rightSideRadiansPPi, "|", leftInRadians, rightInRadians)
-
-
-    cameraCos = math.cos(camDirRads)# camDir[0]
-    cameraSin = math.sin(camDirRads)# camDir[1]
-    cameraX = camPoint[0]
-    cameraY = camPoint[1]
-    cameraZ = 0
-    screenW = fpvpW
-    screenH = fpvpH
-
-    x = leftSide[0]
-    y = leftSide[1]
-    z = 1
-    s3L = s3proj(x, y, z, cameraCos, cameraSin, cameraX, cameraY, cameraZ, screenW, screenH)
-
-    x = rightSide[0]
-    y = rightSide[1]
-    z = 1
-    s3R = s3proj(x, y, z, cameraCos, cameraSin, cameraX, cameraY, cameraZ, screenW, screenH)
-    lh = s3L[2]
-    rh = s3R[2]
-    print(s3L, "|", s3R, "|", x, y, z, "|", lh, rh)
-
-
-    wallX = [
-        [fpvpX + s3L[0], fpvpY + fpvpH/2 - s3L[2]], # up left
-        [fpvpX + s3L[0], fpvpY + s3L[2]], # low left 
-        [fpvpX + s3R[0], fpvpY + s3R[2]], # low right
-        [fpvpX + s3R[0], fpvpY + fpvpH/2 - s3R[2]], # up right
-    ]
-    display.drawLines(wallX, (0, 255, 255), 1, True)
-
-    #display.drawPoint([fpvpX + s3L[0], fpvpY + s3L[1]], (255, 255, 255), 4)
-    #display.drawPoint([fpvpX + s3R[0], fpvpY + s3R[1]], (255, 255, 255), 4)
-
-
-    # 120, 68 are half the dimensions of the calculator screen of that tutorial, not sure if I can use the same math
-    # 
-    '''
-    FOR SX=0,127 DO
-     ...
-     LOCAL T=SX/127
-     VX = V.X0 * (1-T) + V.X1 * T
-     VY = V.Y0 * (1-T) + V.Y1 * T
-    '''
-    # Once a ray hits a wall, we want to find the position of the foot of the wall
-    # on the screen. We can do this with SH/2 + K/TDIST, where SH is the screen
-    # height, and K is some constant. Intuitively, as TDIST gets bigger (further
-    # away), the foot of the wall shrinks toward the horizon. Similarly the
-    # position of the top of the wall is SH/2 - K/TDIST.
-
-    lensWidth = fpvpW
-    leftHeight = 1 / leftIntersectionDistance
-    rightHeight = 1 / rightIntersectionDistance
-
-    wall = [
-        [fpvpX, fpvpY + (fpvpH / 2) - 5000 * leftHeight],
-        [fpvpX, fpvpY + (fpvpH / 2) + 5000 * leftHeight],
-        [fpvpX + fpvpW, fpvpY + (fpvpH / 2) + 5000 * rightHeight],
-        [fpvpX + fpvpW, fpvpY + (fpvpH / 2) - 5000 * rightHeight],
-    ]
-    display.drawLines(wall, (255, 255, 0), 1, True)
 
 
 
-    # we can create intersection points on the screen with our fov to clip the frame
-    # dist1 = engine.mathdef.distance2d(camPoint[0], camPoint[1], wallTest.start[0], wallTest.start[1])
-    # dist2 = engine.mathdef.distance2d(camPoint[0], camPoint[1], wallTest.end[0], wallTest.end[1])
+    # BISQWIT
+    
+    wall = [ [wallTest.start[0], wallTest.start[1]], [wallTest.end[0], wallTest.end[1]] ]
+    px = camPoint[0]
+    py = camPoint[1]
+    angle = camDirRads
+    angleLength = 10
 
-    # h = 1 # height of "wall"
-    # perpWallDist1 = dist1 / 2 # / rayDirX
-    # lineHeight1 = h / perpWallDist1
-    # perpWallDist2 = dist2 / 2 # / rayDirX
-    # lineHeight2 = h / perpWallDist2
-    # # print (dist1, dist2, lineHeight1, lineHeight2)
+    # TOP DOWN
+    
+    # Render frame
+    display.drawLines(tdBounds, (150, 0, 150), 2, True)
 
-    ll = 40
-    display.drawLine([ camPoint, [camPoint[0] + camDir[0] * ll, camPoint[1] + camDir[1] * ll] ], (175, 175, 175), 1)
-    display.drawLine([ camPoint, [camPoint[0] + camR[0] * ll, camPoint[1] + camR[1] * ll] ], (255, 0, 0), 1)
-    display.drawLine([ camPoint, [camPoint[0] + camL[0] * ll, camPoint[1] + camL[1] * ll] ], (255, 0, 0), 1)
-    display.drawPoint(camPoint, (255, 255, 255), 2)
+    # Render wall
+    tdWall = inBoundLine(wall, tdBounds)
+    display.drawLine(tdWall, (255, 50, 255), 2)
 
-    # wallOffsetX = 500
-    # wallOffsetY = 500
+    # Render player angle
+    dir = [[px, py], [px + math.cos(angle) * angleLength, py + math.sin(angle) * angleLength]]
+    tdDir = inBoundLine(dir, tdBounds)
+    display.drawLine(tdDir, (255, 100, 255), 1)
 
-    # # build lines
-    # wall = [
-    #     [wallOffsetX,           wallOffsetY - 5000 * lineHeight1],
-    #     [wallOffsetX,           wallOffsetY + 5000 * lineHeight1],
-    #     [wallOffsetX + 400,     wallOffsetY + 5000 * lineHeight2],
-    #     [wallOffsetX + 400,     wallOffsetY - 5000 * lineHeight2],
-    # ]
-    # display.drawLines(wall, (255, 255, 0), 1, True)
+    # Render player pos
+    tdCamPoint = inBoundPoint(camPoint, tdBounds)
+    display.drawPoint(tdCamPoint, (255, 255, 255), 2)
+
+
+    # PROJECTED
+
+    # Render frame
+    display.drawLines(pjBounds, (150, 150, 0), 2, True)
+
+    # Transform vertices relative to player
+    tx1 = wall[0][0] - px
+    ty1 = wall[0][1] - py
+    tx2 = wall[1][0] - px
+    ty2 = wall[1][1] - py
+
+    # Rotate them around the players view
+    tz1 = tx1 * math.cos(angle) + ty1 * math.sin(angle)
+    tz2 = tx2 * math.cos(angle) + ty2 * math.sin(angle)
+    tx1 = tx1 * math.sin(angle) - ty1 * math.cos(angle)
+    tx2 = tx2 * math.sin(angle) - ty2 * math.cos(angle)
+
+    # Render wall
+    pjWall = [[50 - tx1, 50 - tz1], [50 - tx2, 50 - tz2]]
+    pjWall = inBoundLine(pjWall, pjBounds)
+    display.drawLine(pjWall, (255, 255, 50), 2)
+
+    # Render player angle
+    pjDir = [[50, 50], [50, 50 - angleLength]]
+    pjDir = inBoundLine(pjDir, pjBounds)
+    display.drawLine(pjDir, (255, 255, 100), 1)
+
+    # Render player pos
+    pjCamPoint = [50, 50]
+    pjCamPoint = inBoundPoint(pjCamPoint, pjBounds)
+    display.drawPoint(pjCamPoint, (255, 255, 255), 2)
+
+
+    # PERSPECTIVE TRANSFORMED
+
+    # Clip
+    # determine clipping, if both z's < 0 its totally behind
+	# if only 1 is negative it can be clipped
+    if tz1 > 0 or tz2 > 0:
+        # if line crosses the players view plane clip it
+        # i think the last two are set by refs
+        i1 = intersect(tx1, tz1, tx2, tz2, -0.0001, 0.0001, -20, 5)
+        ix1 = i1[0]
+        iz1 = i1[1]
+        i2 = intersect(tx1, tz1, tx2, tz2, 0.0001, 0.0001, 20, 5)
+        ix2 = i2[0]
+        iz2 = i2[1]
+        if tz1 <= 0:
+            if iz1 > 0:
+                tx1 = ix1
+                tz1 = iz1
+            else:
+                tx1 = ix2
+                tz1 = iz2
+        if tz2 <= 0:
+            if iz1 > 0:
+                tx2 = ix1
+                tz2 = iz1
+            else:
+                tx2 = ix2
+                tz2 = iz2
+
+    # Render frame
+    display.drawLines(fpBounds, (0, 150, 150), 2, True)
+
+    if (tz1 > 0 and tz2 > 0):
+
+        # Transform
+        x1 = -tx1 * 16 / tz1
+        y1a = -50 / tz1
+        y1b = 50 / tz1
+        x2 = -tx2 * 16 / tz2
+        y2a = -50 / tz2
+        y2b = 50 / tz2
+
+        # Render
+        topLine = [[50 + x1, 50 + y1a], [50 + x2, 50 + y2a]]
+        bottomLine = [[50 + x1, 50 + y1b], [50 + x2, 50 + y2b]]
+        leftLine = [[50 + x1, 50 + y1a], [50 + x1, 50 + y1b]]
+        rightLine = [[50 + x2, 50 + y2a], [50 + x2, 50 + y2b]]
+        
+        fpTopLine = inBoundLine(topLine, fpBounds)
+        fpBottomLine = inBoundLine(bottomLine, fpBounds)
+        fpLeftLine = inBoundLine(leftLine, fpBounds)
+        fpRightLine = inBoundLine(rightLine, fpBounds)
+        display.drawLine(fpTopLine, (0, 255, 255), 2)
+        display.drawLine(fpBottomLine, (0, 255, 255), 2)
+        display.drawLine(fpLeftLine, (0, 255, 255), 2)
+        display.drawLine(fpRightLine, (0, 255, 255), 2)
+
+
+
+
+
 
     # draw our position information
     text = font.render("{}, {}".format(mx, my), 1, (50, 50, 50))
@@ -364,3 +348,5 @@ while True:
     display.drawPoint([mx, my], (0,255,255) if inEmpty else (255, 0, 0), 4)
 
     display.end()
+
+    time.sleep(1 / 60)
