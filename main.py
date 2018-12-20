@@ -74,7 +74,7 @@ wallTest = allLineDefs[4]
 camera = Camera()
 camera.worldX = 90
 camera.worldY = 150
-camera.angle = 0
+camera.angle = -math.pi/2
 
 
 # testPoint = [60, 20]
@@ -209,6 +209,19 @@ while True:
     listener.update()
 
     display.start()
+
+
+    # Render Projection
+    topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wallTest, display.width, display.height)
+    if topLeft is not None:
+        wallLines = [
+            topLeft,
+            topRight,
+            bottomRight,
+            bottomLeft,
+        ]
+        display.drawPolygon(wallLines, (100, 100, 100), 0)
+
 
     wall = [ [wallTest.start[0], wallTest.start[1]], [wallTest.end[0], wallTest.end[1]] ]
     angleLength = 10
