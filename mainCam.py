@@ -65,6 +65,13 @@ pjBounds = [
     [109, 149]
 ]
 
+fpBounds = [
+    [214, 40],
+    [315, 40],
+    [315, 149],
+    [214, 149]
+]
+
 display.scale = 2
 
 def inBoundPoint(point, bounds):
@@ -94,7 +101,7 @@ while True:
 
     # TOP DOWN
     
-    # Render map
+    # Render frame
     display.drawLines(tdBounds, (0, 0, 200), 2, True)
 
     # Render wall
@@ -113,7 +120,7 @@ while True:
 
     # PROJECTED
 
-    # Render map
+    # Render frame
     display.drawLines(pjBounds, (0, 200, 0), 2, True)
 
     # Transform vertices relative to player
@@ -142,6 +149,35 @@ while True:
     pjCamPoint = [50, 50]
     pjCamPoint = inBoundPoint(pjCamPoint, pjBounds)
     display.drawPoint(pjCamPoint, (255, 255, 255), 2)
+
+
+    # PERSPECTIVE TRANSFORMED
+
+    # Render frame
+    display.drawLines(fpBounds, (0, 200, 200), 2, True)
+
+    # Transform
+    x1 = -tx1 * 16 / tz1
+    y1a = -50 / tz1
+    y1b = 50 / tz1
+    x2 = -tx2 * 16 / tz2
+    y2a = -50 / tz2
+    y2b = 50 / tz2
+
+    # Render wall
+    topLine = [[50 + x1, 50 + y1a], [50 + x2, 50 + y2a]]
+    bottomLine = [[50 + x1, 50 + y1b], [50 + x2, 50 + y2b]]
+    leftLine = [[50 + x1, 50 + y1a], [50 + x1, 50 + y1b]]
+    rightLine = [[50 + x2, 50 + y2a], [50 + x2, 50 + y2b]]
+    fpTopLine = inBoundLine(topLine, fpBounds)
+    fpBottomLine = inBoundLine(bottomLine, fpBounds)
+    fpLeftLine = inBoundLine(leftLine, fpBounds)
+    fpRightLine = inBoundLine(rightLine, fpBounds)
+    display.drawLine(fpTopLine, (255, 255, 0), 2)
+    display.drawLine(fpBottomLine, (255, 255, 0), 2)
+    display.drawLine(fpLeftLine, (255, 255, 0), 2)
+    display.drawLine(fpRightLine, (255, 255, 0), 2)
+
 
 
     time.sleep(0.016666667)
