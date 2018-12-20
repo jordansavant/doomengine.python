@@ -68,7 +68,8 @@ solidBsp = SolidBSPNode(allLineDefs)
 # TESTING WALL DRAWING
 wallTest = allLineDefs[0]
 camPoint = [90, 150]
-camDir = [0, -1]
+camDirRads = 0
+camDir = engine.mathdef.toVector(camDirRads)
 
 
 # testPoint = [60, 20]
@@ -94,12 +95,16 @@ def mode_down():
     mode = (mode - 1) % max_modes
 listener.onKeyUp(pygame.K_DOWN, mode_down)
 def on_left():
-    global camDir
-    camDir = engine.mathdef.rotate2d(camDir[0], camDir[1], -math.pi / 4 / 800)
+    global camDir, camDirRads
+    camDirRads += -math.pi / 4 / 800
+    #camDir = engine.mathdef.rotate2d(camDir[0], camDir[1], -math.pi / 4 / 800)
+    camDir = engine.mathdef.toVector(camDirRads)
 listener.onKeyHold(pygame.K_LEFT, on_left)
 def on_right():
-    global camDir
-    camDir = engine.mathdef.rotate2d(camDir[0], camDir[1], math.pi / 4 / 800)
+    global camDir, camDirRads
+    camDirRads += math.pi / 4 / 800
+    #camDir = engine.mathdef.rotate2d(camDir[0], camDir[1], math.pi / 4 / 800)
+    camDir = engine.mathdef.toVector(camDirRads)
 listener.onKeyHold(pygame.K_RIGHT, on_right)
 def on_a():
     global camDir
@@ -128,6 +133,63 @@ fpvp = [
         [fpvpX + fpvpW, fpvpY + fpvpH],
         [fpvpX, fpvpY + fpvpH],
 ]
+
+
+
+
+# p' = P * V * M * p
+# p' is output (screen coords)
+# p = world coords
+# M = identity matrix (world offset?)
+# so p' = P * V * p
+# V = view matrix (translation and rotation of camera)
+#   R = view rotation
+#   T = view translation
+#   p' = P * R * T * p
+# P = projection matrix, can be computed offline, dependent on FoV and near/far clipping planes which are hard coded (90deg)
+'''
+function S3Proj(x,y,z)
+    # c = cosMy = camera rotation ?
+    # s = sinMy = camera rotation ?
+    # a = termA = camera translation ?
+    # b = termB = camera translation ?
+    # x, y, z are the point to project (z is used for z-depth buffer for drawing walls, we can ignore (or do we ignore y?))
+    # 
+    # ndcx = screen x
+    # ndcy = screen y return
+    local c, s, a, b = S3.cosMy, S3.sinMy, S3.termA, S3.termB
+    local px = 0.9815 * c * x + 0.9815 * s *z + 0.9815 * a
+    local py = 1.7321 * y - 1.7321 * S3.ey
+    local pz = s * x - z * c - b - 0.2
+    local pw = x * s - z * c - b
+    local ndcx, ndcy = px / abs(pw), py / abs(pw)
+    return 120 + ndcx * 120, 68 - ndcy * 68, pz
+end
+'''
+
+'''
+function S3SetCam(ex,ey,ez,yaw)
+ S3.ex,S3.ey,S3.ez,S3.yaw=ex,ey,ez,yaw
+ -- Precompute some factors we will need often:
+ S3.cosMy,S3.sinMy=cos(-yaw),sin(-yaw)
+ S3.termA=-ex*S3.cosMy-ez*S3.sinMy
+ S3.termB=ex*S3.sinMy-ez*S3.cosMy
+end
+'''
+
+
+def s3proj(x, y, z, cameraCos, cameraSin, cameraX, cameraY, cameraZ, screenW, screenH):
+    termA = - cameraX * cameraCos - cameraZ * cameraSin
+    termB = cameraX * cameraSin - cameraZ * cameraCos
+    px = 0.9815 * cameraCos * x + 0.9815 * cameraSin * z + 0.9815 * termA
+    py = 1.7321 * y - 1.7321 * 0 # S3.ey
+    pz = cameraSin * x - z * cameraCos - termB - 0.2
+    pw = x * cameraSin - z * cameraCos - termB
+    ndcx = px / abs(pw)
+    ndcy = py / abs(pw)
+    halfW = screenW / 2
+    halfH = screenH / 2
+    return [halfW + ndcx * halfW, halfH - ndcy * halfH, pz]
 
 while True:
     listener.update()
@@ -169,13 +231,17 @@ while True:
     leftSideDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], leftSide[0], leftSide[1])
     leftSideDirection = [wallTest.start[0] - camPoint[0], wallTest.start[1] - camPoint[1]]
     leftSideRadians = engine.mathdef.toRadians(leftSideDirection[0], leftSideDirection[1])
+    leftSideRadiansPPi = leftSideRadians + math.pi
     leftCameraRadians = engine.mathdef.toRadians(camL[0], camL[1])
+    leftCameraRadiansPPi = leftCameraRadians + math.pi
 
     rightSide = [wallTest.end[0], wallTest.end[1]]
     rightSideDistance = engine.mathdef.distance2d(camPoint[0], camPoint[1], rightSide[0], rightSide[1])
     rightSideDirection = [wallTest.end[0] - camPoint[0], wallTest.end[1] - camPoint[1]]
     rightSideRadians = engine.mathdef.toRadians(rightSideDirection[0], rightSideDirection[1])
+    rightSideRadiansPPi = rightSideRadians + math.pi
     rightCameraRadians = engine.mathdef.toRadians(camR[0], camR[1])
+    rightCameraRadiansPPi = rightCameraRadians + math.pi
 
     leftIntersection = engine.mathdef.intersection2d(camPoint, [camPoint[0] + camL[0], camPoint[1] + camL[1]], wallTest.start, wallTest.end)
     rightIntersection = engine.mathdef.intersection2d(camPoint, [camPoint[0] + camR[0], camPoint[1] + camR[1]], wallTest.start, wallTest.end)
@@ -187,32 +253,51 @@ while True:
     # 2. At what distance do we draw
     leftInX = (leftSide[0] <= leftIntersection[0] and leftIntersection[0] <= rightSide[0])
     leftInY = (leftSide[1] <= leftIntersection[1] and leftIntersection[1] <= rightSide[1])
-    print(leftSide, rightSide, leftInX, leftInY, leftIntersection)
+    rightInX = (leftSide[0] <= rightIntersection[0] and rightIntersection[0] <= rightSide[0])
+    leftInY = (leftSide[1] <= leftIntersection[1] and leftIntersection[1] <= rightSide[1])
+    leftInRadians = leftCameraRadiansPPi >= leftSideRadiansPPi and leftCameraRadiansPPi <= rightSideRadiansPPi
+    rightInRadians = rightCameraRadiansPPi >= leftSideRadiansPPi and rightCameraRadiansPPi <= rightSideRadiansPPi
 
 
+    # print(leftSide, rightSide, leftInX, rightInX, leftIntersection, "|", leftCameraRadiansPPi, leftSideRadiansPPi, "|", rightCameraRadiansPPi, rightSideRadiansPPi, "|", leftInRadians, rightInRadians)
 
 
-    # p' = P * V * M * p
-    # p' is output (screen coords)
-    # p = world coords
-    # M = identity matrix (world offset?)
-    # so p' = P * V * p
-    # V = view matrix (translation and rotation of camera)
-    #   R = view rotation
-    #   T = view translation
-    #   p' = P * R * T * p
-    # P = projection matrix, can be computed offline, dependent on FoV and near/far clipping planes which are hard coded (90deg)
-    '''
-    function S3Proj(x,y,z)
-     local c, s, a, b = S3.cosMy, S3.sinMy, S3.termA, S3.termB
-     local px = 0.9815 * c * x+0.9815 * s *z+0.9815 * a
-     local py = 1.7321 * y - 1.7321 * S3.ey
-     local pz = s * x - z * c - b - 0.2
-     local pw = x * s - z * c - b
-     local ndcx, ndcy = px / abs(pw), py / abs(pw)
-     return 120 + ndcx * 120, 68 - ndcy * 68, pz
-    end
-    '''
+    cameraCos = math.cos(camDirRads)# camDir[0]
+    cameraSin = math.sin(camDirRads)# camDir[1]
+    cameraX = camPoint[0]
+    cameraY = camPoint[1]
+    cameraZ = 0
+    screenW = fpvpW
+    screenH = fpvpH
+
+    x = leftSide[0]
+    y = leftSide[1]
+    z = 1
+    s3L = s3proj(x, y, z, cameraCos, cameraSin, cameraX, cameraY, cameraZ, screenW, screenH)
+
+    x = rightSide[0]
+    y = rightSide[1]
+    z = 1
+    s3R = s3proj(x, y, z, cameraCos, cameraSin, cameraX, cameraY, cameraZ, screenW, screenH)
+    lh = s3L[2]
+    rh = s3R[2]
+    print(s3L, "|", s3R, "|", x, y, z, "|", lh, rh)
+
+
+    wallX = [
+        [fpvpX + s3L[0], fpvpY + fpvpH/2 - s3L[2]], # up left
+        [fpvpX + s3L[0], fpvpY + s3L[2]], # low left 
+        [fpvpX + s3R[0], fpvpY + s3R[2]], # low right
+        [fpvpX + s3R[0], fpvpY + fpvpH/2 - s3R[2]], # up right
+    ]
+    display.drawLines(wallX, (0, 255, 255), 1, True)
+
+    #display.drawPoint([fpvpX + s3L[0], fpvpY + s3L[1]], (255, 255, 255), 4)
+    #display.drawPoint([fpvpX + s3R[0], fpvpY + s3R[1]], (255, 255, 255), 4)
+
+
+    # 120, 68 are half the dimensions of the calculator screen of that tutorial, not sure if I can use the same math
+    # 
     '''
     FOR SX=0,127 DO
      ...

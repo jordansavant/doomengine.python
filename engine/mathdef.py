@@ -36,6 +36,9 @@ def toRadians(x, y):
     v = normalize(x, y)
     return math.atan2(v[1], v[0])
 
+def toVector(rads):
+    return [math.cos(rads), math.sin(rads)]
+
 def intersection2d(splitterStart, splitterEnd, lineStart, lineEnd):
     s1 = splitterStart
     e1 = splitterEnd

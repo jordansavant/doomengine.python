@@ -22,7 +22,14 @@ class Display(object):
         pygame.draw.line(self.screen, color, [line[0][0] * self.scale, line[0][1] * self.scale], [line[1][0] * self.scale, line[1][1] * self.scale], width)
 
     def drawLines(self, lines, color, width, connect = False):
-        pygame.draw.lines(self.screen, color, connect, lines, width)
+        scaledLines = []
+        if self.scale != 1:
+            for point in lines:
+                scaledLines.append([point[0] * self.scale, point[1] * self.scale])
+            pygame.draw.lines(self.screen, color, connect, scaledLines, width)
+        else:
+            pygame.draw.lines(self.screen, color, connect, lines, width)
+
 
     def drawPoint(self, pos, color, width):
         pygame.draw.circle(self.screen, color, [(int)(pos[0] * self.scale), (int)(pos[1] * self.scale)], width)
