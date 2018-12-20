@@ -195,27 +195,31 @@ while True:
                 tx2 = ix2
                 tz2 = iz2
 
-    # Transform
-    x1 = -tx1 * 16 / tz1
-    y1a = -50 / tz1
-    y1b = 50 / tz1
-    x2 = -tx2 * 16 / tz2
-    y2a = -50 / tz2
-    y2b = 50 / tz2
+    if (tz1 > 0 and tz2 > 0):
 
-    # Render wall
-    topLine = [[50 + x1, 50 + y1a], [50 + x2, 50 + y2a]]
-    bottomLine = [[50 + x1, 50 + y1b], [50 + x2, 50 + y2b]]
-    leftLine = [[50 + x1, 50 + y1a], [50 + x1, 50 + y1b]]
-    rightLine = [[50 + x2, 50 + y2a], [50 + x2, 50 + y2b]]
-    fpTopLine = inBoundLine(topLine, fpBounds)
-    fpBottomLine = inBoundLine(bottomLine, fpBounds)
-    fpLeftLine = inBoundLine(leftLine, fpBounds)
-    fpRightLine = inBoundLine(rightLine, fpBounds)
-    display.drawLine(fpTopLine, (255, 255, 0), 2)
-    display.drawLine(fpBottomLine, (255, 255, 0), 2)
-    display.drawLine(fpLeftLine, (255, 255, 0), 2)
-    display.drawLine(fpRightLine, (255, 255, 0), 2)
+        # Transform
+        x1 = -tx1 * 16 / tz1
+        y1a = -50 / tz1
+        y1b = 50 / tz1
+        x2 = -tx2 * 16 / tz2
+        y2a = -50 / tz2
+        y2b = 50 / tz2
+
+        print(tx1, tx2, tz1, tz2)
+
+        # Render
+        topLine = [[50 + x1, 50 + y1a], [50 + x2, 50 + y2a]]
+        bottomLine = [[50 + x1, 50 + y1b], [50 + x2, 50 + y2b]]
+        leftLine = [[50 + x1, 50 + y1a], [50 + x1, 50 + y1b]]
+        rightLine = [[50 + x2, 50 + y2a], [50 + x2, 50 + y2b]]
+        fpTopLine = inBoundLine(topLine, fpBounds)
+        fpBottomLine = inBoundLine(bottomLine, fpBounds)
+        fpLeftLine = inBoundLine(leftLine, fpBounds)
+        fpRightLine = inBoundLine(rightLine, fpBounds)
+        display.drawLine(fpTopLine, (255, 255, 0), 2)
+        display.drawLine(fpBottomLine, (255, 255, 0), 2)
+        display.drawLine(fpLeftLine, (255, 255, 0), 2)
+        display.drawLine(fpRightLine, (255, 255, 0), 2)
 
 
 
