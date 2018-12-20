@@ -212,6 +212,7 @@ while True:
         bottomLine = [[50 + x1, 50 + y1b], [50 + x2, 50 + y2b]]
         leftLine = [[50 + x1, 50 + y1a], [50 + x1, 50 + y1b]]
         rightLine = [[50 + x2, 50 + y2a], [50 + x2, 50 + y2b]]
+        
         fpTopLine = inBoundLine(topLine, fpBounds)
         fpBottomLine = inBoundLine(bottomLine, fpBounds)
         fpLeftLine = inBoundLine(leftLine, fpBounds)
