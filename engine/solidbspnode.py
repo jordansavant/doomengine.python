@@ -110,6 +110,23 @@ class SolidBSPNode(object):
         else:
             return self.front.inEmpty(testPoint)
 
+    def drawWalls(self, camera, display, depth = 0):
+        if self.isLeaf == False:
+            topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(self.splitter, display.width, display.height)
+            if topLeft is not None:
+                wallLines = [
+                    topLeft,
+                    topRight,
+                    bottomRight,
+                    bottomLeft,
+                ]
+                display.drawPolygon(wallLines, self.splitter.drawColor, 0)
+
+        if self.back:
+            self.back.drawWalls(camera, display, depth + 1)
+        if self.front:
+            self.front.drawWalls(camera, display, depth + 1)
+
     def drawSegs(self, display, depth = 0):
         # draw self
         if self.isLeaf == False:

@@ -212,15 +212,15 @@ while True:
 
 
     # Render Projection
-    topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wallTest, display.width, display.height)
-    if topLeft is not None:
-        wallLines = [
-            topLeft,
-            topRight,
-            bottomRight,
-            bottomLeft,
-        ]
-        display.drawPolygon(wallLines, (100, 100, 100), 0)
+    # topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wallTest, display.width, display.height)
+    # if topLeft is not None:
+    #     wallLines = [
+    #         topLeft,
+    #         topRight,
+    #         bottomRight,
+    #         bottomLeft,
+    #     ]
+    #     display.drawPolygon(wallLines, wallTest.drawColor, 0)
 
 
     wall = [ [wallTest.start[0], wallTest.start[1]], [wallTest.end[0], wallTest.end[1]] ]
@@ -247,6 +247,8 @@ while True:
         solidBsp.drawSegs(display)
     if mode == 2:
         solidBsp.drawFaces(display, mx, my)
+
+    solidBsp.drawWalls(camera, display)
     # render camera
     dir = [[camera.worldX, camera.worldY], [camera.worldX + math.cos(camera.angle) * angleLength, camera.worldY + math.sin(camera.angle) * angleLength]]
     display.drawLine(dir, (255, 100, 255), 1)
