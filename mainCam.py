@@ -90,6 +90,18 @@ def inBoundLine(line, bounds):
     line2[1][1] += bounds[0][1]
     return line2
 
+def fncross(x1, y1, x2, y2):
+    return x1 * y2 - y1 * x2
+
+def intersect(x1, y1, x2, y2, x3, y3, x4, y4):
+    x = fncross(x1, y1, x2, y2)
+    y = fncross(x3, y3, x4, y4)
+    det = fncross(x1 - x2, y1 - y2, x3 - x4, y3 - y4)
+    x = fncross(x, x1 - x2, y, x3 - x4) / det
+    y = fncross(x, y1 - y2, y, y3 - y4) / det
+    return [x, y]
+
+
 while True:
     listener.update()
 
@@ -155,6 +167,33 @@ while True:
 
     # Render frame
     display.drawLines(fpBounds, (0, 200, 200), 2, True)
+
+    # Clip
+    # determine clipping, if both z's < 0 its totally behind
+	# if only 1 is negative it can be clipped
+    if tz1 > 0 or tz2 > 0:
+        # if line crosses the players view plane clip it
+        # i think the last two are set by refs
+        i1 = intersect(tx1, tz1, tx2, tz2, -0.0001, 0.0001, -20, 5)
+        ix1 = i1[0]
+        iz1 = i1[1]
+        i2 = intersect(tx1, tz1, tx2, tz2, 0.0001, 0.0001, 20, 5)
+        ix2 = i2[0]
+        iz2 = i2[1]
+        if tz1 <= 0:
+            if iz1 > 0:
+                tx1 = ix1
+                tz1 = iz1
+            else:
+                tx1 = ix2
+                tz1 = iz2
+        if tz2 <= 0:
+            if iz1 > 0:
+                tx2 = ix1
+                tz2 = iz1
+            else:
+                tx2 = ix2
+                tz2 = iz2
 
     # Transform
     x1 = -tx1 * 16 / tz1
