@@ -8,7 +8,7 @@ print("\n")
 
 
 # TESTING WALL DRAWING
-wallTest = [[70, 20], [70, 70]]
+wall = [[70, 20], [70, 70]]
 camPoint = [50, 50]
 camDirRads = 0
 camDir = engine.mathdef.toVector(camDirRads)
@@ -51,15 +51,37 @@ def on_s():
 listener.onKeyHold(pygame.K_s, on_s)
 
 
-bounds = [
-    [0, 0],
-    [99, 0],
-    [99, 109],
-    [0, 109]
+tdBounds = [
+    [4, 40],
+    [103, 40],
+    [103, 149],
+    [4, 149]
+]
+
+pjBounds = [
+    [109, 40],
+    [208, 40],
+    [208, 149],
+    [109, 149]
 ]
 
 display.scale = 2
 
+def inBoundPoint(point, bounds):
+    point2 = point.copy()
+    point2[0] += bounds[0][0]
+    point2[1] += bounds[0][1]
+    return point2
+
+def inBoundLine(line, bounds):
+    line2 = []
+    line2.append(line[0].copy())
+    line2.append(line[1].copy())
+    line2[0][0] += bounds[0][0]
+    line2[0][1] += bounds[0][1]
+    line2[1][0] += bounds[0][0]
+    line2[1][1] += bounds[0][1]
+    return line2
 
 while True:
     listener.update()
@@ -69,15 +91,58 @@ while True:
     px = camPoint[0]
     py = camPoint[1]
     angle = camDirRads
+
+    # TOP DOWN
     
-    # Render top down version of our map
-    display.drawLines(bounds, (0, 0, 200), 2, True)
+    # Render map
+    display.drawLines(tdBounds, (0, 0, 200), 2, True)
 
     # Render wall
-    display.drawLine(wallTest, (255, 255, 0), 2)
+    tdWall = inBoundLine(wall, tdBounds)
+    display.drawLine(tdWall, (255, 255, 0), 2)
 
     # Render player angle
-    display.drawLine([[px, py], [px + math.cos(angle) * 5, py + math.sin(angle) * 5]], (100, 100, 100), 2)
+    dir = [[px, py], [px + math.cos(angle) * 5, py + math.sin(angle) * 5]]
+    tdDir = inBoundLine(dir, tdBounds)
+    display.drawLine(tdDir, (100, 100, 100), 2)
+
+    # Render player pos
+    tdCamPoint = inBoundPoint(camPoint, tdBounds)
+    display.drawPoint(tdCamPoint, (255, 255, 255), 2)
+
+
+    # PROJECTED
+
+    # Render map
+    display.drawLines(pjBounds, (0, 200, 0), 2, True)
+
+    # Transform vertices relative to player
+    tx1 = wall[0][0] - px
+    ty1 = wall[0][1] - py
+    tx2 = wall[1][0] - px
+    ty2 = wall[1][1] - py
+
+    # Rotate them around the players view
+    tz1 = tx1 * math.cos(angle) + ty1 * math.sin(angle)
+    tz2 = tx2 * math.cos(angle) + ty2 * math.sin(angle)
+    tx1 = tx1 * math.sin(angle) - ty1 * math.cos(angle)
+    tx2 = tx2 * math.sin(angle) - ty2 * math.cos(angle)
+
+    # Render wall
+    pjWall = [[50 - tx1, 50 - tz1], [50 - tx2, 50 - tz2]]
+    pjWall = inBoundLine(pjWall, pjBounds)
+    display.drawLine(pjWall, (255, 255, 0), 2)
+
+    # Render player angle
+    pjDir = [[50, 50], [50, 45]]
+    pjDir = inBoundLine(pjDir, pjBounds)
+    display.drawLine(pjDir, (100, 100, 100), 2)
+
+    # Render player pos
+    pjCamPoint = [50, 50]
+    pjCamPoint = inBoundPoint(pjCamPoint, pjBounds)
+    display.drawPoint(pjCamPoint, (255, 255, 255), 2)
+
 
     time.sleep(0.016666667)
 
