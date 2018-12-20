@@ -273,10 +273,19 @@ while True:
     # ========================
     # FPS Perspective
 
+    surfaceWidth = 320
+    surfaceHeight = 180
+    fpBounds = [
+        [500 + 214, 40],
+        [500 + 214 + surfaceWidth, 40],
+        [500 + 214 + surfaceWidth, 40 + surfaceHeight],
+        [500 + 214, 40 + surfaceHeight]
+    ]
+
     # Render frame
     display.drawLines(fpBounds, (0, 150, 150), 2, True)
     # Render Projection
-    topLine, rightLine, bottomLine, leftLine = camera.projectWall(wallTest)
+    topLine, rightLine, bottomLine, leftLine = camera.projectWall(wallTest, surfaceWidth, surfaceHeight)
     if topLine is not None:
         fpTopLine = inBoundLine(topLine, fpBounds)
         fpRightLine = inBoundLine(rightLine, fpBounds)

@@ -16,7 +16,7 @@ class Camera(object):
         det = self.fncross(x1 - x2, y1 - y2, x3 - x4, y3 - y4)
         x = self.fncross(x, x1 - x2, y, x3 - x4) / det
         y = self.fncross(x, y1 - y2, y, y3 - y4) / det
-        return [x, y]
+        return (x, y)
 
     def transformWall(self, lineDef):
 
@@ -34,7 +34,10 @@ class Camera(object):
 
         return (tx1, ty1, tz1, tx2, ty2, tz2)
 
-    def projectWall(self, lineDef):
+    def projectWall(self, lineDef, surfaceWidth, surfaceHeight):
+
+        halfW = surfaceWidth / 2
+        halfH = surfaceHeight / 2
 
         # PROJECTED
         (tx1, ty1, tz1, tx2, ty2, tz2) = self.transformWall(lineDef)
@@ -46,13 +49,8 @@ class Camera(object):
         # if only 1 is negative it can be clipped
         if tz1 > 0 or tz2 > 0:
             # if line crosses the players view plane clip it
-            # i think the last two are set by refs
-            i1 = self.intersect(tx1, tz1, tx2, tz2, -0.0001, 0.0001, -20, 5)
-            ix1 = i1[0]
-            iz1 = i1[1]
-            i2 = self.intersect(tx1, tz1, tx2, tz2, 0.0001, 0.0001, 20, 5)
-            ix2 = i2[0]
-            iz2 = i2[1]
+            ix1, iz1 = self.intersect(tx1, tz1, tx2, tz2, -0.0001, 0.0001, -20, 5)
+            ix2, iz2 = self.intersect(tx1, tz1, tx2, tz2, 0.0001, 0.0001, 20, 5)
             if tz1 <= 0:
                 if iz1 > 0:
                     tx1 = ix1
@@ -71,18 +69,23 @@ class Camera(object):
         # If not behind us
         if (tz1 > 0 and tz2 > 0):
             # Transform
+            print(tx1, tz1)
+            # 16 is effects FoV, the bigger the narrower
+            # TODO: its either halfW or halfH, haven't figured it out, originally just "50"
             x1 = -tx1 * 16 / tz1
-            y1a = -50 / tz1
-            y1b = 50 / tz1
-            x2 = -tx2 * 16 / tz2
-            y2a = -50 / tz2
-            y2b = 50 / tz2
+            y1a = -halfW / tz1
+            y1b = halfW / tz1
 
-            # Render
-            topLine = [[50 + x1, 50 + y1a], [50 + x2, 50 + y2a]]
-            bottomLine = [[50 + x1, 50 + y1b], [50 + x2, 50 + y2b]]
-            leftLine = [[50 + x1, 50 + y1a], [50 + x1, 50 + y1b]]
-            rightLine = [[50 + x2, 50 + y2a], [50 + x2, 50 + y2b]]
+            x2 = -tx2 * 16 / tz2
+            y2a = -halfW / tz2
+            y2b = halfW / tz2
+
+            # get parts
+            topLine = [[halfW + x1, halfH + y1a], [halfW + x2, halfH + y2a]]
+            bottomLine = [[halfW + x1, halfH + y1b], [halfW + x2, halfH + y2b]]
+            
+            leftLine = [[halfW + x1, halfH + y1a], [halfW + x1, halfH + y1b]]
+            rightLine = [[halfW + x2, halfH + y2a], [halfW + x2, halfH + y2b]]
 
             return (topLine, rightLine, bottomLine, leftLine)
         
