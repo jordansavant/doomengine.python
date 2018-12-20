@@ -30,6 +30,9 @@ class Display(object):
         else:
             pygame.draw.lines(self.screen, color, connect, lines, width)
 
+    def drawPolygon(self, points, color, width):
+        pygame.draw.polygon(self.screen, color, points, width)
+
 
     def drawPoint(self, pos, color, width):
         pygame.draw.circle(self.screen, color, [(int)(pos[0] * self.scale), (int)(pos[1] * self.scale)], width)

@@ -80,13 +80,15 @@ class Camera(object):
             y2a = -halfW / tz2
             y2b = halfW / tz2
 
+            # List of points
+            return [halfW + x1, halfH + y1a], [halfW + x2, halfH + y2a], [halfW + x2, halfH + y2b], [halfW + x1, halfH + y1b],
             # get parts
-            topLine = [[halfW + x1, halfH + y1a], [halfW + x2, halfH + y2a]]
-            bottomLine = [[halfW + x1, halfH + y1b], [halfW + x2, halfH + y2b]]
+            # topLine = [[halfW + x1, halfH + y1a], [halfW + x2, halfH + y2a]]
+            # bottomLine = [[halfW + x1, halfH + y1b], [halfW + x2, halfH + y2b]]
             
-            leftLine = [[halfW + x1, halfH + y1a], [halfW + x1, halfH + y1b]]
-            rightLine = [[halfW + x2, halfH + y2a], [halfW + x2, halfH + y2b]]
+            # leftLine = [[halfW + x1, halfH + y1a], [halfW + x1, halfH + y1b]]
+            # rightLine = [[halfW + x2, halfH + y2a], [halfW + x2, halfH + y2b]]
 
-            return (topLine, rightLine, bottomLine, leftLine)
+            # return (topLine, rightLine, bottomLine, leftLine)
         
         return (None, None, None, None)

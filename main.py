@@ -166,11 +166,14 @@ pjBounds = [
     [500 + 109, 149]
 ]
 
+
+surfaceWidth = 320
+surfaceHeight = 180
 fpBounds = [
     [500 + 214, 40],
-    [500 + 315, 40],
-    [500 + 315, 149],
-    [500 + 214, 149]
+    [500 + 214 + surfaceWidth, 40],
+    [500 + 214 + surfaceWidth, 40 + surfaceHeight],
+    [500 + 214, 40 + surfaceHeight]
 ]
 
 
@@ -207,6 +210,9 @@ while True:
 
     display.start()
 
+    wall = [ [wallTest.start[0], wallTest.start[1]], [wallTest.end[0], wallTest.end[1]] ]
+    angleLength = 10
+
     # render the polygons directly
     if mode == 0:
         for lineDef in allLineDefs:
@@ -228,10 +234,10 @@ while True:
         solidBsp.drawSegs(display)
     if mode == 2:
         solidBsp.drawFaces(display, mx, my)
-
-
-    wall = [ [wallTest.start[0], wallTest.start[1]], [wallTest.end[0], wallTest.end[1]] ]
-    angleLength = 10
+    # render camera
+    dir = [[camera.worldX, camera.worldY], [camera.worldX + math.cos(camera.angle) * angleLength, camera.worldY + math.sin(camera.angle) * angleLength]]
+    display.drawLine(dir, (255, 100, 255), 1)
+    display.drawPoint([camera.worldX, camera.worldY], (255, 255, 255), 2)
 
     # ========================
     # Top Down Perspective
@@ -273,28 +279,18 @@ while True:
     # ========================
     # FPS Perspective
 
-    surfaceWidth = 320
-    surfaceHeight = 180
-    fpBounds = [
-        [500 + 214, 40],
-        [500 + 214 + surfaceWidth, 40],
-        [500 + 214 + surfaceWidth, 40 + surfaceHeight],
-        [500 + 214, 40 + surfaceHeight]
-    ]
-
     # Render frame
     display.drawLines(fpBounds, (0, 150, 150), 2, True)
     # Render Projection
-    topLine, rightLine, bottomLine, leftLine = camera.projectWall(wallTest, surfaceWidth, surfaceHeight)
-    if topLine is not None:
-        fpTopLine = inBoundLine(topLine, fpBounds)
-        fpRightLine = inBoundLine(rightLine, fpBounds)
-        fpBottomLine = inBoundLine(bottomLine, fpBounds)
-        fpLeftLine = inBoundLine(leftLine, fpBounds)
-        display.drawLine(fpTopLine, (0, 255, 255), 2)
-        display.drawLine(fpBottomLine, (0, 255, 255), 2)
-        display.drawLine(fpLeftLine, (0, 255, 255), 2)
-        display.drawLine(fpRightLine, (0, 255, 255), 2)
+    topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wallTest, surfaceWidth, surfaceHeight)
+    if topLeft is not None:
+        fpLines = [
+            inBoundPoint(topLeft, fpBounds),
+            inBoundPoint(topRight, fpBounds),
+            inBoundPoint(bottomRight, fpBounds),
+            inBoundPoint(bottomLeft, fpBounds)
+        ]
+        display.drawPolygon(fpLines, (0, 255, 255), 0)
     
     # draw our position information
     text = font.render("{}, {}".format(mx, my), 1, (50, 50, 50))
