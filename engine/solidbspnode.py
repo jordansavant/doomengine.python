@@ -110,22 +110,32 @@ class SolidBSPNode(object):
         else:
             return self.front.inEmpty(testPoint)
 
+    def getWallsSorted(self, posA, posB, walls, depth = 0):
+        if not self.isLeaf:
+            behind = self.splitter.isPointBehind(posA, posB)
+            # painter's algorithm paints back to front, (front to back recursively)
+            # to switch to doom algorithm (requires clipping) swap front and back orders
+            if behind:
+                self.front.getWallsSorted(posA, posB, walls, depth + 1)
+                walls.append(self.splitter)
+                self.back.getWallsSorted(posA, posB, walls, depth + 1)
+            else:
+                self.back.getWallsSorted(posA, posB, walls, depth + 1)
+                walls.append(self.splitter)
+                self.front.getWallsSorted(posA, posB, walls, depth + 1)
+
     def drawWalls(self, camera, display, depth = 0):
         if self.isLeaf == False:
-            topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(self.splitter, display.width, display.height)
-            if topLeft is not None:
-                wallLines = [
-                    topLeft,
-                    topRight,
-                    bottomRight,
-                    bottomLeft,
-                ]
-                display.drawPolygon(wallLines, self.splitter.drawColor, 0)
-
-        if self.back:
-            self.back.drawWalls(camera, display, depth + 1)
+            behind = self.splitter.isPointBehind(camera.worldX, camera.worldY)
+            if not behind:
+                topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(self.splitter, display.width, display.height)
+                if topLeft:
+                    wallLines = [ topLeft, topRight, bottomRight, bottomLeft ]
+                    display.drawPolygon(wallLines, self.splitter.drawColor, 0)
         if self.front:
             self.front.drawWalls(camera, display, depth + 1)
+        if self.back:
+            self.back.drawWalls(camera, display, depth + 1)
 
     def drawSegs(self, display, depth = 0):
         # draw self
@@ -153,14 +163,27 @@ class SolidBSPNode(object):
         if self.isLeaf == False:
             behind = self.splitter.isPointBehind(posA, posB)
             if not behind:
-                display.drawLine([self.splitter.start, self.splitter.end], (255, 0, 0), 1)
+                display.drawLine([self.splitter.start, self.splitter.end], (255, depth * 20, 0), 1)
             else:
-                display.drawLine([self.splitter.start, self.splitter.end], (60, 0, 0), 1)
+                display.drawLine([self.splitter.start, self.splitter.end], (60, depth * 5, 0), 1)
 
         if self.back:
             self.back.drawFaces(display, posA, posB, depth + 1)
         if self.front:
             self.front.drawFaces(display, posA, posB, depth + 1)
+
+    def drawClosest(self, display, posA, posB, depth = 0):
+        if self.isLeaf == False:
+            behind = self.splitter.isPointBehind(posA, posB)
+            if not behind:
+                display.drawLine([self.splitter.start, self.splitter.end], (0, depth * 20, 255), depth + 1)
+            else:
+                display.drawLine([self.splitter.start, self.splitter.end], (0, depth * 5, 60), depth + 1)
+        if self.back:
+            self.back.drawClosest(display, posA, posB, depth + 1)
+        if self.front:
+            self.front.drawClosest(display, posA, posB, depth + 1)
+
 
     def toText(self, depth = 0):
         s = "{}\n".format(self)

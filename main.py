@@ -90,7 +90,7 @@ font = pygame.font.Font(None, 36)
     
 # render mode ops
 mode = 0
-max_modes = 3
+max_modes = 4
 def mode_up():
     global mode
     mode = (mode + 1) % max_modes
@@ -246,14 +246,25 @@ while True:
     if mode == 1:
         solidBsp.drawSegs(display)
     if mode == 2:
-        solidBsp.drawFaces(display, mx, my)
+        solidBsp.drawFaces(display, camera.worldX, camera.worldY)
+    if mode == 3:
+        solidBsp.drawClosest(display, camera.worldX, camera.worldY)
 
-    solidBsp.drawWalls(camera, display)
+    walls = []
+    solidBsp.getWallsSorted(camera.worldX, camera.worldY, walls)
+    for wall in walls:
+        topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wall, display.width, display.height)
+        if topLeft:
+            wallLines = [ topLeft, topRight, bottomRight, bottomLeft ]
+            display.drawPolygon(wallLines, wall.drawColor, 0)
+    # solidBsp.drawWalls(camera, display)
+
     # render camera
     dir = [[camera.worldX, camera.worldY], [camera.worldX + math.cos(camera.angle) * angleLength, camera.worldY + math.sin(camera.angle) * angleLength]]
     display.drawLine(dir, (255, 100, 255), 1)
     display.drawPoint([camera.worldX, camera.worldY], (255, 255, 255), 2)
 
+    '''
     # ========================
     # Top Down Perspective
     
@@ -306,10 +317,11 @@ while True:
             inBoundPoint(bottomLeft, fpBounds)
         ]
         display.drawPolygon(fpLines, (0, 255, 255), 0)
-    
+    '''
+
     # draw our position information
     text = font.render("{}, {}".format(mx, my), 1, (50, 50, 50))
-    textpos = text.get_rect(centerx = display.width / 2, centery = display.height/2)
+    textpos = text.get_rect(centerx = display.width - 60, centery = display.height - 20)
     display.drawText(text, textpos)
 
     # test our BSP tree
