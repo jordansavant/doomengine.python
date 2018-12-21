@@ -117,7 +117,7 @@ class SolidBSPNode(object):
             # to switch to doom algorithm (requires clipping) swap front and back orders
             if behind:
                 self.front.getWallsSorted(posA, posB, walls, depth + 1)
-                walls.append(self.splitter)
+                # walls.append(self.splitter)
                 self.back.getWallsSorted(posA, posB, walls, depth + 1)
             else:
                 self.back.getWallsSorted(posA, posB, walls, depth + 1)
@@ -171,18 +171,6 @@ class SolidBSPNode(object):
             self.back.drawFaces(display, posA, posB, depth + 1)
         if self.front:
             self.front.drawFaces(display, posA, posB, depth + 1)
-
-    def drawClosest(self, display, posA, posB, depth = 0):
-        if self.isLeaf == False:
-            behind = self.splitter.isPointBehind(posA, posB)
-            if not behind:
-                display.drawLine([self.splitter.start, self.splitter.end], (0, depth * 20, 255), depth + 1)
-            else:
-                display.drawLine([self.splitter.start, self.splitter.end], (0, depth * 5, 60), depth + 1)
-        if self.back:
-            self.back.drawClosest(display, posA, posB, depth + 1)
-        if self.front:
-            self.front.drawClosest(display, posA, posB, depth + 1)
 
 
     def toText(self, depth = 0):

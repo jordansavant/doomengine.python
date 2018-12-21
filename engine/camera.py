@@ -11,17 +11,14 @@ class Camera(object):
         self.vfov = .2 # multiply by screen height
 
     def fncross(self, x1, y1, x2, y2):
-        return x1 * y2 - y1 * x2
+        return x1 * y2 - x2 * y1
 
     def intersect(self, x1, y1, x2, y2, x3, y3, x4, y4):
-        x = self.fncross(x1, y1, x2, y2)
-        y = self.fncross(x3, y3, x4, y4)
-        det = self.fncross(x1 - x2, y1 - y2, x3 - x4, y3 - y4)
-        x = self.fncross(x, x1 - x2, y, x3 - x4) / det
-        y = self.fncross(x, y1 - y2, y, y3 - y4) / det
+        x = self.fncross(self.fncross(x1,y1, x2,y2), (x1)-(x2), self.fncross(x3,y3, x4,y4), (x3)-(x4)) / self.fncross((x1)-(x2), (y1)-(y2), (x3)-(x4), (y3)-(y4))
+        y = self.fncross(self.fncross(x1,y1, x2,y2), (y1)-(y2), self.fncross(x3,y3, x4,y4), (y3)-(y4)) / self.fncross((x1)-(x2), (y1)-(y2), (x3)-(x4), (y3)-(y4))
         return (x, y)
 
-    def transformWall(self, lineDef):
+    def transformWall(self, lineDef, debug = False):
 
         # Transform vertices relative to player
         tx1 = lineDef.start[0] - self.worldX
@@ -41,7 +38,7 @@ class Camera(object):
         return y + z * self.angle
         # Yaw(y,z) (y + z*player.yaw)
 
-    def projectWall(self, lineDef, surfaceWidth, surfaceHeight):
+    def projectWall(self, lineDef, surfaceWidth, surfaceHeight, debug = False):
 
         lhfov = self.hfov * surfaceHeight
         lvfov = self.vfov * surfaceHeight
@@ -50,7 +47,7 @@ class Camera(object):
         halfH = surfaceHeight / 2
 
         # PROJECTED
-        (tx1, ty1, tz1, tx2, ty2, tz2) = self.transformWall(lineDef)
+        (tx1, ty1, tz1, tx2, ty2, tz2) = self.transformWall(lineDef, debug)
 
         # PERSPECTIVE TRANSFORMED
 
@@ -59,6 +56,7 @@ class Camera(object):
         # if only 1 is negative it can be clipped
         if tz1 > 0 or tz2 > 0:
             # if line crosses the players view plane clip it
+            # nearz = 1e-4, farz = 5, nearside = 1e-5f, farside = 20.f;
             ix1, iz1 = self.intersect(tx1, tz1, tx2, tz2, -0.0001, 0.0001, -20, 5)
             ix2, iz2 = self.intersect(tx1, tz1, tx2, tz2, 0.0001, 0.0001, 20, 5)
             if tz1 <= 0:
@@ -117,7 +115,6 @@ class Camera(object):
             yscale2 = lvfov / tz2
 
             height = 10
-
             
             # huh = 32
             # x1 = -tx1 * huh / tz1
@@ -142,6 +139,8 @@ class Camera(object):
             y2a = -halfH / tz2 * height
             # y2b = -(int)(self.yaw(yfloor, tz2) * yscale2)
             y2b = halfH / tz2 * height
+
+            # if debug: print(-halfH, tz1, height, ' = ', y1a)
 
             # List of points
             return [halfW + x1, halfH + y1a], [halfW + x2, halfH + y2a], [halfW + x2, halfH + y2b], [halfW + x1, halfH + y1b],

@@ -72,8 +72,8 @@ wallTest = allLineDefs[4]
 # camDirRads = 0
 # camDir = engine.mathdef.toVector(camDirRads)
 camera = Camera()
-camera.worldX = 90
-camera.worldY = 150
+camera.worldX = 150
+camera.worldY = 60
 camera.angle = -math.pi/2
 
 
@@ -209,22 +209,10 @@ while True:
     listener.update()
 
     display.start()
+    
 
-
-    # Render Projection
-    # topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wallTest, display.width, display.height)
-    # if topLeft is not None:
-    #     wallLines = [
-    #         topLeft,
-    #         topRight,
-    #         bottomRight,
-    #         bottomLeft,
-    #     ]
-    #     display.drawPolygon(wallLines, wallTest.drawColor, 0)
-
-
-    wall = [ [wallTest.start[0], wallTest.start[1]], [wallTest.end[0], wallTest.end[1]] ]
-    angleLength = 10
+    walls = []
+    solidBsp.getWallsSorted(camera.worldX, camera.worldY, walls)
 
     # render the polygons directly
     if mode == 0:
@@ -248,18 +236,21 @@ while True:
     if mode == 2:
         solidBsp.drawFaces(display, camera.worldX, camera.worldY)
     if mode == 3:
-        solidBsp.drawClosest(display, camera.worldX, camera.worldY)
+        for wall in walls:
+            display.drawLine([wall.start, wall.end], (0, 40, 255), 1)
+        
+    
 
-    walls = []
-    solidBsp.getWallsSorted(camera.worldX, camera.worldY, walls)
-    for wall in walls:
-        topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wall, display.width, display.height)
+    # render 3D walls
+    for i, wall in enumerate(walls):
+        topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wall, display.width, display.height, i is 0)
         if topLeft:
-            wallLines = [ topLeft, topRight, bottomRight, bottomLeft ]
+            wallLines = [ topLeft, topRight, bottomRight, bottomLeft]
             display.drawPolygon(wallLines, wall.drawColor, 0)
     # solidBsp.drawWalls(camera, display)
 
     # render camera
+    angleLength = 10
     dir = [[camera.worldX, camera.worldY], [camera.worldX + math.cos(camera.angle) * angleLength, camera.worldY + math.sin(camera.angle) * angleLength]]
     display.drawLine(dir, (255, 100, 255), 1)
     display.drawPoint([camera.worldX, camera.worldY], (255, 255, 255), 2)
