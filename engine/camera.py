@@ -116,21 +116,32 @@ class Camera(object):
             xscale2 = lhfov / tz2
             yscale2 = lvfov / tz2
 
-            height = 5
+            height = 10
+
+            
+            # huh = 32
+            # x1 = -tx1 * huh / tz1
+            # y1a = -halfH / tz1
+            # y1b =  halfH / tz1
+            # x2 = -tx2 * huh / tz2
+            # y2a = -halfH / tz2
+            # y2b =  halfH / tz2
+
+            # return [halfW + x1, halfH + y1a], [halfW + x2, halfH + y2a], [halfW + x2, halfH + y2b], [halfW + x1, halfH + y1b],
 
             x1 = -(int)(tx1 * xscale1)
             # x1 = -tx1 * 16 / tz1
             # y1a = surfaceHeight/2 - (int)(self.yaw(yceil, tz1) * yscale1)
-            y1a = -halfW / tz1 * height
+            y1a = -halfH / tz1 * height
             # y1b = -(int)(self.yaw(yfloor, tz1) * yscale1)
-            y1b = halfW / tz1 * height
+            y1b = halfH / tz1 * height
 
             x2 = -(int)(tx2 * xscale2)
             # x2 = -tx2 * 16 / tz2
             # y2a = -(int)(self.yaw(yceil, tz2) * yscale2)
-            y2a = -halfW / tz2 * height
+            y2a = -halfH / tz2 * height
             # y2b = -(int)(self.yaw(yfloor, tz2) * yscale2)
-            y2b = halfW / tz2 * height
+            y2b = halfH / tz2 * height
 
             # List of points
             return [halfW + x1, halfH + y1a], [halfW + x2, halfH + y2a], [halfW + x2, halfH + y2b], [halfW + x1, halfH + y1b],
