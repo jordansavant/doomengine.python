@@ -204,17 +204,44 @@ def intersect(x1, y1, x2, y2, x3, y3, x4, y4):
     y = fncross(x, y1 - y2, y, y3 - y4) / det
     return [x, y]
 
+mouseX, mouseY = pygame.mouse.get_pos()
+lastmouseX, lastmouseY = mouseX, mouseY
 
 while True:
     listener.update()
 
     display.start()
-    
 
+    # get mouse steering
+    lastmouseX, lastmouseY = mouseX, mouseY
+    mouseX, mouseY = pygame.mouse.get_pos()
+    diffmouseX, diffmouseY = mouseX - lastmouseX, mouseY - lastmouseY
+    camera.angle += diffmouseX * 0.01
+
+    # draw floor and ceiling
+    floor = [
+        [0, display.height / 2], [display.width, display.height / 2], [display.width, display.height], [0, display.height]
+    ]
+    ceiling = [
+        [0, 0], [display.width, 0], [display.width, display.height / 2], [0, display.height / 2]
+    ]
+    display.drawPolygon(floor, (60, 60, 60), 0)
+    display.drawPolygon(ceiling, (100, 100, 100), 0)
+
+    # render 3D walls
     walls = []
     solidBsp.getWallsSorted(camera.worldX, camera.worldY, walls)
+    for i, wall in enumerate(walls):
+        topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wall, display.width, display.height, i is 0)
+        if topLeft:
+            wallLines = [ topLeft, topRight, bottomRight, bottomLeft]
+            display.drawPolygon(wallLines, wall.drawColor, 0)
 
-    # render the polygons directly
+    # test our BSP tree
+    inEmpty = solidBsp.inEmpty([camera.worldX, camera.worldY])
+    display.drawPoint([display.width - 20, 20], (0,255,255) if inEmpty else (255, 0, 0), 10)
+
+    # render the top down map
     if mode == 0:
         for lineDef in allLineDefs:
             display.drawLine([lineDef.start, lineDef.end], (0, 0, 255), 1)
@@ -227,10 +254,6 @@ while True:
                 display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (0, 255, 255), 1)
             else:
                 display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
-
-    mx, my = pygame.mouse.get_pos()
-
-    # render the tree
     if mode == 1:
         solidBsp.drawSegs(display)
     if mode == 2:
@@ -238,86 +261,20 @@ while True:
     if mode == 3:
         for wall in walls:
             display.drawLine([wall.start, wall.end], (0, 40, 255), 1)
-        
-    
 
-    # render 3D walls
-    for i, wall in enumerate(walls):
-        topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wall, display.width, display.height, i is 0)
-        if topLeft:
-            wallLines = [ topLeft, topRight, bottomRight, bottomLeft]
-            display.drawPolygon(wallLines, wall.drawColor, 0)
-    # solidBsp.drawWalls(camera, display)
-
-    # render camera
+    # render camera pos
     angleLength = 10
     dir = [[camera.worldX, camera.worldY], [camera.worldX + math.cos(camera.angle) * angleLength, camera.worldY + math.sin(camera.angle) * angleLength]]
     display.drawLine(dir, (255, 100, 255), 1)
     display.drawPoint([camera.worldX, camera.worldY], (255, 255, 255), 2)
 
-    '''
-    # ========================
-    # Top Down Perspective
-    
-    # Render frame
-    display.drawLines(tdBounds, (150, 0, 150), 2, True)
-    # Render wall
-    tdWall = inBoundLine(wall, tdBounds)
-    display.drawLine(tdWall, (255, 50, 255), 2)
-    # Render player angle
-    dir = [[camera.worldX, camera.worldY], [camera.worldX + math.cos(camera.angle) * angleLength, camera.worldY + math.sin(camera.angle) * angleLength]]
-    tdDir = inBoundLine(dir, tdBounds)
-    display.drawLine(tdDir, (255, 100, 255), 1)
-    # Render player pos
-    tdCamPoint = inBoundPoint([camera.worldX, camera.worldY], tdBounds)
-    display.drawPoint(tdCamPoint, (255, 255, 255), 2)
+    # render mouse
+    display.drawPoint([mouseX, mouseY], (255,255,255), 2)
 
-    # ========================
-    # Transformed Perspected
-
-    # Render frame
-    display.drawLines(pjBounds, (150, 150, 0), 2, True)
-    # Transform vertices relative to player
-    (tx1, ty1, tz1, tx2, ty2, tz2) = camera.transformWall(wallTest)
-    # Render wall
-    pjWall = [[50 - tx1, 50 - tz1], [50 - tx2, 50 - tz2]]
-    pjWall = inBoundLine(pjWall, pjBounds)
-    display.drawLine(pjWall, (255, 255, 50), 2)
-    # Render player angle
-    pjDir = [[50, 50], [50, 50 - angleLength]]
-    pjDir = inBoundLine(pjDir, pjBounds)
-    display.drawLine(pjDir, (255, 255, 100), 1)
-    # Render player pos
-    pjCamPoint = [50, 50]
-    pjCamPoint = inBoundPoint(pjCamPoint, pjBounds)
-    display.drawPoint(pjCamPoint, (255, 255, 255), 2)
-    
-
-    # ========================
-    # FPS Perspective
-
-    # Render frame
-    display.drawLines(fpBounds, (0, 150, 150), 2, True)
-    # Render Projection
-    topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wallTest, surfaceWidth, surfaceHeight)
-    if topLeft is not None:
-        fpLines = [
-            inBoundPoint(topLeft, fpBounds),
-            inBoundPoint(topRight, fpBounds),
-            inBoundPoint(bottomRight, fpBounds),
-            inBoundPoint(bottomLeft, fpBounds)
-        ]
-        display.drawPolygon(fpLines, (0, 255, 255), 0)
-    '''
-
-    # draw our position information
-    text = font.render("{}, {}".format(mx, my), 1, (50, 50, 50))
+    # draw our mouse position information
+    text = font.render("{}, {}".format(mouseX, mouseY), 1, (50, 50, 50))
     textpos = text.get_rect(centerx = display.width - 60, centery = display.height - 20)
     display.drawText(text, textpos)
-
-    # test our BSP tree
-    inEmpty = solidBsp.inEmpty([mx, my])
-    display.drawPoint([mx, my], (0,255,255) if inEmpty else (255, 0, 0), 4)
 
     display.end()
 
