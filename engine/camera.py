@@ -117,7 +117,7 @@ class Camera(object):
             xscale2 = lhfov / tz2
             yscale2 = lvfov / tz2
 
-            height = lineDef.height
+            height = 10
             
             # huh = 32
             # x1 = -tx1 * huh / tz1
@@ -143,7 +143,7 @@ class Camera(object):
             # y2b = -(int)(self.yaw(yfloor, tz2) * yscale2)
             y2b = halfH / tz2 * height
 
-            # if debug: print(-halfH, y1a, tz1)
+            # if debug: print(-halfH, tz1, height, ' = ', y1a)
 
             # List of points
             return [halfW + x1, halfH + y1a], [halfW + x2, halfH + y2a], [halfW + x2, halfH + y2b], [halfW + x1, halfH + y1b],
