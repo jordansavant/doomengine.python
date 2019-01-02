@@ -8,6 +8,7 @@ class Display(object):
         self.bg = 0, 0, 0
         self.scale = 1.0
         self.offset = [0, 0]
+        self.fullscreen = False
         pygame.init()
         self.screen = pygame.display.set_mode(self.size)
     
@@ -16,6 +17,13 @@ class Display(object):
     
     def end(self):
         pygame.display.flip()
+
+    def toggleFullscreen(self):
+        self.fullscreen = not self.fullscreen
+        if self.fullscreen:
+            self.screen = pygame.display.set_mode(self.size, pygame.FULLSCREEN)
+        else:
+            self.screen = pygame.display.set_mode(self.size)
 
     def drawLine(self, line, color, width):
         # line(Surface, color, start_pos, end_pos, width=1) -> Rect

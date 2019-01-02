@@ -62,11 +62,11 @@ class SolidBSPNode(object):
 
         splitBehind = splits[0]
         splitBehindDef = linedef.LineDef()
-        splitBehindDef.asRoot(splitBehind[0][0], splitBehind[0][1], splitBehind[1][0], splitBehind[1][1], lineDef.facing)
+        splitBehindDef.asRoot(splitBehind[0][0], splitBehind[0][1], splitBehind[1][0], splitBehind[1][1], lineDef.facing,  lineDef.height)
 
         splitFront = splits[1]
         splitFrontDef = linedef.LineDef()
-        splitFrontDef.asRoot(splitFront[0][0], splitFront[0][1], splitFront[1][0], splitFront[1][1], lineDef.facing)
+        splitFrontDef.asRoot(splitFront[0][0], splitFront[0][1], splitFront[1][0], splitFront[1][1], lineDef.facing,  lineDef.height)
         return [splitBehindDef, splitFrontDef]
 
     # if all points behind, we would put whole poly in back list

@@ -15,24 +15,28 @@ class LineDef(object):
         self.mid = []
         self.normals = []
         self.drawColor = (random.randint(10, 255), random.randint(10, 255), random.randint(50, 255))
+        self.height = 10
         # TODO: get normals and stuff calculated here
 
-    def asRoot(self, startX, startY, endX, endY, facing):
+    def asRoot(self, startX, startY, endX, endY, facing, height):
         self.start = [startX, startY]
         self.end = [endX, endY]
         self.facing = facing
+        self.height = height
         self.setup()
     
-    def asChild(self, preLineDef, endX, endY, facing):
+    def asChild(self, preLineDef, endX, endY, facing, height):
         self.start = [preLineDef.end[0], preLineDef.end[1]]
         self.end = [endX, endY]
         self.facing = facing
+        self.height = height
         self.setup()
     
-    def asLeaf(self, preLineDef, rootLineDef, facing):
+    def asLeaf(self, preLineDef, rootLineDef, facing, height):
         self.start = [preLineDef.end[0], preLineDef.end[1]]
         self.end = [rootLineDef.start[0], rootLineDef.start[1]]
         self.facing = facing
+        self.height = height
         self.setup()
 
     def setup(self):

@@ -12,27 +12,27 @@ print("\n")
 polygons = [
     # open room
     [
-        # x, y, facing
-        [30,  30, 0],
-        [300, 20, 0],
-        [400, 300, 0],
-        [30, 200, 0]
+        # x, y, facing, height
+        [30,  30, 0, 10],
+        [300, 20, 0, 10],
+        [400, 300, 0, 10],
+        [30, 200, 0, 10]
     ],
     # inner col
     [
         # x, y, facing
-        [50,  50, 1],
-        [100, 50, 1],
-        [75,  75, 1],
-        [100, 100, 1],
-        [50,  100, 1]
+        [50,  50, 1, 5],
+        [100, 50, 1, 5],
+        [75,  75, 1, 5],
+        [100, 100, 1, 5],
+        [50,  100, 1, 5]
     ],
     # inner room
     [
-        [55, 55, 0],
-        [70, 55, 0],
-        [70, 95, 0],
-        [55, 95, 0],
+        [55, 55, 0, 5],
+        [70, 55, 0, 5],
+        [70, 95, 0, 5],
+        [55, 95, 0, 5],
     ]
 ]
 
@@ -46,19 +46,19 @@ for i, v in enumerate(polygons):
 
         # first point, connect to second point
         if idx == 0:
-            lineDef.asRoot(polygon[idx][0], polygon[idx][1], polygon[idx + 1][0], polygon[idx + 1][1], polygon[idx + 1][2])
+            lineDef.asRoot(polygon[idx][0], polygon[idx][1], polygon[idx + 1][0], polygon[idx + 1][1], polygon[idx + 1][2], polygon[idx + 1][3])
             lineDefs.append(lineDef)
             allLineDefs.append(lineDef)
 
         # some point in the middle
         elif idx < len(polygon) - 1:
-            lineDef.asChild(lineDefs[-1], polygon[idx + 1][0], polygon[idx + 1][1], polygon[idx + 1][2])
+            lineDef.asChild(lineDefs[-1], polygon[idx + 1][0], polygon[idx + 1][1], polygon[idx + 1][2], polygon[idx + 1][3])
             lineDefs.append(lineDef)
             allLineDefs.append(lineDef)
         
         # final point, final line, connects back to first point
         elif idx == len(polygon) - 1:
-            lineDef.asLeaf(lineDefs[-1], lineDefs[0], polygon[idx][2])
+            lineDef.asLeaf(lineDefs[-1], lineDefs[0], polygon[idx][2], polygon[idx][3])
             lineDefs.append(lineDef)
             allLineDefs.append(lineDef)
 
@@ -83,14 +83,23 @@ camera.angle = -math.pi/2
 #     print(lineDef.start, lineDef.end, lineDef.facing, isBehind)
 # print(solidBsp.inEmpty(testPoint))
 
-display = Display(1280, 720)
+display = Display(1920, 1080)
 listener = EventListener()
 pygame.mouse.set_visible(False)
 font = pygame.font.Font(None, 36)
-    
+
+def moveTo(x, y):
+    global camera
+    if not collisionDetection or solidBsp.inEmpty([x, y]):
+        camera.worldX = x
+        camera.worldY = y
+
+
 # render mode ops
 mode = 0
 max_modes = 4
+collisionDetection = True
+fullscreen = False
 def mode_up():
     global mode
     mode = (mode + 1) % max_modes
@@ -99,6 +108,14 @@ def mode_down():
     global mode
     mode = (mode - 1) % max_modes
 listener.onKeyUp(pygame.K_DOWN, mode_down)
+def on_x():
+    global collisionDetection
+    collisionDetection = not collisionDetection
+listener.onKeyUp(pygame.K_x, on_x)
+def on_f():
+    global display
+    display.toggleFullscreen()
+listener.onKeyUp(pygame.K_f, on_f)
 
 def on_left():
     global camera
@@ -108,73 +125,33 @@ def on_left():
 listener.onKeyHold(pygame.K_LEFT, on_left)
 def on_right():
     global camera
-    # camDirRads = camDirRads + 0.1
-    # camDir = engine.mathdef.toVector(camDirRads)
     camera.angle += 0.1
 listener.onKeyHold(pygame.K_RIGHT, on_right)
+
 def on_a():
     global camera
-    camera.worldX += math.sin(camera.angle)
-    camera.worldY -= math.cos(camera.angle)
-    # camPoint[0] = camPoint[0] + math.sin(camDirRads)
-    # camPoint[1] = camPoint[1] - math.cos(camDirRads)
+    potentialX = camera.worldX + math.sin(camera.angle)
+    potentialY = camera.worldY - math.cos(camera.angle)
+    moveTo(potentialX, potentialY)
 listener.onKeyHold(pygame.K_a, on_a)
 def on_d():
     global camera
-    camera.worldX -= math.sin(camera.angle)
-    camera.worldY += math.cos(camera.angle)
-    # camPoint[0] = camPoint[0] - math.sin(camDirRads)
-    # camPoint[1] = camPoint[1] + math.cos(camDirRads)
+    potentialX = camera.worldX - math.sin(camera.angle)
+    potentialY = camera.worldY + math.cos(camera.angle)
+    moveTo(potentialX, potentialY)
 listener.onKeyHold(pygame.K_d, on_d)
 def on_w():
     global camera
-    camera.worldX += math.cos(camera.angle)
-    camera.worldY += math.sin(camera.angle)
-    # camPoint[0] = camPoint[0] + math.cos(camDirRads)
-    # camPoint[1] = camPoint[1] + math.sin(camDirRads)
+    potentialX = camera.worldX + math.cos(camera.angle)
+    potentialY = camera.worldY + math.sin(camera.angle)
+    moveTo(potentialX, potentialY)
 listener.onKeyHold(pygame.K_w, on_w)
 def on_s():
     global camera
-    camera.worldX -= math.cos(camera.angle)
-    camera.worldY -= math.sin(camera.angle)
-    # camPoint[0] = camPoint[0] - math.cos(camDirRads)
-    # camPoint[1] = camPoint[1] - math.sin(camDirRads)
+    potentialX = camera.worldX - math.cos(camera.angle)
+    potentialY = camera.worldY - math.sin(camera.angle)
+    moveTo(potentialX, potentialY)
 listener.onKeyHold(pygame.K_s, on_s)
-
-fpvpX = 500
-fpvpY = 100
-fpvpW = 500
-fpvpH = 300
-fpvp = [
-        [fpvpX, fpvpY],
-        [fpvpX + fpvpW, fpvpY],
-        [fpvpX + fpvpW, fpvpY + fpvpH],
-        [fpvpX, fpvpY + fpvpH],
-]
-
-tdBounds = [
-    [500 + 4, 40],
-    [500 + 103, 40],
-    [500 + 103, 149],
-    [500 + 4, 149]
-]
-
-pjBounds = [
-    [500 + 109, 40],
-    [500 + 208, 40],
-    [500 + 208, 149],
-    [500 + 109, 149]
-]
-
-
-surfaceWidth = 320
-surfaceHeight = 180
-fpBounds = [
-    [500 + 214, 40],
-    [500 + 214 + surfaceWidth, 40],
-    [500 + 214 + surfaceWidth, 40 + surfaceHeight],
-    [500 + 214, 40 + surfaceHeight]
-]
 
 
 def inBoundPoint(point, bounds):
@@ -205,7 +182,6 @@ def intersect(x1, y1, x2, y2, x3, y3, x4, y4):
     return [x, y]
 
 mouseX, mouseY = pygame.mouse.get_pos()
-lastmouseX, lastmouseY = mouseX, mouseY
 
 while True:
     listener.update()
@@ -213,10 +189,15 @@ while True:
     display.start()
 
     # get mouse steering
-    lastmouseX, lastmouseY = mouseX, mouseY
     mouseX, mouseY = pygame.mouse.get_pos()
-    diffmouseX, diffmouseY = mouseX - lastmouseX, mouseY - lastmouseY
-    camera.angle += diffmouseX * 0.01
+    mouserelX, mouserelY = pygame.mouse.get_rel()
+    if mouseX >= display.width - 1:
+        pygame.mouse.set_pos(0, mouseY)
+    elif mouseX <= 1:
+        pygame.mouse.set_pos(display.width, mouseY)
+    elif mouserelX <= 1000 and mouserelX >= -1000:
+        camera.angle += mouserelX * 0.005
+    
 
     # draw floor and ceiling
     floor = [
@@ -236,10 +217,6 @@ while True:
         if topLeft:
             wallLines = [ topLeft, topRight, bottomRight, bottomLeft]
             display.drawPolygon(wallLines, wall.drawColor, 0)
-
-    # test our BSP tree
-    inEmpty = solidBsp.inEmpty([camera.worldX, camera.worldY])
-    display.drawPoint([display.width - 20, 20], (0,255,255) if inEmpty else (255, 0, 0), 10)
 
     # render the top down map
     if mode == 0:
@@ -268,12 +245,16 @@ while True:
     display.drawLine(dir, (255, 100, 255), 1)
     display.drawPoint([camera.worldX, camera.worldY], (255, 255, 255), 2)
 
-    # render mouse
-    display.drawPoint([mouseX, mouseY], (255,255,255), 2)
+    # test our BSP tree
+    inEmpty = solidBsp.inEmpty([camera.worldX, camera.worldY])
+    display.drawPoint([display.width - 20, 20], (0,255,60) if inEmpty else (255, 0, 0), 10)
 
-    # draw our mouse position information
-    text = font.render("{}, {}".format(mouseX, mouseY), 1, (50, 50, 50))
-    textpos = text.get_rect(centerx = display.width - 60, centery = display.height - 20)
+    # render mouse
+    # display.drawPoint([mouseX, mouseY], (255,255,255), 2)
+
+    # draw our system information
+    text = font.render("collision:{} camera:[{}] m:[{}, {}]".format(collisionDetection, camera, mouseX, mouseY), 1, (50, 50, 50))
+    textpos = text.get_rect(left = 0, centery = display.height - 20)
     display.drawText(text, textpos)
 
     display.end()
