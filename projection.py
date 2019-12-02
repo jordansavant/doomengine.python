@@ -86,7 +86,8 @@ while True:
     # ROTATE THE POINTS
     #pygame.draw.polygon(screen, (0, 255, 255), (a, b, c, d), 0)
 
-    # LETS RENDER IT
+    # REPOSITION AND PROJECT EACH POINT
+    projectedPoints = []
     for i in range(len(points)):
 
         # transform vector3 into a 1col matrix
@@ -97,14 +98,31 @@ while True:
         rotated = matmul(rotationZ, rotated)
         # project onto 2d screen surface
         projected = matmul(projection, rotated)
+
         # transform 2d matrix into list
         drawpoint = [int(projected[0][0]), int(projected[1][0])]
 
-        # offset the point to the center of the camera for better viewing
+        # center on the screen
         offx = 1280/2
         offy = 720/2
         drawpoint[0] += int(offx)
         drawpoint[1] += int(offy)
+        projectedPoints.append(drawpoint)
+
+        # could render right here but i choose to render them in a sep
+        # loop not mixed with all the transformations
+
+
+    # test render the plane?
+    pygame.draw.polygon(screen, (0, 255, 255), projectedPoints, 0)
+
+    # RENDER THEM OUT
+    for drawpoint in projectedPoints:
+        # offset the point to the center of the camera for better viewing
+        #offx = 1280/2
+        #offy = 720/2
+        #drawpoint[0] += int(offx)
+        #drawpoint[1] += int(offy)
 
         # draw point
         pygame.draw.circle(screen, (255, 0, 255), drawpoint, 5)
