@@ -45,7 +45,7 @@ g3 = [ 1,  1, 1]
 h3 = [-1,  1, 1]
 points = [a3, b3, c3, d3,   e3, f3, g3, h3] # two sides of cube
 
-angleX = 0.0 # of cube
+angleX = 0.4 # of cube
 angleY = 0.0
 angleZ = 0.0
 
@@ -65,7 +65,6 @@ while True:
     angleX += 0.00
     angleY += 0.01
     angleZ += 0.00
-
 
     # CALCULATION ROTATION MATRICES
     rotationX = [
@@ -91,13 +90,44 @@ while True:
     projectedPoints = []
     for i in range(len(points)):
 
+        # DETERMINE FINAL TRANSFORMATION MATRIX
+        # http://www.codinglabs.net/article_world_view_projection_matrix.aspx
+        # we can translate, rotate and scale a
+        # with a single transformation matrix.
+        # Ordering is important:
+        # 1. scale
+        # 2. rotate
+        # 3. translate
+
+        # SCALE OUR POINT
+        # I defined the model in unit space and
+        # need to scale the model to world space
+        scaleX = 100
+        scaleY = 100
+        scaleZ = 100
+        scale = [
+            [scaleX, 0, 0, 0],
+            [0, scaleY, 0, 0],
+            [0, 0, scaleZ, 0],
+            [0, 0, 0, 1]
+        ]
+        transform = scale
+
+        # ROTATE THE POINT IN 3D SPACE
+        # we can calculate the rotation in each axis
+        # based on whatever the angle for that axis is
+        transform = matmul(rotationX, transform)
+        transform = matmul(rotationY, transform)
+        transform = matmul(rotationZ, transform)
+
+
         # TRANSLATE FROM MODEL SPACE (-1, 1) TO WORLD SPACE
         # keeping the points in model space around the
         # model's origin, we can give the whole cube a
         # world position and translate our model to that
         # position by placing its world position in the
         # final column for x, y, z
-        worldX = 1
+        worldX = 100
         worldY = 0
         worldZ = 0
         translation = [
@@ -106,19 +136,12 @@ while True:
             [0, 0, 1, worldZ],
             [0, 0, 0, 1]
         ]
+        transform = matmul(translation, transform)
 
-        # ROTATE THE POINT IN 3D SPACE
-        # we can calculate the rotation in each axis
-        # based on whatever the angle for that axis is
-        rotated = translation
-        rotated = matmul(rotationX, rotated)
-        rotated = matmul(rotationY, rotated)
-        rotated = matmul(rotationZ, rotated)
-
-        # APPLY OUR TRANSLATION AND ROTATION MATRIX TO OUR POSITION
+        # MULTIPLY TRANSFORMATION MATRIX TO POSITION
         # convert vector3 into a 1col matrix
         p = [[points[i][0] - cameraX], [points[i][1] - cameraY], [points[i][2] - cameraZ], [1]]
-        transformed = matmul(rotated, p)
+        transformed = matmul(transform, p)
 
         # CALCULATE PROJECTION MATRIX
         orthographicProjection = [
@@ -144,8 +167,7 @@ while True:
         projected = matmul(projection, transformed)
 
         # transform 2d matrix into list
-        zoom = 100
-        drawpoint = [int(projected[0][0] * zoom), int(projected[1][0] * zoom)]
+        drawpoint = [int(projected[0][0]), int(projected[1][0])]
 
         # center on the screen
         offx = 1280/2
@@ -172,7 +194,7 @@ while True:
         #drawpoint[1] += int(offy)
 
         # draw point
-        pygame.draw.circle(screen, (255, 0, 255), drawpoint, 4)
+        pygame.draw.circle(screen, (255, 0, 255), drawpoint, 2)
 
 
     # LOOP END
