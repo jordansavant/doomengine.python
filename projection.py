@@ -25,20 +25,19 @@ def matmul(matrix, vec3):
     return r
 
 
-
 pygame.init()
 screen = pygame.display.set_mode((1280, 720), 0, 32)
 
-a = (-100, -100)
-b = ( 100, -100)
-c = ( 100,  100)
-d = (-100,  100)
+a = (-1, -1)
+b = ( 1, -1)
+c = ( 1,  1)
+d = (-1,  1)
 
 # DEFINE OUR PLANE IN 3D SPACE
-a3 = [-100, -100, -100]
-b3 = [ 100, -100, -100]
-c3 = [ 100,  100, -100]
-d3 = [-100,  100, -100]
+a3 = [-1, -1, -1]
+b3 = [ 1, -1, -1]
+c3 = [ 1,  1, -1]
+d3 = [-1,  1, -1]
 
 points = [a3, b3, c3, d3]
 
@@ -58,13 +57,6 @@ while True:
 
 
     # LOOP
-
-    # CALCULATE PROJECTION MATRIX
-    # ortho?
-    projection = [
-        [1, 0, 0],
-        [0, 1, 0]
-    ]
 
     # CALCULATION ROTATION MATRICES
     rotationX = [
@@ -93,14 +85,35 @@ while True:
         # transform vector3 into a 1col matrix
         p = [[points[i][0]], [points[i][1]], [points[i][2]]]
         # rotate the point in 3d space
-        rotated = matmul(rotationX, p)
+        rotated = p
+        #rotated = matmul(rotationX, rotated)
         rotated = matmul(rotationY, rotated)
-        rotated = matmul(rotationZ, rotated)
+        #rotated = matmul(rotationZ, rotated)
+
+        # CALCULATE PROJECTION MATRIX
+        orthographicProjection = [
+            [1, 0, 0],
+            [0, 1, 0]
+        ]
+        # reduce x and y when z is further away
+        # center of cube is at -z is in front of us (at -1)
+        # pushing it away by three lets us see it
+        distance = 3.0
+        z = 1 / (distance - rotated[2][0])
+        perspectiveProjection = [
+            [z, 0, 0],
+            [0, z, 0]
+        ]
+
+        projection = perspectiveProjection
+        #projection = orthographicProjection
+
         # project onto 2d screen surface
         projected = matmul(projection, rotated)
 
         # transform 2d matrix into list
-        drawpoint = [int(projected[0][0]), int(projected[1][0])]
+        zoom = 100
+        drawpoint = [int(projected[0][0] * zoom), int(projected[1][0] * zoom)]
 
         # center on the screen
         offx = 1280/2
@@ -125,7 +138,7 @@ while True:
         #drawpoint[1] += int(offy)
 
         # draw point
-        pygame.draw.circle(screen, (255, 0, 255), drawpoint, 5)
+        pygame.draw.circle(screen, (255, 0, 255), drawpoint, 2)
 
 
     angle += 0.03

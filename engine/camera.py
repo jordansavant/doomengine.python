@@ -9,7 +9,7 @@ class Camera(object):
         self.angle = 0
         self.hfov = .73 # multiply by screen height
         self.vfov = .2 # multiply by screen height
-    
+
     def __str__(self):
         return "{},{}".format((int)(self.worldX), (int)(self.worldY))
 
@@ -36,7 +36,7 @@ class Camera(object):
         tx2 = tx2 * math.sin(self.angle) - ty2 * math.cos(self.angle)
 
         return (tx1, ty1, tz1, tx2, ty2, tz2)
-    
+
     def yaw(self, y, z):
         return y + z * self.angle
         # Yaw(y,z) (y + z*player.yaw)
@@ -80,7 +80,6 @@ class Camera(object):
         # If not behind us
         if (tz1 > 0 and tz2 > 0):
 
-            
             # Do perspective transformation
             # xscale1 = lhfov / tz1
             # yscale1 = lvfov / tz1
@@ -118,7 +117,7 @@ class Camera(object):
             yscale2 = lvfov / tz2
 
             height = 10
-            
+
             # huh = 32
             # x1 = -tx1 * huh / tz1
             # y1a = -halfH / tz1
@@ -150,10 +149,10 @@ class Camera(object):
             # get parts
             # topLine = [[halfW + x1, halfH + y1a], [halfW + x2, halfH + y2a]]
             # bottomLine = [[halfW + x1, halfH + y1b], [halfW + x2, halfH + y2b]]
-            
+
             # leftLine = [[halfW + x1, halfH + y1a], [halfW + x1, halfH + y1b]]
             # rightLine = [[halfW + x2, halfH + y2a], [halfW + x2, halfH + y2b]]
 
             # return (topLine, rightLine, bottomLine, leftLine)
-        
+
         return (None, None, None, None)
