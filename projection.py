@@ -28,20 +28,17 @@ def matmul(matrix, vec3):
 pygame.init()
 screen = pygame.display.set_mode((1280, 720), 0, 32)
 
-a = (-1, -1)
-b = ( 1, -1)
-c = ( 1,  1)
-d = (-1,  1)
+cameraX = 0
+cameraY = 0
+cameraZ = 0
+cameraAngle = 0.0
 
 # DEFINE OUR PLANE IN 3D SPACE
 a3 = [-1, -1, -1]
 b3 = [ 1, -1, -1]
 c3 = [ 1,  1, -1]
 d3 = [-1,  1, -1]
-
 points = [a3, b3, c3, d3]
-
-angle = 0.0
 
 while True:
 
@@ -61,30 +58,30 @@ while True:
     # CALCULATION ROTATION MATRICES
     rotationX = [
         [1, 0, 0],
-        [0, math.cos(angle), - math.sin(angle)],
-        [0, math.sin(angle),   math.cos(angle)]
+        [0, math.cos(cameraAngle), - math.sin(cameraAngle)],
+        [0, math.sin(cameraAngle),   math.cos(cameraAngle)]
     ]
     rotationY = [
-        [math.cos(angle), 0, - math.sin(angle)],
+        [math.cos(cameraAngle), 0, - math.sin(cameraAngle)],
         [0, 1, 0],
-        [math.sin(angle), 0,   math.cos(angle)]
+        [math.sin(cameraAngle), 0,   math.cos(cameraAngle)]
     ]
     rotationZ = [
-        [math.cos(angle), - math.sin(angle), 0],
-        [math.sin(angle),   math.cos(angle), 0],
+        [math.cos(cameraAngle), - math.sin(cameraAngle), 0],
+        [math.sin(cameraAngle),   math.cos(cameraAngle), 0],
         [0, 0, 1]
     ]
-
-    # ROTATE THE POINTS
-    #pygame.draw.polygon(screen, (0, 255, 255), (a, b, c, d), 0)
 
     # REPOSITION AND PROJECT EACH POINT
     projectedPoints = []
     for i in range(len(points)):
 
-        # transform vector3 into a 1col matrix
+        # convert vector3 into a 1col matrix
         p = [[points[i][0]], [points[i][1]], [points[i][2]]]
-        # rotate the point in 3d space
+
+        # TRAN
+
+        # ROTATE THE POINT IN 3D SPACE
         rotated = p
         #rotated = matmul(rotationX, rotated)
         rotated = matmul(rotationY, rotated)
@@ -98,7 +95,7 @@ while True:
         # reduce x and y when z is further away
         # center of cube is at -z is in front of us (at -1)
         # pushing it away by three lets us see it
-        distance = 3.0
+        distance = 0.0
         z = 1 / (distance - rotated[2][0])
         perspectiveProjection = [
             [z, 0, 0],
@@ -141,7 +138,7 @@ while True:
         pygame.draw.circle(screen, (255, 0, 255), drawpoint, 2)
 
 
-    angle += 0.03
+    cameraAngle += 0.03
 
     # LOOP END
     pygame.display.flip()
