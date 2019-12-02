@@ -5,8 +5,6 @@ from engine.linedef import LineDef
 from engine.solidbspnode import SolidBSPNode
 from engine.camera import Camera
 
-print("\n")
-
 # Lines, each vertex connects to the next one in CW fashion
 # third element is direction its facing, when CW facing 1 = left
 polygons = [
@@ -55,7 +53,7 @@ for i, v in enumerate(polygons):
             lineDef.asChild(lineDefs[-1], polygon[idx + 1][0], polygon[idx + 1][1], polygon[idx + 1][2], polygon[idx + 1][3])
             lineDefs.append(lineDef)
             allLineDefs.append(lineDef)
-        
+
         # final point, final line, connects back to first point
         elif idx == len(polygon) - 1:
             lineDef.asLeaf(lineDefs[-1], lineDefs[0], polygon[idx][2], polygon[idx][3])
@@ -197,7 +195,7 @@ while True:
         pygame.mouse.set_pos(display.width, mouseY)
     elif mouserelX <= 1000 and mouserelX >= -1000:
         camera.angle += mouserelX * 0.005
-    
+
 
     # draw floor and ceiling
     floor = [

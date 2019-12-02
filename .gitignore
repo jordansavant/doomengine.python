@@ -1,4 +1,4 @@
 .vscode
-.swp
-.swo
+*.swp
+*.swo
 __pycache__
