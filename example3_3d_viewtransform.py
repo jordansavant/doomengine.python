@@ -58,10 +58,8 @@ cameraAngleZ = 0.0
 # CREATE OBJECTS FOR RENDERING
 cube = Cube()
 
-while True:
-
-    # LOOP START
-    screen.fill((200, 200, 200))
+def inputlisten():
+    # "INPUT LISTENING" LOOP
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit(0)
@@ -69,8 +67,15 @@ while True:
             if event.key == pygame.K_ESCAPE:
                 sys.exit(0)
 
+def update():
+    # "UPDATE" LOOP
     # rotate cube
     cube.worldRot[1] += 0.01
+
+
+def draw():
+    # "DRAW" LOOP
+    screen.fill((200, 200, 200))
 
     # REPOSITION AND PROJECT EACH POINT
     projectedPoints = []
@@ -198,7 +203,6 @@ while True:
         # could render right here but i choose to render them in a sep
         # loop not mixed with all the transformations
 
-
     # test render the plane?
     # whats awkward about this is that one plane always renders on top the other despite it being "behind it" in the projection
     #pygame.draw.polygon(screen, (0, 255, 255), [projectedPoints[0], projectedPoints[1], projectedPoints[2], projectedPoints[3]], 0)
@@ -215,7 +219,15 @@ while True:
         # draw point
         pygame.draw.circle(screen, (255, 0, 255), drawpoint, 2)
 
-
-    # LOOP END
     pygame.display.flip()
+    # /// DRAW END
+
+while True:
+
+    inputlisten()
+
+    update()
+
+    draw()
+
     time.sleep(1 / 60)
