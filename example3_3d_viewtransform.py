@@ -223,9 +223,9 @@ def update():
     # rotate cube
     cube.worldRot[0] = math.pi / 3
     cube.worldRot[1] += 0.01
-    cube.worldPos[2] = -100
+    cube.worldPos[2] = 0
 
-    #camera.worldRot[2] += .01
+    camera.worldRot[2] += .01
 
 def draw():
     # "DRAW" LOOP
@@ -256,17 +256,33 @@ def draw():
         transformed = matmul(ViewSpace, p)
 
 
-        # V
-        # DETERMINE VIEW TRANSFORMATION MATRIX
-        # basically move everything in the world
-        # to be positioned relative to the camera
-        viewtranslate = [
-            [1, 0, 0, 0],
-            [0, 1, 0, -10],
-            [0, 0, 1, -20],
+        # P ATTEMPT AGAIN OFF NEW VIEW SPACE
+        # ORTHOGRAPHIC
+        width = 2
+        height = 2
+        znear = 1
+        zfar = 100
+        ortho1 = [
+            [1/width, 0, 0, 0],
+            [0, 1/height, 0, 0],
+            [0, 0, -2/(zfar - znear), - (zfar + znear) / (zfar - znear)],
             [0, 0, 0, 1]
         ]
-        transformed = matmul(viewtranslate, transformed)
+
+        # PERSPECTIVE
+        # attempting while ignoring that it cops
+        # out its tut and says the "GPU" will do
+        # it for you
+        fovx = 1
+        fovy = .75
+        persp1 = [
+            [math.atan(fovx/2), 0, 0, 0],
+            [0, math.atan(fovy/2), 0, 0],
+            [0, 0, -((zfar + znear)/(zfar - znear)), -((2 * (znear * zfar)) / (zfar - znear))],
+            [0, 0, -1, 0],
+        ]
+
+
 
         # P
         # http://ogldev.atspace.co.uk/www/tutorial12/tutorial12.html
@@ -341,24 +357,24 @@ def draw():
         # also it maps wProj = -z ?
         # - far / (far - near)
         # - (far * near) / (far - near)
-        near = 0.1 # made up
-        far = 100 # made up
-        z = transformed[2][0];
-        per1 = [
-            [1/-z, 0, 0, 0],
-            [0, 1/-z, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1]
-        ]
-        fov = .75
-        s = 1 / math.tan(fov / 2)
-        per2 = [
-            [s, 0, 0, 0],
-            [0, s, 0, 0],
-            [0, 0, - (far/(far - near)), -1],
-            [0, 0, - (far * near / far - near), 0]
-        ]
-        per3 = matmul(per1, per2)
+        #near = 0.1 # made up
+        #far = 100 # made up
+        #z = transformed[2][0];
+        #per1 = [
+        #    [1/-z, 0, 0, 0],
+        #    [0, 1/-z, 0, 0],
+        #    [0, 0, 1, 0],
+        #    [0, 0, 0, 1]
+        #]
+        #fov = .75
+        #s = 1 / math.tan(fov / 2)
+        #per2 = [
+        #    [s, 0, 0, 0],
+        #    [0, s, 0, 0],
+        #    [0, 0, - (far/(far - near)), -1],
+        #    [0, 0, - (far * near / far - near), 0]
+        #]
+        #per3 = matmul(per1, per2)
 
         # CALCULATE PROJECTION MATRIX
         orthographicProjection = [
@@ -381,21 +397,26 @@ def draw():
         ]
 
         #projection = perspectiveProjection
-        projection = orthographicProjection
-        #projection = per3
+        #projection = orthographicProjection
+        #projection = per2
+        #projection = ortho1
+        projection = persp1
 
         # project onto 2d screen surface
         projected = matmul(projection, transformed)
 
-        # transform 2d matrix into list
-        drawpoint = [int(projected[0][0]), int(projected[1][0])]
+        px = projected[0][0]
+        py = projected[1][0]
+        if px > -1 and px < 1:
+            # transform 2d matrix into list
+            drawpoint = [int(projected[0][0]), int(projected[1][0])]
+            # center on the screen
+            offx = screenW/2
+            offy = screenH/2
+            drawpoint[0] += int(offx)
+            drawpoint[1] += int(offy)
+            projectedPoints.append(drawpoint)
 
-        # center on the screen
-        offx = screenW/2
-        offy = screenH/2
-        drawpoint[0] += int(offx)
-        drawpoint[1] += int(offy)
-        projectedPoints.append(drawpoint)
 
         # could render right here but i choose to render them in a sep
         # loop not mixed with all the transformations
