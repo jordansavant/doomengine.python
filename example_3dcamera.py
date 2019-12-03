@@ -2,6 +2,11 @@ import sys, pygame, engine, math, time
 
 # matrix is array of array
 # vec3 is an array of array pairs [[x,y], ...]
+# same as dot product
+# Two vectors multiplied together and summed to produce a scalar
+# Each element in the same row multiplied together. The result of each row added together
+# [2] . [-1] =  ((2 * -1) + (3 * 5)) = 13
+# [3]   [ 5]
 def matmul(matrix, matrixB):
     colsA = len(matrix[0])
     colsB = len(matrixB[0])
@@ -24,6 +29,43 @@ def matmul(matrix, matrixB):
             r[j].append(summ)
     return r
 
+# https://www.3dgep.com/understanding-the-view-matrix/
+# Pitch must be in the range of [-90 ... 90] degrees and
+# yaw must be in the range of [0 ... 360] degrees.
+# Pitch and yaw variables must be expressed in radians.
+# eye is a vector 3 that represents the cameras position
+def FPSViewRH(eye, pitch, yaw):
+    # I assume the values are already converted to radians.
+    cosPitch = math.cos(pitch)
+    sinPitch = math.sin(pitch)
+    cosYaw = math.cos(yaw)
+    sinYaw = math.sin(yaw)
+
+    # vec3s
+    xaxis = [ cosYaw, 0, -sinYaw ];
+    yaxis = [ sinYaw * sinPitch, cosPitch, cosYaw * sinPitch ];
+    zaxis = [ sinYaw * cosPitch, -sinPitch, cosPitch * cosYaw ];
+
+    # Create a 4x4 view matrix from the right, up, forward and eye position vectors
+    dotA = xaxis[0] * eye[0] + xaxis[1] * eye[1] + xaxis[2] * eye[2];
+    dotB = yaxis[0] * eye[0] + yaxis[1] * eye[1] + yaxis[2] * eye[2];
+    dotC = zaxis[0] * eye[0] + zaxis[1] * eye[1] + zaxis[2] * eye[2];
+    viewMatrix = [
+        [xaxis[0], xaxis[1], xaxis[2], -dotA],
+        [yaxis[0], yaxis[1], yaxis[2], -dotB],
+        [zaxis[0], zaxis[1], zaxis[2], -dotC],
+        [0, 0, 0, 1]
+    ];
+
+    # viewMatrix = [
+    #    [xaxis[0], yaxis[0], zaxis[0], 0],
+    #    [xaxis[1], yaxis[1], zaxis[1], 0],
+    #    [xaxis[2], yaxis[2], zaxis[2], 0],
+    #    [-matmul(xaxis, eye), -matmul(yaxis, eye), -matmul(zaxis, eye), 1]
+    #];
+
+    return viewMatrix;
+
 
 pygame.init()
 screen = pygame.display.set_mode((1280, 720), 0, 32)
@@ -31,7 +73,9 @@ screen = pygame.display.set_mode((1280, 720), 0, 32)
 cameraX = 0
 cameraY = 0
 cameraZ = 0
-cameraAngle = 0.0
+cameraAngleX = 0.0
+cameraAngleY = 0.0
+cameraAngleZ = 0.0
 
 # DEFINE OUR PLANE IN 3D SPACE
 a3 = [-1, -1, -1]
@@ -66,22 +110,10 @@ while True:
     angleY += 0.01
     angleZ += 0.00
 
-    # CALCULATION ROTATION MATRICES
-    rotationX = [
+    # CALCULATE CAMERA TRANSFORM MATRIX
+    identity = [
         [1, 0, 0, 0],
-        [0, math.cos(angleX), - math.sin(angleX), 0],
-        [0, math.sin(angleX),   math.cos(angleX), 0],
-        [0, 0, 0, 1]
-    ]
-    rotationY = [
-        [math.cos(angleY), 0, - math.sin(angleY), 0],
         [0, 1, 0, 0],
-        [math.sin(angleY), 0,   math.cos(angleY), 0],
-        [0, 0, 0, 1]
-    ]
-    rotationZ = [
-        [math.cos(angleZ), - math.sin(angleZ), 0, 0],
-        [math.sin(angleZ),   math.cos(angleZ), 0, 0],
         [0, 0, 1, 0],
         [0, 0, 0, 1]
     ]
@@ -90,7 +122,13 @@ while True:
     projectedPoints = []
     for i in range(len(points)):
 
-        # DETERMINE FINAL TRANSFORMATION MATRIX
+        # FULL STEPS
+        # 1. TRANSFORM MODEL TO WORLD SPACE
+        # 2. TRANSFORM WORLD TO VIEW SPACE (CAMERA SPACE)
+        # 3. TRANSFORM VIEW TO PROJECTION
+
+
+        # DETERMINE WORLD TRANSFORMATION MATRIX
         # http://www.codinglabs.net/article_world_view_projection_matrix.aspx
         # we can translate, rotate and scale a
         # with a single transformation matrix.
@@ -98,6 +136,8 @@ while True:
         # 1. scale
         # 2. rotate
         # 3. translate
+        # TODO: all of this is transformation of our cube model
+        # and could be put in a model class
 
         # SCALE OUR POINT
         # I defined the model in unit space and
@@ -111,15 +151,32 @@ while True:
             [0, 0, scaleZ, 0],
             [0, 0, 0, 1]
         ]
-        transform = scale
+        transform = matmul(scale, identity) # optional to multiply scale by identity here, could just start with scale
 
         # ROTATE THE POINT IN 3D SPACE
         # we can calculate the rotation in each axis
         # based on whatever the angle for that axis is
+        rotationX = [
+            [1, 0, 0, 0],
+            [0, math.cos(angleX), - math.sin(angleX), 0],
+            [0, math.sin(angleX),   math.cos(angleX), 0],
+            [0, 0, 0, 1]
+        ]
+        rotationY = [
+            [math.cos(angleY), 0, - math.sin(angleY), 0],
+            [0, 1, 0, 0],
+            [math.sin(angleY), 0,   math.cos(angleY), 0],
+            [0, 0, 0, 1]
+        ]
+        rotationZ = [
+            [math.cos(angleZ), - math.sin(angleZ), 0, 0],
+            [math.sin(angleZ),   math.cos(angleZ), 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ]
         transform = matmul(rotationX, transform)
         transform = matmul(rotationY, transform)
         transform = matmul(rotationZ, transform)
-
 
         # TRANSLATE FROM MODEL SPACE (-1, 1) TO WORLD SPACE
         # keeping the points in model space around the
@@ -143,6 +200,13 @@ while True:
         p = [[points[i][0] - cameraX], [points[i][1] - cameraY], [points[i][2] - cameraZ], [1]]
         transformed = matmul(transform, p)
 
+
+        # DETERMINE VIEW TRANSFORMATION MATRIX
+        # basically move everything in the world
+        # to be positioned relative to the camera
+        viewTransform = FPSViewRH([cameraX, cameraY, cameraZ], cameraAngleX, cameraAngleY)
+        #transformed = matmul(viewTransform, transformed)
+
         # CALCULATE PROJECTION MATRIX
         orthographicProjection = [
             [1, 0, 0, 0],
@@ -150,15 +214,23 @@ while True:
             [0, 0, 1, 0],
             [0, 0, 0, 1]
         ]
+        fovx = 1
+        fovy = 1
+        perspectiveProjection = [
+
+        ]
         # reduce x and y when z is further away
         # center of cube is at -z is in front of us (at -1)
         # pushing it away by three lets us see it
         #distance = 0.0
+        z = 1 / -transformed[2][0];
         #z = 1 / (distance - rotated[2][0])
-        #perspectiveProjection = [
-        #    [z, 0, 0],
-        #    [0, z, 0]
-        #]
+        perspectiveProjection = [
+            [z, 0, 0, 0],
+            [0, z, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ]
 
         #projection = perspectiveProjection
         projection = orthographicProjection
