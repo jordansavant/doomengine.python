@@ -1,9 +1,24 @@
 import sys, pygame, engine, math, time
 
 
-# CODE CONVENTIONS
+# CONVENTIONS
 # Vector3s are represented with a three element slice
 # [ x, y, z ] for positions and rotations in 3d
+#
+# When reading matrix documentations they multiply
+# left to right
+# X = M . N . T
+# means T times N times M in that order
+#
+# When reading matrix documentations consider their
+# format for Column Major vs Row Major data layout
+# I <believe?> I have used Column Major matrices
+# [
+#   [c1r1, c2r1, c3r1, c4r1]
+#   [c1r2, c2r2, c3r2, c4r2]
+#   [c1r3, c2r3, c3r3, c4r3]
+#   [c1r4, c2r4, c3r4, c4r4]
+# ]
 
 class Cube(object):
     def __init__(self):
@@ -24,6 +39,7 @@ class Cube(object):
         self.points = [a3, b3, c3, d3,   e3, f3, g3, h3] # two sides of cube
 
 # Two matrices multiplied together and summed to produce a scalar
+# same as dot product ?
 def matmul(matrix, matrixB):
     colsA = len(matrix[0])
     colsB = len(matrixB[0])
@@ -71,6 +87,7 @@ def inputlisten():
 def update():
     # "UPDATE" LOOP
     # rotate cube
+    cube.worldRot[0] = math.pi / 3
     cube.worldRot[1] += 0.01
 
 
@@ -164,6 +181,7 @@ def draw():
 
 
         # P
+        # http://ogldev.atspace.co.uk/www/tutorial12/tutorial12.html
         # CALCULATE PROJECTION MATRIX
         orthographicProjection = [
             [1, 0, 0, 0],
