@@ -29,44 +29,6 @@ def matmul(matrix, matrixB):
             r[j].append(summ)
     return r
 
-# https://www.3dgep.com/understanding-the-view-matrix/
-# Pitch must be in the range of [-90 ... 90] degrees and
-# yaw must be in the range of [0 ... 360] degrees.
-# Pitch and yaw variables must be expressed in radians.
-# eye is a vector 3 that represents the cameras position
-def FPSViewRH(eye, pitch, yaw):
-    # I assume the values are already converted to radians.
-    cosPitch = math.cos(pitch)
-    sinPitch = math.sin(pitch)
-    cosYaw = math.cos(yaw)
-    sinYaw = math.sin(yaw)
-
-    # vec3s
-    xaxis = [ cosYaw, 0, -sinYaw ];
-    yaxis = [ sinYaw * sinPitch, cosPitch, cosYaw * sinPitch ];
-    zaxis = [ sinYaw * cosPitch, -sinPitch, cosPitch * cosYaw ];
-
-    # Create a 4x4 view matrix from the right, up, forward and eye position vectors
-    dotA = xaxis[0] * eye[0] + xaxis[1] * eye[1] + xaxis[2] * eye[2];
-    dotB = yaxis[0] * eye[0] + yaxis[1] * eye[1] + yaxis[2] * eye[2];
-    dotC = zaxis[0] * eye[0] + zaxis[1] * eye[1] + zaxis[2] * eye[2];
-    viewMatrix = [
-        [xaxis[0], xaxis[1], xaxis[2], -dotA],
-        [yaxis[0], yaxis[1], yaxis[2], -dotB],
-        [zaxis[0], zaxis[1], zaxis[2], -dotC],
-        [0, 0, 0, 1]
-    ];
-
-    # viewMatrix = [
-    #    [xaxis[0], yaxis[0], zaxis[0], 0],
-    #    [xaxis[1], yaxis[1], zaxis[1], 0],
-    #    [xaxis[2], yaxis[2], zaxis[2], 0],
-    #    [-matmul(xaxis, eye), -matmul(yaxis, eye), -matmul(zaxis, eye), 1]
-    #];
-
-    return viewMatrix;
-
-
 pygame.init()
 screen = pygame.display.set_mode((1280, 720), 0, 32)
 
@@ -123,11 +85,12 @@ while True:
     for i in range(len(points)):
 
         # FULL STEPS
-        # 1. TRANSFORM MODEL TO WORLD SPACE
-        # 2. TRANSFORM WORLD TO VIEW SPACE (CAMERA SPACE)
-        # 3. TRANSFORM VIEW TO PROJECTION
+        # 1. M > TRANSFORM MODEL TO WORLD SPACE
+        # 2. V > TRANSFORM WORLD TO VIEW SPACE (CAMERA SPACE)
+        # 3. P > TRANSFORM VIEW TO PROJECTION
 
 
+        # M
         # DETERMINE WORLD TRANSFORMATION MATRIX
         # http://www.codinglabs.net/article_world_view_projection_matrix.aspx
         # we can translate, rotate and scale a
@@ -151,7 +114,7 @@ while True:
             [0, 0, scaleZ, 0],
             [0, 0, 0, 1]
         ]
-        transform = matmul(scale, identity) # optional to multiply scale by identity here, could just start with scale
+        transform = scale
 
         # ROTATE THE POINT IN 3D SPACE
         # we can calculate the rotation in each axis
@@ -197,27 +160,22 @@ while True:
 
         # MULTIPLY TRANSFORMATION MATRIX TO POSITION
         # convert vector3 into a 1col matrix
-        p = [[points[i][0] - cameraX], [points[i][1] - cameraY], [points[i][2] - cameraZ], [1]]
+        p = [[points[i][0]], [points[i][1]], [points[i][2]], [1]]
         transformed = matmul(transform, p)
 
 
+        # V
         # DETERMINE VIEW TRANSFORMATION MATRIX
         # basically move everything in the world
         # to be positioned relative to the camera
-        viewTransform = FPSViewRH([cameraX, cameraY, cameraZ], cameraAngleX, cameraAngleY)
-        #transformed = matmul(viewTransform, transformed)
 
+        # P
         # CALCULATE PROJECTION MATRIX
         orthographicProjection = [
             [1, 0, 0, 0],
             [0, 1, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1]
-        ]
-        fovx = 1
-        fovy = 1
-        perspectiveProjection = [
-
         ]
         # reduce x and y when z is further away
         # center of cube is at -z is in front of us (at -1)
