@@ -1,4 +1,4 @@
-import sys, pygame, engine, math, time
+import sys, pygame, engine, math, time, numpy as np
 
 
 # CONVENTIONS
@@ -19,29 +19,6 @@ import sys, pygame, engine, math, time
 #   [c1r3, c2r3, c3r3, c4r3]
 #   [c1r4, c2r4, c3r4, c4r4]
 # ]
-
-class Cube(object):
-    def __init__(self):
-        self.worldPos = [0, 0, 0] # x, y, z coords
-        self.worldRot = [0.0, 0.0, 0.0] # x, y, z rotations in radians
-        self.worldScale = [100, 100, 100] # x, y, z axis scaling in world
-        self.points = []
-
-        a3 = [-1, -1, -1]
-        b3 = [ 1, -1, -1]
-        c3 = [ 1,  1, -1]
-        d3 = [-1,  1, -1]
-
-        e3 = [-1, -1, 1]
-        f3 = [ 1, -1, 1]
-        g3 = [ 1,  1, 1]
-        h3 = [-1,  1, 1]
-        self.points = [a3, b3, c3, d3,   e3, f3, g3, h3] # two sides of cube
-
-class Camera(object):
-    def __init__(self):
-        self.worldPos = [0, 0, 0]
-        self.worldRot = [0.0, 0.0, 0.0]
 
 # Two matrices multiplied together and summed to produce a scalar
 # same as dot product ?
@@ -67,6 +44,162 @@ def matmul(matrix, matrixB):
             r[j].append(summ)
     return r
 
+def matinverse(matrix):
+    return np.linalg.inv(matrix)
+
+# NUMPY TEST
+#A = [
+#    [1, 3, 3],
+#    [1, 4, 3],
+#    [1, 3, 4]
+#]
+#B = np.linalg.inv(A)
+#print(B)
+#I = matmul(A, B)
+#print(I)
+#sys.exit()
+
+class Cube(object):
+    def __init__(self):
+        self.worldPos = [0, 0, 0] # x, y, z coords
+        self.worldRot = [0.0, 0.0, 0.0] # x, y, z rotations in radians
+        self.worldScale = [100, 100, 100] # x, y, z axis scaling in world
+        self.points = []
+
+        a3 = [-1, -1, -1]
+        b3 = [ 1, -1, -1]
+        c3 = [ 1,  1, -1]
+        d3 = [-1,  1, -1]
+
+        e3 = [-1, -1, 1]
+        f3 = [ 1, -1, 1]
+        g3 = [ 1,  1, 1]
+        h3 = [-1,  1, 1]
+        self.points = [a3, b3, c3, d3,   e3, f3, g3, h3] # two sides of cube
+
+    def getModelToWorldTransform(self):
+        # FULL STEPS
+        # 1. M > TRANSFORM MODEL TO WORLD SPACE
+        # 2. V > TRANSFORM WORLD TO VIEW SPACE (CAMERA SPACE)
+        # 3. P > TRANSFORM VIEW TO PROJECTION
+
+        # M
+        # DETERMINE WORLD TRANSFORMATION MATRIX
+        # http://www.codinglabs.net/article_world_view_projection_matrix.aspx
+        # we can translate, rotate and scale a
+        # with a single transformation matrix.
+        # Ordering is important:
+        # 1. scale
+        # 2. rotate
+        # 3. translate
+
+        # SCALE OUR CUBE
+        # I defined the model in unit space and
+        # need to scale the model to world space
+        scale = [
+            [self.worldScale[0], 0, 0, 0],
+            [0, self.worldScale[1], 0, 0],
+            [0, 0, self.worldScale[2], 0],
+            [0, 0, 0, 1]
+        ]
+        transform = scale
+
+        # ROTATE THE CUBE IN 3D SPACE
+        # we can calculate the rotation in each axis
+        # based on whatever the angle for that axis is
+        rotationX = [
+            [1, 0, 0, 0],
+            [0, math.cos(self.worldRot[0]), - math.sin(self.worldRot[0]), 0],
+            [0, math.sin(self.worldRot[0]),   math.cos(self.worldRot[0]), 0],
+            [0, 0, 0, 1]
+        ]
+        rotationY = [
+            [math.cos(self.worldRot[1]), 0, - math.sin(self.worldRot[1]), 0],
+            [0, 1, 0, 0],
+            [math.sin(self.worldRot[1]), 0,   math.cos(self.worldRot[1]), 0],
+            [0, 0, 0, 1]
+        ]
+        rotationZ = [
+            [math.cos(self.worldRot[2]), - math.sin(self.worldRot[2]), 0, 0],
+            [math.sin(self.worldRot[2]),   math.cos(self.worldRot[2]), 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ]
+        transform = matmul(rotationX, transform)
+        transform = matmul(rotationY, transform)
+        transform = matmul(rotationZ, transform)
+
+        # TRANSLATE FROM MODEL SPACE (-1, 1) TO WORLD SPACE
+        # keeping the points in model space around the
+        # model's origin, we can give the whole self a
+        # world position and translate our model to that
+        # position by placing its world position in the
+        # final column for x, y, z
+        translation = [
+            [1, 0, 0, self.worldPos[0]],
+            [0, 1, 0, self.worldPos[1]],
+            [0, 0, 1, self.worldPos[2]],
+            [0, 0, 0, 1]
+        ]
+        ModelToWorldTransform = matmul(translation, transform)
+
+        return ModelToWorldTransform
+
+class Camera(object):
+    def __init__(self):
+        self.worldPos = [0, 0, 0]
+        self.worldRot = [0.0, 0.0, 0.0]
+
+    def getCameraToWorldTransform(self):
+        # FULL STEPS
+        # less than cube model because we don't
+        # scale a camera
+
+        # M
+        # DETERMINE WORLD TRANSFORMATION MATRIX
+
+        # ROTATE THE CUBE IN 3D SPACE
+        # we can calculate the rotation in each axis
+        # based on whatever the angle for that axis is
+        rotationX = [
+            [1, 0, 0, 0],
+            [0, math.cos(self.worldRot[0]), - math.sin(self.worldRot[0]), 0],
+            [0, math.sin(self.worldRot[0]),   math.cos(self.worldRot[0]), 0],
+            [0, 0, 0, 1]
+        ]
+        rotationY = [
+            [math.cos(self.worldRot[1]), 0, - math.sin(self.worldRot[1]), 0],
+            [0, 1, 0, 0],
+            [math.sin(self.worldRot[1]), 0,   math.cos(self.worldRot[1]), 0],
+            [0, 0, 0, 1]
+        ]
+        rotationZ = [
+            [math.cos(self.worldRot[2]), - math.sin(self.worldRot[2]), 0, 0],
+            [math.sin(self.worldRot[2]),   math.cos(self.worldRot[2]), 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ]
+        transform = rotationX
+        transform = matmul(rotationY, transform)
+        transform = matmul(rotationZ, transform)
+
+        # TRANSLATE FROM MODEL SPACE (-1, 1) TO WORLD SPACE
+        # keeping the points in model space around the
+        # model's origin, we can give the whole self a
+        # world position and translate our model to that
+        # position by placing its world position in the
+        # final column for x, y, z
+        translation = [
+            [1, 0, 0, self.worldPos[0]],
+            [0, 1, 0, self.worldPos[1]],
+            [0, 0, 1, self.worldPos[2]],
+            [0, 0, 0, 1]
+        ]
+        CameraToWorldTransform = matmul(translation, transform)
+
+        return CameraToWorldTransform
+
+
 screenW = 720
 screenH = 720
 pygame.init()
@@ -74,6 +207,7 @@ screen = pygame.display.set_mode((screenW, screenH), 0, 32)
 
 # CREATE OBJECTS FOR RENDERING
 cube = Cube()
+camera = Camera()
 
 def inputlisten():
     # "INPUT LISTENING" LOOP
@@ -91,78 +225,24 @@ def update():
     cube.worldRot[1] += 0.01
     cube.worldPos[2] = -100
 
+    #camera.worldRot[2] += .01
 
 def draw():
     # "DRAW" LOOP
     screen.fill((200, 200, 200))
 
 
-    # FULL STEPS
-    # 1. M > TRANSFORM MODEL TO WORLD SPACE
-    # 2. V > TRANSFORM WORLD TO VIEW SPACE (CAMERA SPACE)
-    # 3. P > TRANSFORM VIEW TO PROJECTION
-
     # M
-    # DETERMINE WORLD TRANSFORMATION MATRIX
-    # http://www.codinglabs.net/article_world_view_projection_matrix.aspx
-    # we can translate, rotate and scale a
-    # with a single transformation matrix.
-    # Ordering is important:
-    # 1. scale
-    # 2. rotate
-    # 3. translate
+    # GET CUBE MODEL TO WORLD TRANSFORMATION MATRIX
+    ModelToWorldTransform = cube.getModelToWorldTransform()
 
-    # SCALE OUR CUBE
-    # I defined the model in unit space and
-    # need to scale the model to world space
-    scale = [
-        [cube.worldScale[0], 0, 0, 0],
-        [0, cube.worldScale[1], 0, 0],
-        [0, 0, cube.worldScale[2], 0],
-        [0, 0, 0, 1]
-    ]
-    transform = scale
-
-    # ROTATE THE CUBE IN 3D SPACE
-    # we can calculate the rotation in each axis
-    # based on whatever the angle for that axis is
-    rotationX = [
-        [1, 0, 0, 0],
-        [0, math.cos(cube.worldRot[0]), - math.sin(cube.worldRot[0]), 0],
-        [0, math.sin(cube.worldRot[0]),   math.cos(cube.worldRot[0]), 0],
-        [0, 0, 0, 1]
-    ]
-    rotationY = [
-        [math.cos(cube.worldRot[1]), 0, - math.sin(cube.worldRot[1]), 0],
-        [0, 1, 0, 0],
-        [math.sin(cube.worldRot[1]), 0,   math.cos(cube.worldRot[1]), 0],
-        [0, 0, 0, 1]
-    ]
-    rotationZ = [
-        [math.cos(cube.worldRot[2]), - math.sin(cube.worldRot[2]), 0, 0],
-        [math.sin(cube.worldRot[2]),   math.cos(cube.worldRot[2]), 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1]
-    ]
-    transform = matmul(rotationX, transform)
-    transform = matmul(rotationY, transform)
-    transform = matmul(rotationZ, transform)
-
-    # TRANSLATE FROM MODEL SPACE (-1, 1) TO WORLD SPACE
-    # keeping the points in model space around the
-    # model's origin, we can give the whole cube a
-    # world position and translate our model to that
-    # position by placing its world position in the
-    # final column for x, y, z
-    translation = [
-        [1, 0, 0, cube.worldPos[0]],
-        [0, 1, 0, cube.worldPos[1]],
-        [0, 0, 1, cube.worldPos[2]],
-        [0, 0, 0, 1]
-    ]
-    ModelToWorldTransform = matmul(translation, transform)
-
+    # V
     # FIND THE CAMERA POSITION IN WORLD SPACE
+    CameraToWorldTransform = camera.getCameraToWorldTransform()
+
+    # GET THE INVERSE (VIEW SPACE) AND APPLY IT TO THE MODEL
+    CameraInverse = matinverse(CameraToWorldTransform)
+    ViewSpace = matmul(CameraInverse, ModelToWorldTransform)
 
     # REPOSITION AND PROJECT EACH POINT
     projectedPoints = []
@@ -173,7 +253,7 @@ def draw():
         # convert vector3 into a 1col matrix
         point = cube.points[i]
         p = [[point[0]], [point[1]], [point[2]], [1]]
-        transformed = matmul(ModelToWorldTransform, p)
+        transformed = matmul(ViewSpace, p)
 
 
         # V
@@ -301,8 +381,8 @@ def draw():
         ]
 
         #projection = perspectiveProjection
-        #projection = orthographicProjection
-        projection = per3
+        projection = orthographicProjection
+        #projection = per3
 
         # project onto 2d screen surface
         projected = matmul(projection, transformed)
