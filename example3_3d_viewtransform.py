@@ -38,6 +38,11 @@ class Cube(object):
         h3 = [-1,  1, 1]
         self.points = [a3, b3, c3, d3,   e3, f3, g3, h3] # two sides of cube
 
+class Camera(object):
+    def __init__(self):
+        self.worldPos = [0, 0, 0]
+        self.worldRot = [0.0, 0.0, 0.0]
+
 # Two matrices multiplied together and summed to produce a scalar
 # same as dot product ?
 def matmul(matrix, matrixB):
@@ -62,15 +67,10 @@ def matmul(matrix, matrixB):
             r[j].append(summ)
     return r
 
+screenW = 720
+screenH = 720
 pygame.init()
-screen = pygame.display.set_mode((1280, 720), 0, 32)
-
-cameraX = 0
-cameraY = 0
-cameraZ = 0
-cameraAngleX = 0.0
-cameraAngleY = 0.0
-cameraAngleZ = 0.0
+screen = pygame.display.set_mode((screenW, screenH), 0, 32)
 
 # CREATE OBJECTS FOR RENDERING
 cube = Cube()
@@ -89,6 +89,7 @@ def update():
     # rotate cube
     cube.worldRot[0] = math.pi / 3
     cube.worldRot[1] += 0.01
+    cube.worldPos[2] = -100
 
 
 def draw():
@@ -161,6 +162,7 @@ def draw():
     ]
     ModelToWorldTransform = matmul(translation, transform)
 
+    # FIND THE CAMERA POSITION IN WORLD SPACE
 
     # REPOSITION AND PROJECT EACH POINT
     projectedPoints = []
@@ -178,10 +180,106 @@ def draw():
         # DETERMINE VIEW TRANSFORMATION MATRIX
         # basically move everything in the world
         # to be positioned relative to the camera
-
+        viewtranslate = [
+            [1, 0, 0, 0],
+            [0, 1, 0, -10],
+            [0, 0, 1, -20],
+            [0, 0, 0, 1]
+        ]
+        transformed = matmul(viewtranslate, transformed)
 
         # P
         # http://ogldev.atspace.co.uk/www/tutorial12/tutorial12.html
+        # Perspective projection transformation requires 4 params
+        # 1. The aspect ratio: the ratio between the width and the height of the rectangular area which will be the target of projection
+        # 2. The vertical field of view: the vertical angle of the camera through which we are looking at the world
+        # ?? Horizontal Field of View ??
+        # 3. The location of the near Z plane: allows us to clip objects that are too close to the camera
+        # 4. The location of the near Z plane: allows us to clip objects that are too close to the camera
+
+        # Aspect Ratio = screen width / screen height
+        aspectRatio = screenW / screenH
+        #  . _ +1 _ .
+        #  |        |
+        # -ar      +ar   wider width than height has ar > 1
+        #  |        |
+        #  . _ -1 _ .
+        #
+        # projection plane is a rectangle that sits
+        # in front of the camera
+        #
+        # distance from camera to projection plane using the vertical field of view:
+        # vertFov is up to us to deterime, radians?
+        # tan(vertFoV / 2) = 1 / dist
+        # dist = 1 / tan(vertFoV / 2)
+        #
+        # now we find the projection of a points 3d coords on 2d projection
+        # yProj / dist = y / z
+        # yProj = (y * dist) / z = y / (z * tan(vertFov / 2))
+        #
+        # xProj / dist = x / z
+        # xProj = (x * dist) / z = x ( z * tan(vertFov / 2))
+        #
+        # we know the point is in our projection plane if
+        # it is within our projection window defined:
+        # -ar < x < +ar
+        # -1 < y < +1
+        #
+        # yProj is normalized between -1 and +1
+        # xProj is not, its between aspect ratio +-
+        # we can normalize xProj
+        # xProj = x / ( aspectRatio * z * tan(vertFov / 2) )
+        # yProj = y / ( z * tan(vertFov / 2) )
+        #
+        # whole lotta b.s. about how OpenGL does z division for us?
+        #
+        nearZ = -100 # picked at random
+        farZ = 100 # picked at random
+        vertFov = .95 # picked at random
+        per1 = [
+            [1 / (math.tan(vertFov / 2)), 0, 0, 0],
+            [0, 1 / math.tan(vertFov / 2), 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 1, 0]
+        ]
+        per2 = [
+            [1 / (aspectRatio * math.tan(vertFov / 2)), 0, 0, 0],
+            [0, 1 / math.tan(vertFov / 2), 0, 0],
+            [0, 0, (-nearZ - farZ) / (nearZ - farZ), (2 * farZ * nearZ / nearZ - farZ)],
+            [0, 0, 1, 0]
+        ]
+        # above seems incomplete attempts since the tut
+        # ended with opengl doing part of the work for us
+
+
+        # https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/building-basic-perspective-projection-matrix
+        # divide x and y by negative z since the camera
+        # faces in the negative z direction
+        # xProj = x / -z
+        # yProj = y / -z
+        # zProj = -z / -z = 1
+        # also it maps wProj = -z ?
+        # - far / (far - near)
+        # - (far * near) / (far - near)
+        near = 0.1 # made up
+        far = 100 # made up
+        z = transformed[2][0];
+        per1 = [
+            [1/-z, 0, 0, 0],
+            [0, 1/-z, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ]
+        fov = .75
+        s = 1 / math.tan(fov / 2)
+        per2 = [
+            [s, 0, 0, 0],
+            [0, s, 0, 0],
+            [0, 0, - (far/(far - near)), -1],
+            [0, 0, - (far * near / far - near), 0]
+        ]
+        per3 = matmul(per1, per2)
+
         # CALCULATE PROJECTION MATRIX
         orthographicProjection = [
             [1, 0, 0, 0],
@@ -193,17 +291,18 @@ def draw():
         # center of cube is at -z is in front of us (at -1)
         # pushing it away by three lets us see it
         #distance = 0.0
-        z = 1 / -transformed[2][0];
+        z = transformed[2][0];
         #z = 1 / (distance - rotated[2][0])
         perspectiveProjection = [
-            [z, 0, 0, 0],
-            [0, z, 0, 0],
+            [1/-z, 0, 0, 0],
+            [0, 1/-z, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1]
         ]
 
         #projection = perspectiveProjection
-        projection = orthographicProjection
+        #projection = orthographicProjection
+        projection = per3
 
         # project onto 2d screen surface
         projected = matmul(projection, transformed)
@@ -212,8 +311,8 @@ def draw():
         drawpoint = [int(projected[0][0]), int(projected[1][0])]
 
         # center on the screen
-        offx = 1280/2
-        offy = 720/2
+        offx = screenW/2
+        offy = screenH/2
         drawpoint[0] += int(offx)
         drawpoint[1] += int(offy)
         projectedPoints.append(drawpoint)
