@@ -158,7 +158,7 @@ class Camera(object):
         # M
         # DETERMINE WORLD TRANSFORMATION MATRIX
 
-        # ROTATE THE CUBE IN 3D SPACE
+        # ROTATE THE CAMERA IN 3D SPACE
         # we can calculate the rotation in each axis
         # based on whatever the angle for that axis is
         rotationX = [
@@ -407,15 +407,14 @@ def draw():
 
         px = projected[0][0]
         py = projected[1][0]
-        if px > -1 and px < 1:
-            # transform 2d matrix into list
-            drawpoint = [int(projected[0][0]), int(projected[1][0])]
-            # center on the screen
-            offx = screenW/2
-            offy = screenH/2
-            drawpoint[0] += int(offx)
-            drawpoint[1] += int(offy)
-            projectedPoints.append(drawpoint)
+        # transform 2d matrix into list
+        drawpoint = [int(projected[0][0]), int(projected[1][0])]
+        # center on the screen
+        offx = screenW/2
+        offy = screenH/2
+        drawpoint[0] += int(offx)
+        drawpoint[1] += int(offy)
+        projectedPoints.append(drawpoint)
 
 
         # could render right here but i choose to render them in a sep
