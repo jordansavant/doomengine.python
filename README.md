@@ -1,5 +1,9 @@
 # Doom Engine (Renderer) in Python
 
+## Built with
+- Python 3.7.1
+- pygame, numpy, opengl
+
 In awe of the 1993 doom engine rendering logic regarding Binary Space Partitioning I explored its concepts using a recreation of this engine in Python using pygame as the display portion. The result was great respect for Id Software's work they accomplished.
 
 <img src="https://media.giphy.com/media/PNfObqJPEaHiPRt2zL/giphy.gif" width="500" />
