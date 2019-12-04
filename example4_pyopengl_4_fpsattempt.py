@@ -1,4 +1,4 @@
-import pygame, math
+import pygame, math, numpy
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -78,23 +78,30 @@ def Cube():
             glVertex3fv(vertices[vertex])
     glEnd()
 
+
+
 def main():
+
     pygame.init()
     display = (1280, 720)
     # DOUBLEBUF is a type of buffering where there are
     # two buffers to comply with monitor refresh rates
     # OPENGL says we will be doing opengl calls
     pygame.display.set_mode(display, DOUBLEBUF|OPENGL)
+    pygame.mouse.set_visible(False)
+    pygame.event.set_grab(True)
 
     # fov, aspect ratio, nearz, farz clipping planes
     # "nearz and farz values are supposed to be positive
     #  because they are in relation to your perspective,
     #  not in relation to your actual location within the
     #  3D environment."
-    gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
+    glMatrixMode(GL_PROJECTION)
+    gluPerspective(75, (display[0] / display[1]), 0.1, 500.0)
 
+    glMatrixMode(GL_MODELVIEW)
     # move perspective by x, y, z (-5 to be back from cube)
-    glTranslatef(0.0,0.0, -5)
+    glTranslatef(0.0, 0.0, -5.0)
 
     #glRotatef(25, 2, 1, 0)
 
@@ -110,29 +117,58 @@ def main():
                     pygame.quit()
                     quit()
 
+            # move forward-back or right-left
+            # fwd =   .1 if 'w' is pressed;   -0.1 if 's'
+            #fwd = .1 * (self.keys[w_key]-self.keys[s_key])
+            #strafe = .1 * (self.keys[a_key]-self.keys[d_key])
+            #if abs(fwd) or abs(strafe):
+                # matrix positions
+                #  0,  1,  2,  3
+                #  4,  5,  6,  7
+                #  8,  9, 10, 11
+                # 12, 13, 14, 15
             if event.type == pygame.KEYDOWN:
                 # move in X axis
                 if event.key == pygame.K_a:
-                    glTranslatef(0.5,0,0)
+                    strafe = .1
+                    m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
+                    glTranslate(strafe*m[0],strafe*m[4],strafe*m[8])
                 if event.key == pygame.K_d:
-                    glTranslatef(-0.5,0,0)
+                    strafe = -.1
+                    m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
+                    glTranslate(strafe*m[0],strafe*m[4],strafe*m[8])
 
                 # move in Z axis
                 if event.key == pygame.K_w:
-                    glTranslatef(0,0,.5)
+                    fwd = .1
+                    m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
+                    glTranslate(fwd*m[2],fwd*m[6],fwd*m[10])
                 if event.key == pygame.K_s:
-                    glTranslatef(0,0,-.5)
+                    fwd = -.1
+                    m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
+                    glTranslate(fwd*m[2],fwd*m[6],fwd*m[10])
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                # rotate left in Y axis
-                if event.button == 4:
-                    glRotatef(1,-1,1,1)
+            if event.type == pygame.MOUSEMOTION:
+                # get mouse steering
+                #mouseX, mouseY = pygame.mouse.get_pos()
+                mouserelX, mouserelY = pygame.mouse.get_rel()
+                look_speed = .2
+                bufer = glGetDoublev(GL_MODELVIEW_MATRIX)
+                c = (-1 * numpy.mat(bufer[:3,:3]) * \
+                    numpy.mat(bufer[3,:3]).T).reshape(3,1)
+                # c is camera center in absolute coordinates,
+                # we need to move it back to (0,0,0)
+                # before rotating the camera
+                glTranslate(c[0],c[1],c[2])
+                m = bufer.flatten()
+                glRotate(mouserelX * look_speed, m[1],m[5],m[9])
+                glRotate(mouserelY * look_speed, m[0],m[4],m[8])
 
-                if event.button == 5:
-                    glRotatef(-1,1,-1, 1)
+                # compensate roll
+                glRotated(-math.atan2(-m[4],m[5]) * \
+                    57.295779513082320876798154814105 ,m[2],m[6],m[10])
+                glTranslate(-c[0],-c[1],-c[2])
 
-        # rotate current matrix by, x,y,z (w?) (radians?)
-        #glRotatef(1, 3, 1, 1)
         # clear buffers
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
         # render cube lines

@@ -5,10 +5,14 @@ from OpenGL.GLU import *
 
 class Spectator:
     def __init__(self, w=640, h=480, fov=75):
-        pygame.init()
-        pygame.display.set_mode((640,480), pygame.OPENGL|pygame.DOUBLEBUF)
-        glMatrixMode(GL_PROJECTION)
         aspect = w/h
+
+        pygame.init()
+        pygame.display.set_mode((w,h), pygame.OPENGL|pygame.DOUBLEBUF)
+        pygame.mouse.set_visible(False)
+        pygame.event.set_grab(True)
+
+        glMatrixMode(GL_PROJECTION)
         gluPerspective(fov, aspect, 0.001, 100000.0);
         glMatrixMode(GL_MODELVIEW)
 
@@ -79,7 +83,8 @@ class Spectator:
     def controls_3d(self,mouse_button=1,w_key='w',s_key='s',a_key='a',d_key='d'):
         """ The actual camera setting cycle """
         mouse_dx,mouse_dy = pygame.mouse.get_rel()
-        if pygame.mouse.get_pressed()[mouse_button]:
+        if abs(mouse_dx) > 0 or abs(mouse_dy) > 0:
+        #if pygame.mouse.get_pressed()[mouse_button]:
             look_speed = .2
             buffer = glGetDoublev(GL_MODELVIEW_MATRIX)
             c = (-1 * numpy.mat(buffer[:3,:3]) * \
@@ -112,7 +117,7 @@ class Spectator:
             glTranslate(strafe*m[0],strafe*m[4],strafe*m[8])
 
 
-fps = Spectator(w = 640, h = 480, fov = 75)
+fps = Spectator(w = 1280, h = 720, fov = 75)
 fps.simple_lights()
 fps.simple_camera_pose()
 

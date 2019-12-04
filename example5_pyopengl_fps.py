@@ -69,7 +69,8 @@ class Spectator:
                         d_key='d'):
         """ The actual camera setting cycle """
         mouse_dx,mouse_dy = pygame.mouse.get_rel()
-        if pygame.mouse.get_pressed()[mouse_button]:
+        #if pygame.mouse.get_pressed()[mouse_button]:
+        if abs(mouse_dx) > 0 or abs(mouse_dy) > 0:
             look_speed = .2
             buffer = glGetDoublev(GL_MODELVIEW_MATRIX)
             c = (-1 * numpy.mat(buffer[:3,:3]) * \
