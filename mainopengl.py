@@ -1,9 +1,86 @@
-import pygame, engine, math, time
-from engine.display import Display
-from engine.eventlistener import EventListener
-from engine.linedef import LineDef
-from engine.solidbspnode import SolidBSPNode
-from engine.camera import Camera
+import pygame, engine_opengl, math, time
+from engine_opengl.display import Display
+from engine_opengl.eventlistener import EventListener
+from engine_opengl.linedef import LineDef
+from engine_opengl.solidbspnode import SolidBSPNode
+from engine_opengl.camera import Camera
+from OpenGL.GL import *
+from OpenGL.GLU import *
+
+
+vertices= (
+    (1, -1, -1),
+    (1, 1, -1),
+    (-1, 1, -1),
+    (-1, -1, -1),
+    (1, -1, 1),
+    (1, 1, 1),
+    (-1, -1, 1),
+    (-1, 1, 1)
+)
+
+# maps how to connected vertices
+edges = (
+    (0,1),
+    (0,3),
+    (0,4),
+    (2,1),
+    (2,3),
+    (2,7),
+    (6,3),
+    (6,4),
+    (6,7),
+    (5,1),
+    (5,4),
+    (5,7)
+)
+
+# rgb in float 0-1 values
+colors = (
+    (1,0,0), #r
+    (0,1,0), #g
+    (0,0,1), #b
+    (0,1,0), #g
+    (1,1,1), #wh
+    (0,1,1), #cy
+    (1,0,0), #r
+    (0,1,0), #g
+    (0,0,1), #b
+    (1,0,0), #r
+    (1,1,1), #wh
+    (0,1,1), #cy
+)
+
+# surfaces are groups of vertices
+# indexes to the vertices list
+surfaces = (
+    (0,1,2,3),
+    (3,2,7,6),
+    (6,7,5,4),
+    (4,5,1,0),
+    (1,5,7,2),
+    (4,0,3,6)
+)
+
+def Cube():
+
+    # render colored surfaces as quads
+    glBegin(GL_QUADS)
+    for surface in surfaces:
+        x = 0
+        for vertex in surface:
+            x+=1
+            glColor3fv(colors[x])
+            glVertex3fv(vertices[vertex])
+    glEnd()
+
+    # render lines between vertices
+    glBegin(GL_LINES)
+    for edge in edges:
+        for vertex in edge:
+            glVertex3fv(vertices[vertex])
+    glEnd()
+
 
 # Lines, each vertex connects to the next one in CW fashion
 # third element is direction its facing, when CW facing 1 = left
@@ -69,10 +146,10 @@ wallTest = allLineDefs[4]
 # camPoint = [90, 150]
 # camDirRads = 0
 # camDir = engine.mathdef.toVector(camDirRads)
-camera = Camera()
-camera.worldX = 150
-camera.worldY = 60
-camera.angle = -math.pi/2
+#camera = Camera()
+#camera.worldX = 150
+#camera.worldY = 60
+#camera.angle = -math.pi/2
 
 
 # testPoint = [60, 20]
@@ -81,18 +158,14 @@ camera.angle = -math.pi/2
 #     print(lineDef.start, lineDef.end, lineDef.facing, isBehind)
 # print(solidBsp.inEmpty(testPoint))
 
+
 display = Display(1920, 1080)
+camera = Camera(75, display.width, display.height)
 listener = EventListener()
+
 pygame.mouse.set_visible(False)
 pygame.event.set_grab(True)
 font = pygame.font.Font(None, 36)
-
-def moveTo(x, y):
-    global camera
-    if not collisionDetection or solidBsp.inEmpty([x, y]):
-        camera.worldX = x
-        camera.worldY = y
-
 
 # render mode ops
 mode = 0
@@ -116,41 +189,28 @@ def on_f():
     display.toggleFullscreen()
 listener.onKeyUp(pygame.K_f, on_f)
 
-def on_left():
-    global camera
-    # camDirRads = camDirRads - 0.1
-    # camDir = engine.mathdef.toVector(camDirRads)
-    camera.angle -= 0.1
-listener.onKeyHold(pygame.K_LEFT, on_left)
-def on_right():
-    global camera
-    camera.angle += 0.1
-listener.onKeyHold(pygame.K_RIGHT, on_right)
-
+# move controls
+# TODO: normalize simultaneous x and z movement
 def on_a():
     global camera
-    potentialX = camera.worldX + math.sin(camera.angle)
-    potentialY = camera.worldY - math.cos(camera.angle)
-    moveTo(potentialX, potentialY)
+    #camera.strafeLeft()
 listener.onKeyHold(pygame.K_a, on_a)
 def on_d():
     global camera
-    potentialX = camera.worldX - math.sin(camera.angle)
-    potentialY = camera.worldY + math.cos(camera.angle)
-    moveTo(potentialX, potentialY)
+    #camera.strafeRight()
 listener.onKeyHold(pygame.K_d, on_d)
 def on_w():
     global camera
-    potentialX = camera.worldX + math.cos(camera.angle)
-    potentialY = camera.worldY + math.sin(camera.angle)
-    moveTo(potentialX, potentialY)
+    #camera.moveForward()
 listener.onKeyHold(pygame.K_w, on_w)
 def on_s():
     global camera
-    potentialX = camera.worldX - math.cos(camera.angle)
-    potentialY = camera.worldY - math.sin(camera.angle)
-    moveTo(potentialX, potentialY)
+    #camera.moveBackward()
 listener.onKeyHold(pygame.K_s, on_s)
+def on_mousemove(deltaX, deltaY, mouseX, mouseY):
+    global camera
+    #camera.applyMouseMove(deltaX, deltaY)
+listener.onMouseMove(on_mousemove)
 
 
 def inBoundPoint(point, bounds):
@@ -169,53 +229,37 @@ def inBoundLine(line, bounds):
     line2[1][1] += bounds[0][1]
     return line2
 
-def fncross(x1, y1, x2, y2):
-    return x1 * y2 - y1 * x2
-
-def intersect(x1, y1, x2, y2, x3, y3, x4, y4):
-    x = fncross(x1, y1, x2, y2)
-    y = fncross(x3, y3, x4, y4)
-    det = fncross(x1 - x2, y1 - y2, x3 - x4, y3 - y4)
-    x = fncross(x, x1 - x2, y, x3 - x4) / det
-    y = fncross(x, y1 - y2, y, y3 - y4) / det
-    return [x, y]
-
-mouseX, mouseY = pygame.mouse.get_pos()
-
 while True:
     listener.update()
 
-    display.start()
 
-    # get mouse steering
-    mouseX, mouseY = pygame.mouse.get_pos()
-    mouserelX, mouserelY = pygame.mouse.get_rel()
-    if mouseX >= display.width - 1:
-        pygame.mouse.set_pos(0, mouseY)
-    elif mouseX <= 1:
-        pygame.mouse.set_pos(display.width, mouseY)
-    elif mouserelX <= 1000 and mouserelX >= -1000:
-        camera.angle += mouserelX * 0.005
+    display.setModeOpenGL()
+    # render cube lines
+    Cube()
+    # update display
 
+    display.setModeUI()
 
-    # draw floor and ceiling
-    floor = [
-        [0, display.height / 2], [display.width, display.height / 2], [display.width, display.height], [0, display.height]
-    ]
-    ceiling = [
-        [0, 0], [display.width, 0], [display.width, display.height / 2], [0, display.height / 2]
-    ]
-    display.drawPolygon(floor, (60, 60, 60), 0)
-    display.drawPolygon(ceiling, (100, 100, 100), 0)
+    #display.start()
 
-    # render 3D walls
-    walls = []
-    solidBsp.getWallsSorted(camera.worldX, camera.worldY, walls)
-    for i, wall in enumerate(walls):
-        topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wall, display.width, display.height, i is 0)
-        if topLeft:
-            wallLines = [ topLeft, topRight, bottomRight, bottomLeft]
-            display.drawPolygon(wallLines, wall.drawColor, 0)
+    ## draw floor and ceiling
+    #floor = [
+    #    [0, display.height / 2], [display.width, display.height / 2], [display.width, display.height], [0, display.height]
+    #]
+    #ceiling = [
+    #    [0, 0], [display.width, 0], [display.width, display.height / 2], [0, display.height / 2]
+    #]
+    #display.drawPolygon(floor, (60, 60, 60), 0)
+    #display.drawPolygon(ceiling, (100, 100, 100), 0)
+
+    ## render 3D walls
+    #walls = []
+    #solidBsp.getWallsSorted(camera.worldX, camera.worldY, walls)
+    #for i, wall in enumerate(walls):
+    #    topLeft, topRight, bottomRight, bottomLeft = camera.projectWall(wall, display.width, display.height, i is 0)
+    #    if topLeft:
+    #        wallLines = [ topLeft, topRight, bottomRight, bottomLeft]
+    #        display.drawPolygon(wallLines, wall.drawColor, 0)
 
     # render the top down map
     if mode == 0:
@@ -232,29 +276,29 @@ while True:
                 display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
     if mode == 1:
         solidBsp.drawSegs(display)
-    if mode == 2:
-        solidBsp.drawFaces(display, camera.worldX, camera.worldY)
+    #if mode == 2:
+    #    solidBsp.drawFaces(display, camera.worldX, camera.worldY)
     if mode == 3:
         for wall in walls:
             display.drawLine([wall.start, wall.end], (0, 40, 255), 1)
 
     # render camera pos
-    angleLength = 10
-    dir = [[camera.worldX, camera.worldY], [camera.worldX + math.cos(camera.angle) * angleLength, camera.worldY + math.sin(camera.angle) * angleLength]]
-    display.drawLine(dir, (255, 100, 255), 1)
-    display.drawPoint([camera.worldX, camera.worldY], (255, 255, 255), 2)
+    #angleLength = 10
+    #dir = [[camera.worldX, camera.worldY], [camera.worldX + math.cos(camera.angle) * angleLength, camera.worldY + math.sin(camera.angle) * angleLength]]
+    #display.drawLine(dir, (255, 100, 255), 1)
+    #display.drawPoint([camera.worldX, camera.worldY], (255, 255, 255), 2)
 
     # test our BSP tree
-    inEmpty = solidBsp.inEmpty([camera.worldX, camera.worldY])
-    display.drawPoint([display.width - 20, 20], (0,255,60) if inEmpty else (255, 0, 0), 10)
+    #inEmpty = solidBsp.inEmpty([camera.worldX, camera.worldY])
+    #display.drawPoint([display.width - 20, 20], (0,255,60) if inEmpty else (255, 0, 0), 10)
 
     # render mouse
     # display.drawPoint([mouseX, mouseY], (255,255,255), 2)
 
     # draw our system information
-    text = font.render("collision:{} camera:[{}] m:[{}, {}]".format(collisionDetection, camera, mouseX, mouseY), 1, (50, 50, 50))
-    textpos = text.get_rect(left = 0, centery = display.height - 20)
-    display.drawText(text, textpos)
+    #text = font.render("collision:{} camera:[{}] m:[{}, {}]".format(collisionDetection, camera, mouseX, mouseY), 1, (50, 50, 50))
+    #textpos = text.get_rect(left = 0, centery = display.height - 20)
+    #display.drawText(text, textpos)
 
     display.end()
 

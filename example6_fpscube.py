@@ -168,7 +168,7 @@ def on_s():
 listener.onKeyHold(pygame.K_s, on_s)
 
 pitch = 0
-pitchMax = math.pi/2 - .1 # maximum rotation negative and positive for pitch
+pitchMax = math.pi/2 - .05 # maximum rotation negative and positive for pitch
 def on_mousemove(deltaX, deltaY, mouseX, mouseY):
     global pitch
     bufer = glGetDoublev(GL_MODELVIEW_MATRIX)
