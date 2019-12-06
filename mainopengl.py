@@ -163,12 +163,14 @@ wallTest = allLineDefs[4]
 pygame.init()
 os.environ['SDL_VIDEO_CENTERED'] = '1' # center window on screen
 #display = Display(1920, 1080)
-screen = pygame.display.set_mode((1920,1080), DOUBLEBUF|OPENGL) # build window with opengl
-camera = Camera(75, 1920, 1080) # build camera with projection matrix
-glMatrixMode(GL_PROJECTION)
-gluPerspective(75, (1920/1080), .1, 50)
-glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
-glTranslatef(0.0, 0.0, -5.0) # move shit back
+width = 1920
+height = 1080
+screen = pygame.display.set_mode((width,height), DOUBLEBUF|OPENGL) # build window with opengl
+camera = Camera(75, width, height) # build camera with projection matrix
+#glMatrixMode(GL_PROJECTION)
+#gluPerspective(75, (1920/1080), .1, 50)
+#glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
+#glTranslatef(0.0, 0.0, -5.0) # move shit back
 listener = EventListener()
 
 pygame.mouse.set_visible(False)
@@ -241,33 +243,31 @@ while True:
 
     listener.update()
 
-    width = 1920
-    height = 1080
-
     # RENDER 3D
-    # clear buffer
+    glPushMatrix() # optional
 
-    glPushMatrix()
-
+    # projection
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
     glViewport(0, 0, width, height)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluPerspective(45, (width/height), .1, 50)
+    # models
     glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
     #glTranslatef(0.0, 0.0, -5.0) # move shit back
     Cube()
 
-    glPopMatrix()
+    glPopMatrix() # optional
 
 
     # RENDER 2D - reference this: https://stackoverflow.com/questions/43130842/python-opengl-issues-displaying-2d-graphics-over-a-3d-scene
     glPushMatrix()
 
+    # projection
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluOrtho2D(0.0, width, height, 0.0)
-    ## modelview mode
+    #models
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
