@@ -11,9 +11,6 @@ class Camera(object):
         self.pitch = 0
         self.pitchMax = math.pi/2 - .05 # maximum rotation negative and positive for pitch
 
-        glMatrixMode(GL_PROJECTION)
-        gluPerspective(fov, (screenWidth / screenHeight), nearZ, farZ)
-
     def moveForward(self):
         fwd = self.moveSpeed
         m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()

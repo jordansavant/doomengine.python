@@ -12,18 +12,15 @@ class Display(object):
         self.scale = 1.0
         self.offset = [0, 0]
         self.fullscreen = False
-        pygame.init()
-        self.setModeOpenGL();
 
-    def setModeOpenGL(self):
-        self.screen = pygame.display.set_mode(self.size, DOUBLEBUF|OPENGL)
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+        # init pygame
+        #pygame.init()
 
-    def setModeUI(self):
-        self.screen = pygame.display.set_mode(self.size)
+        # build opengl window
+        #self.screen = pygame.display.set_mode(self.size, DOUBLEBUF|OPENGL)
 
     def start(self):
-        self.screen.fill(self.bg)
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
     def end(self):
         pygame.display.flip()

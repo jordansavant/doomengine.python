@@ -4,6 +4,7 @@ from engine_opengl.eventlistener import EventListener
 from engine_opengl.linedef import LineDef
 from engine_opengl.solidbspnode import SolidBSPNode
 from engine_opengl.camera import Camera
+from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
@@ -159,8 +160,14 @@ wallTest = allLineDefs[4]
 # print(solidBsp.inEmpty(testPoint))
 
 
-display = Display(1920, 1080)
-camera = Camera(75, display.width, display.height)
+pygame.init()
+#display = Display(1920, 1080)
+screen = pygame.display.set_mode((1920,1080), DOUBLEBUF|OPENGL) # build window with opengl
+camera = Camera(75, 1920, 1080) # build camera with projection matrix
+glMatrixMode(GL_PROJECTION)
+gluPerspective(75, (1920/1080), .1, 50)
+glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
+glTranslatef(0.0, 0.0, -5.0) # move shit back
 listener = EventListener()
 
 pygame.mouse.set_visible(False)
@@ -193,23 +200,23 @@ listener.onKeyUp(pygame.K_f, on_f)
 # TODO: normalize simultaneous x and z movement
 def on_a():
     global camera
-    #camera.strafeLeft()
+    camera.strafeLeft()
 listener.onKeyHold(pygame.K_a, on_a)
 def on_d():
     global camera
-    #camera.strafeRight()
+    camera.strafeRight()
 listener.onKeyHold(pygame.K_d, on_d)
 def on_w():
     global camera
-    #camera.moveForward()
+    camera.moveForward()
 listener.onKeyHold(pygame.K_w, on_w)
 def on_s():
     global camera
-    #camera.moveBackward()
+    camera.moveBackward()
 listener.onKeyHold(pygame.K_s, on_s)
 def on_mousemove(deltaX, deltaY, mouseX, mouseY):
     global camera
-    #camera.applyMouseMove(deltaX, deltaY)
+    camera.applyMouseMove(deltaX, deltaY)
 listener.onMouseMove(on_mousemove)
 
 
@@ -230,15 +237,22 @@ def inBoundLine(line, bounds):
     return line2
 
 while True:
+
     listener.update()
 
+    # RENDER 3D
+    # clear buffer
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+    #display.setMode3D()
+    #camera.setProjection()
 
-    display.setModeOpenGL()
     # render cube lines
     Cube()
-    # update display
 
-    display.setModeUI()
+    # update display
+    pygame.display.flip()
+
+    #display.setMode2D()
 
     #display.start()
 
@@ -262,25 +276,25 @@ while True:
     #        display.drawPolygon(wallLines, wall.drawColor, 0)
 
     # render the top down map
-    if mode == 0:
-        for lineDef in allLineDefs:
-            display.drawLine([lineDef.start, lineDef.end], (0, 0, 255), 1)
-            ln = 7
-            mx = lineDef.mid[0]
-            my = lineDef.mid[1]
-            nx = lineDef.normals[lineDef.facing][0] * ln
-            ny = lineDef.normals[lineDef.facing][1] * ln
-            if lineDef.facing == 1:
-                display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (0, 255, 255), 1)
-            else:
-                display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
-    if mode == 1:
-        solidBsp.drawSegs(display)
+    #if mode == 0:
+    #    for lineDef in allLineDefs:
+    #        display.drawLine([lineDef.start, lineDef.end], (0, 0, 255), 1)
+    #        ln = 7
+    #        mx = lineDef.mid[0]
+    #        my = lineDef.mid[1]
+    #        nx = lineDef.normals[lineDef.facing][0] * ln
+    #        ny = lineDef.normals[lineDef.facing][1] * ln
+    #        if lineDef.facing == 1:
+    #            display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (0, 255, 255), 1)
+    #        else:
+    #            display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
+    #if mode == 1:
+    #    solidBsp.drawSegs(display)
     #if mode == 2:
     #    solidBsp.drawFaces(display, camera.worldX, camera.worldY)
-    if mode == 3:
-        for wall in walls:
-            display.drawLine([wall.start, wall.end], (0, 40, 255), 1)
+    #if mode == 3:
+    #    for wall in walls:
+    #        display.drawLine([wall.start, wall.end], (0, 40, 255), 1)
 
     # render camera pos
     #angleLength = 10
@@ -300,6 +314,6 @@ while True:
     #textpos = text.get_rect(left = 0, centery = display.height - 20)
     #display.drawText(text, textpos)
 
-    display.end()
+    #display.end()
 
-    time.sleep(1 / 60)
+    pygame.time.wait(16)
