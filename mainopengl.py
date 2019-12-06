@@ -1,4 +1,4 @@
-import pygame, engine_opengl, math, time
+import pygame, engine_opengl, math, time, os
 from engine_opengl.display import Display
 from engine_opengl.eventlistener import EventListener
 from engine_opengl.linedef import LineDef
@@ -161,6 +161,7 @@ wallTest = allLineDefs[4]
 
 
 pygame.init()
+os.environ['SDL_VIDEO_CENTERED'] = '1' # center window on screen
 #display = Display(1920, 1080)
 screen = pygame.display.set_mode((1920,1080), DOUBLEBUF|OPENGL) # build window with opengl
 camera = Camera(75, 1920, 1080) # build camera with projection matrix
@@ -240,17 +241,48 @@ while True:
 
     listener.update()
 
+    width = 1920
+    height = 1080
+
     # RENDER 3D
     # clear buffer
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
-    #display.setMode3D()
-    #camera.setProjection()
 
-    # render cube lines
+    glPushMatrix()
+
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+    glViewport(0, 0, width, height)
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(45, (width/height), .1, 50)
+    glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
+    #glTranslatef(0.0, 0.0, -5.0) # move shit back
     Cube()
 
+    glPopMatrix()
+
+
+    # RENDER 2D - reference this: https://stackoverflow.com/questions/43130842/python-opengl-issues-displaying-2d-graphics-over-a-3d-scene
+    glPushMatrix()
+
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluOrtho2D(0.0, width, height, 0.0)
+    ## modelview mode
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+
+    glBegin(GL_TRIANGLES)
+    glColor3f(0.0, 1.0, 0.0)
+    glVertex2f(0, 0)
+    glVertex2f(100, 0)
+    glVertex2f(0, 100)
+    glEnd()
+
+    glPopMatrix()
+
     # update display
-    pygame.display.flip()
+    pygame.display.flip() # buffer swap
+
 
     #display.setMode2D()
 
