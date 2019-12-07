@@ -223,6 +223,16 @@ def inBoundLine(line, bounds):
     line2[1][1] += bounds[0][1]
     return line2
 
+def drawMap():
+    # draw map bg
+    glBegin(GL_QUADS)
+    glColor3f(.3, .3, .3)
+    glVertex2f(10, 10)
+    glVertex2f(210, 10)
+    glVertex2f(210, 210)
+    glVertex2f(10, 210)
+    glEnd()
+
 while True:
 
     listener.update()
@@ -239,7 +249,7 @@ while True:
     gluPerspective(45, (width/height), .1, 50)
     # models
     glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
-    #glTranslatef(0.0, 0.0, -5.0) # move shit back
+    #glTranslatef(0.0, 0.0, -0.004) # move shit back
     Cube()
 
     glPopMatrix() # optional
@@ -256,12 +266,8 @@ while True:
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
-    glBegin(GL_TRIANGLES)
-    glColor3f(0.0, 1.0, 0.0)
-    glVertex2f(0, 0)
-    glVertex2f(100, 0)
-    glVertex2f(0, 100)
-    glEnd()
+
+    drawMap()
 
     glPopMatrix()
 

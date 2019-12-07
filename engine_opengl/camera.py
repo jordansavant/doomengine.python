@@ -7,11 +7,16 @@ from OpenGL.GLU import *
 class Camera(object):
 
     def __init__(self, fov, screenWidth, screenHeight, nearZ = .1, farZ = 500.0):
+        # move
         self.moveSpeed = .2
-        self.lookSpeed = .2
+        self.moveDir = [0, 0] # x,y or strafe/fwd
+        # look
         self.pitch = 0
         self.pitchMax = math.pi/2 - .05 # maximum rotation negative and positive for pitch
-        self.moveDir = [0, 0] # x,y or strafe/fwd
+        self.pitchDelta = 0
+        self.yaw = 0
+        self.yawDelta = 0
+        self.lookSpeed = .2
 
     def moveForward(self):
         self.moveDir[1] = 1
@@ -26,31 +31,8 @@ class Camera(object):
         self.moveDir[0] = -1
 
     def applyMouseMove(self, deltaX, deltaY, screenX, screenY):
-        bufer = glGetDoublev(GL_MODELVIEW_MATRIX)
-        c = (-1 * numpy.mat(bufer[:3,:3]) * \
-            numpy.mat(bufer[3,:3]).T).reshape(3,1)
-        # c is camera center in absolute coordinates,
-        # we need to move it back to (0,0,0)
-        # before rotating the camera
-        glTranslate(c[0],c[1],c[2])
-        m = bufer.flatten()
-
-        # yaw in y axis unlimited
-        glRotate(deltaX * self.lookSpeed, m[1], m[5], m[9])
-
-        # pitch in x axis should be limited to -90 and +90 degrees
-        pitchdeltaDegrees = deltaY * self.lookSpeed
-        pitchdeltaRadians = pitchdeltaDegrees * math.pi / 180
-        newPitch = self.pitch + pitchdeltaRadians
-        if newPitch < self.pitchMax and newPitch > -self.pitchMax:
-            self.pitch = newPitch
-            glRotate(pitchdeltaDegrees, m[0], m[4], m[8])
-
-        # compensate roll (not sure what this does yet)
-        glRotated(-math.atan2(-m[4],m[5]) * \
-            57.295779513082320876798154814105 ,m[2],m[6],m[10])
-        # reset translation back to where we were
-        glTranslate(-c[0],-c[1],-c[2])
+        self.yawDelta = deltaX
+        self.pitchDelta = deltaY
 
     def update(self):
 
@@ -64,8 +46,39 @@ class Camera(object):
         if self.moveDir[1] != 0:
             fwd = self.moveDir[1] * self.moveSpeed
             m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
-            glTranslate(fwd*m[2],fwd*m[6],fwd*m[10])
+            glTranslate(fwd * m[2], fwd * m[6], fwd * m[10])
             self.moveDir[1] = 0
+        if self.yawDelta != 0 or self.pitchDelta != 0:
+            yawDeltaDegrees = self.yawDelta * self.lookSpeed
+            yawDeltaRadians = yawDeltaDegrees * math.pi / 180
+            pitchDeltaDegrees = self.pitchDelta * self.lookSpeed
+            pitchDeltaRadians = pitchDeltaDegrees * math.pi / 180
+
+            M = glGetDoublev(GL_MODELVIEW_MATRIX)
+            c = (-1 * numpy.mat(M[:3,:3]) * \
+                numpy.mat(M[3,:3]).T).reshape(3,1)
+            # c is camera center in absolute coordinates,
+            # we need to move it back to (0,0,0)
+            # before rotating the camera
+            glTranslate(c[0],c[1],c[2])
+            m = M.flatten()
+            # yaw in y axis unlimited
+            glRotate(yawDeltaDegrees, m[1], m[5], m[9])
+            self.yaw += pitchDeltaRadians
+
+            # pitch in x axis should be limited to -90 and +90 degrees
+            newPitch = self.pitch + pitchDeltaRadians
+            if newPitch < self.pitchMax and newPitch > -self.pitchMax:
+                self.pitch = newPitch
+                glRotate(pitchDeltaDegrees, m[0], m[4], m[8])
+
+            # compensate roll (not sure what this does yet)
+            glRotated(-math.atan2(-m[4],m[5]) * 57.295779513082320876798154814105, m[2], m[6], m[10])
+            # reset translation back to where we were
+            glTranslate(-c[0],-c[1],-c[2])
+
+            self.yawDelta = 0
+            self.pitchDelta = 0
 
 
     def __str__(self):
