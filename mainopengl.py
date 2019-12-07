@@ -1,5 +1,4 @@
-import pygame, engine_opengl, math, time, os
-from engine_opengl.display import Display
+import pygame, engine_opengl, math, os
 from engine_opengl.eventlistener import EventListener
 from engine_opengl.linedef import LineDef
 from engine_opengl.solidbspnode import SolidBSPNode
@@ -9,6 +8,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 
+# CUBE DATA
 vertices= (
     (1, -1, -1),
     (1, 1, -1),
@@ -19,7 +19,6 @@ vertices= (
     (-1, -1, 1),
     (-1, 1, 1)
 )
-
 # maps how to connected vertices
 edges = (
     (0,1),
@@ -35,7 +34,6 @@ edges = (
     (5,4),
     (5,7)
 )
-
 # rgb in float 0-1 values
 colors = (
     (1,0,0), #r
@@ -51,7 +49,6 @@ colors = (
     (1,1,1), #wh
     (0,1,1), #cy
 )
-
 # surfaces are groups of vertices
 # indexes to the vertices list
 surfaces = (
@@ -64,7 +61,6 @@ surfaces = (
 )
 
 def Cube(x, y, z):
-
     # render colored surfaces as quads
     glBegin(GL_QUADS)
     for surface in surfaces:
@@ -86,7 +82,7 @@ def Cube(x, y, z):
             #glVertex3fv(vertices[vertex])
     glEnd()
 
-
+# MAP ROOMS
 # Lines, each vertex connects to the next one in CW fashion
 # third element is direction its facing, when CW facing 1 = left
 polygons = [
@@ -116,11 +112,6 @@ polygons = [
     ]
 ]
 
-# Line Defs built Clockwise
-minLineX = None
-minLineY = None
-maxLineX = None
-minLineX = None
 allLineDefs = []
 for i, v in enumerate(polygons):
     polygon = polygons[i]
@@ -149,25 +140,7 @@ for i, v in enumerate(polygons):
 solidBsp = SolidBSPNode(allLineDefs)
 #print(solidBsp.toText())
 
-# TESTING WALL DRAWING
-wallTest = allLineDefs[4]
-# camPoint = [90, 150]
-# camDirRads = 0
-# camDir = engine.mathdef.toVector(camDirRads)
-#camera = Camera()
-#camera.worldX = 150
-#camera.worldY = 60
-#camera.angle = -math.pi/2
-
-
-# testPoint = [60, 20]
-# for lineDef in allLineDefs:
-#     isBehind = lineDef.isPointBehind(testPoint[0], testPoint[1])
-#     print(lineDef.start, lineDef.end, lineDef.facing, isBehind)
-# print(solidBsp.inEmpty(testPoint))
-
-
-
+# GAME SETUP
 pygame.init()
 
 # get os resolution
@@ -185,17 +158,16 @@ os.environ['SDL_VIDEO_CENTERED'] = '1' # center window on screen
 screen = pygame.display.set_mode((width, height), DOUBLEBUF|OPENGL) # build window with opengl
 pygame.mouse.set_visible(False)
 pygame.event.set_grab(True)
-camera = Camera()
 glEnable(GL_BLEND);
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+font = pygame.font.Font(None, 36)
+listener = EventListener()
+camera = Camera()
 
 #glMatrixMode(GL_PROJECTION)
 #gluPerspective(75, (1920/1080), .1, 50)
 #glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
 #glTranslatef(0.0, 0.0, -5.0) # move shit back
-listener = EventListener()
-
-font = pygame.font.Font(None, 36)
 
 # render mode ops
 mode = 0
@@ -243,22 +215,6 @@ listener.onKeyHold(pygame.K_s, camera.moveBackward)
 listener.onMouseMove(camera.applyMouseMove)
 
 
-def inBoundPoint(point, bounds):
-    point2 = point.copy()
-    point2[0] += bounds[0][0]
-    point2[1] += bounds[0][1]
-    return point2
-
-def inBoundLine(line, bounds):
-    line2 = []
-    line2.append(line[0].copy())
-    line2.append(line[1].copy())
-    line2[0][0] += bounds[0][0]
-    line2[0][1] += bounds[0][1]
-    line2[1][0] += bounds[0][0]
-    line2[1][1] += bounds[0][1]
-    return line2
-
 def drawLine(start, end, width, r, g, b, a):
     glLineWidth(width)
     glColor4f(r, g, b, a)
@@ -279,7 +235,6 @@ def drawPoint(pos, radius, r, g, b, a):
     glEnd()
 
 def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs):
-
     # draw map bg
     glBegin(GL_QUADS)
     glColor4f(0, 0, 0, .6)
@@ -316,8 +271,6 @@ def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs):
     camNeedle = [camOrigin[0] + math.cos(camera.yaw) * angleLength, camOrigin[1] + math.sin(camera.yaw) * angleLength]
     drawLine(camOrigin, camNeedle, 1, 1, .5, 1, 1)
     drawPoint(camOrigin, 2, 1, 1, 1, 1)
-    #display.drawLine(dir, (255, 100, 255), 1)
-    #display.drawPoint([camera.worldX, camera.worldY], (255, 255, 255), 2)
 
 while True:
 
@@ -326,7 +279,7 @@ while True:
     camera.update()
 
     # RENDER 3D
-    glPushMatrix() # optional
+    glPushMatrix()
 
     # projection
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
@@ -341,7 +294,7 @@ while True:
     Cube(0, 0, 10)
     Cube(3, -3, 15)
 
-    glPopMatrix() # optional
+    glPopMatrix()
 
 
     # RENDER 2D - reference this: https://stackoverflow.com/questions/43130842/python-opengl-issues-displaying-2d-graphics-over-a-3d-scene
@@ -351,7 +304,7 @@ while True:
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluOrtho2D(0.0, width, height, 0.0)
-    #models
+    # models
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
@@ -362,11 +315,9 @@ while True:
     # update display
     pygame.display.flip() # buffer swap
 
+    pygame.time.wait(16) # dinky 60fps
 
-    #display.setMode2D()
-
-    #display.start()
-
+    # OLD RENDERING
     ## draw floor and ceiling
     #floor = [
     #    [0, display.height / 2], [display.width, display.height / 2], [display.width, display.height], [0, display.height]
@@ -427,4 +378,4 @@ while True:
 
     #display.end()
 
-    pygame.time.wait(16)
+    #pygame.time.wait(16)
