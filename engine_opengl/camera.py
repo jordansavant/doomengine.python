@@ -10,26 +10,19 @@ class Camera(object):
         self.lookSpeed = .2
         self.pitch = 0
         self.pitchMax = math.pi/2 - .05 # maximum rotation negative and positive for pitch
+        self.moveDir = [0, 0] # x,y or strafe/fwd
 
     def moveForward(self):
-        fwd = self.moveSpeed
-        m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
-        glTranslate(fwd*m[2],fwd*m[6],fwd*m[10])
+        self.moveDir[1] = 1
 
     def moveBackward(self):
-        fwd = -self.moveSpeed
-        m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
-        glTranslate(fwd*m[2],fwd*m[6],fwd*m[10])
+        self.moveDir[1] = -1
 
     def strafeLeft(self):
-        strafe = self.moveSpeed
-        m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
-        glTranslate(strafe*m[0],strafe*m[4],strafe*m[8])
+        self.moveDir[0] = 1
 
     def strafeRight(self):
-        strafe = -self.moveSpeed
-        m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
-        glTranslate(strafe*m[0],strafe*m[4],strafe*m[8])
+        self.moveDir[0] = -1
 
     def applyMouseMove(self, deltaX, deltaY):
         bufer = glGetDoublev(GL_MODELVIEW_MATRIX)
@@ -57,6 +50,20 @@ class Camera(object):
             57.295779513082320876798154814105 ,m[2],m[6],m[10])
         # reset translation back to where we were
         glTranslate(-c[0],-c[1],-c[2])
+
+    def update(self):
+
+        if self.moveDir[0] != 0:
+            strafe = self.moveDir[0] * self.moveSpeed
+            m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
+            glTranslate(strafe * m[0], strafe * m[4], strafe * m[8])
+            self.moveDir[0] = 0
+        if self.moveDir[1] != 0:
+            fwd = self.moveDir[1] * self.moveSpeed
+            m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
+            glTranslate(fwd*m[2],fwd*m[6],fwd*m[10])
+            self.moveDir[1] = 0
+
 
     def __str__(self):
         return "{},{}".format((int)(self.worldX), (int)(self.worldY))

@@ -201,22 +201,10 @@ listener.onKeyUp(pygame.K_f, on_f)
 
 # move controls
 # TODO: normalize simultaneous x and z movement
-def on_a():
-    global camera
-    camera.strafeLeft()
-listener.onKeyHold(pygame.K_a, on_a)
-def on_d():
-    global camera
-    camera.strafeRight()
-listener.onKeyHold(pygame.K_d, on_d)
-def on_w():
-    global camera
-    camera.moveForward()
-listener.onKeyHold(pygame.K_w, on_w)
-def on_s():
-    global camera
-    camera.moveBackward()
-listener.onKeyHold(pygame.K_s, on_s)
+listener.onKeyHold(pygame.K_a, camera.strafeLeft)
+listener.onKeyHold(pygame.K_d, camera.strafeRight)
+listener.onKeyHold(pygame.K_w, camera.moveForward)
+listener.onKeyHold(pygame.K_s, camera.moveBackward)
 def on_mousemove(deltaX, deltaY, mouseX, mouseY):
     global camera
     camera.applyMouseMove(deltaX, deltaY)
@@ -242,6 +230,7 @@ def inBoundLine(line, bounds):
 while True:
 
     listener.update()
+    camera.update()
 
     # RENDER 3D
     glPushMatrix() # optional
