@@ -272,12 +272,11 @@ def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs):
     drawLine(camOrigin, camNeedle, 1, 1, .5, 1, 1)
     drawPoint(camOrigin, 2, 1, 1, 1, 1)
 
-while True:
-
+def update():
     listener.update()
-
     camera.update()
 
+def draw():
     # RENDER 3D
     glPushMatrix()
 
@@ -295,6 +294,7 @@ while True:
     Cube(3, -3, 15)
 
     glPopMatrix()
+    # END 3D
 
 
     # RENDER 2D - reference this: https://stackoverflow.com/questions/43130842/python-opengl-issues-displaying-2d-graphics-over-a-3d-scene
@@ -311,9 +311,16 @@ while True:
     drawMap(10, 10, 400, 300, mode, camera, allLineDefs)
 
     glPopMatrix()
+    # END 2D
 
     # update display
     pygame.display.flip() # buffer swap
+
+while True:
+
+    update()
+
+    draw()
 
     pygame.time.wait(16) # dinky 60fps
 

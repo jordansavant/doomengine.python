@@ -24,14 +24,14 @@ class LineDef(object):
         self.facing = facing
         self.height = height
         self.setup()
-    
+
     def asChild(self, preLineDef, endX, endY, facing, height):
         self.start = [preLineDef.end[0], preLineDef.end[1]]
         self.end = [endX, endY]
         self.facing = facing
         self.height = height
         self.setup()
-    
+
     def asLeaf(self, preLineDef, rootLineDef, facing, height):
         self.start = [preLineDef.end[0], preLineDef.end[1]]
         self.end = [rootLineDef.start[0], rootLineDef.start[1]]
@@ -47,7 +47,7 @@ class LineDef(object):
         # (a.x+b.x)/2,(a.y+b.y)/2
         self.mid.append((self.start[0] + self.end[0]) / 2)
         self.mid.append((self.start[1] + self.end[1]) / 2)
-    
+
     def setNormals(self):
         dx = self.end[0] - self.start[0]
         dy = self.end[1] - self.start[1]
