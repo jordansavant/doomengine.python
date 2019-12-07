@@ -6,10 +6,11 @@ from OpenGL.GLU import *
 
 class Camera(object):
 
-    def __init__(self, fov, screenWidth, screenHeight, nearZ = .1, farZ = 500.0):
+    def __init__(self):
         # move
         self.moveSpeed = .2
         self.moveDir = [0, 0] # x,y or strafe/fwd
+        self.worldPos = [0, 0, 0] # x, y, z
         # look
         self.lookSpeed = .2
         self.pitch = 0
@@ -43,11 +44,13 @@ class Camera(object):
             m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
             glTranslate(strafe * m[0], strafe * m[4], strafe * m[8])
             self.moveDir[0] = 0
+            self.worldPos[0] += strafe # x
         if self.moveDir[1] != 0:
             fwd = self.moveDir[1] * self.moveSpeed
             m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
             glTranslate(fwd * m[2], fwd * m[6], fwd * m[10])
             self.moveDir[1] = 0
+            self.worldPos[2] += fwd # z
         # look
         if self.yawDelta != 0 or self.pitchDelta != 0:
             yawDeltaDegrees = self.yawDelta * self.lookSpeed
@@ -80,6 +83,8 @@ class Camera(object):
             self.yawDelta = 0
             self.pitchDelta = 0
 
+        # get world position
+        m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
 
     def __str__(self):
         return "{},{}".format((int)(self.worldX), (int)(self.worldY))

@@ -167,23 +167,32 @@ wallTest = allLineDefs[4]
 # print(solidBsp.inEmpty(testPoint))
 
 
+
 pygame.init()
+
+# get os resolution
+displayInfo = pygame.display.Info()
+resolutionWidth = displayInfo.current_w
+resolutionHeight = displayInfo.current_h
+
+# start with this resolution in windowed
+targetWidth = 1280
+targetHeight = 720
+width = targetWidth
+height = targetHeight
+
 os.environ['SDL_VIDEO_CENTERED'] = '1' # center window on screen
-#display = Display(1920, 1080)
-width = 1920
-height = 1080
-screen = pygame.display.set_mode((width,height), DOUBLEBUF|OPENGL) # build window with opengl
-camera = Camera(75, width, height) # build camera with projection matrix
+screen = pygame.display.set_mode((width, height), DOUBLEBUF|OPENGL) # build window with opengl
+camera = Camera()
 glEnable(GL_BLEND);
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 #glMatrixMode(GL_PROJECTION)
 #gluPerspective(75, (1920/1080), .1, 50)
 #glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
 #glTranslatef(0.0, 0.0, -5.0) # move shit back
 listener = EventListener()
 
-pygame.mouse.set_visible(False)
-pygame.event.set_grab(True)
 font = pygame.font.Font(None, 36)
 
 # render mode ops
@@ -204,8 +213,20 @@ def on_x():
     collisionDetection = not collisionDetection
 listener.onKeyUp(pygame.K_x, on_x)
 def on_f():
-    global display
-    display.toggleFullscreen()
+    global fullscreen, screen, width, height
+    global resolutionWidth, resolutionHeight, targetWidth, targetHeight
+    fullscreen = not fullscreen
+    # get world model matrix
+    m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
+    if fullscreen:
+        width, height = resolutionWidth, resolutionHeight
+        screen = pygame.display.set_mode((width,height), DOUBLEBUF|OPENGL|FULLSCREEN) # build window with opengl
+    else:
+        width, height = targetWidth, targetHeight
+        screen = pygame.display.set_mode((width,height), DOUBLEBUF|OPENGL) # build window with opengl
+    pygame.mouse.set_visible(not fullscreen)
+    pygame.event.set_grab(fullscreen)
+    glLoadMatrixf(m)
 listener.onKeyUp(pygame.K_f, on_f)
 
 # move controls
@@ -251,6 +272,7 @@ def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs):
     glVertex2f(offsetX, height + offsetY)
     glEnd()
 
+    # wall lines
     if mode == 0:
         for lineDef in allLineDefs:
             drawLine(lineDef.start, lineDef.end, 1, 0.0, 0.0, 1.0, 1.0)
@@ -270,6 +292,14 @@ def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs):
     #if mode == 3:
     #    for wall in walls:
     #        display.drawLine([wall.start, wall.end], (0, 40, 255), 1)
+
+    # camera
+    angleLength = 10
+    camOrigin = [camera.worldPos[2], camera.worldPos[0]]
+    camNeedle = [camera.worldPos[2] + math.cos(camera.yaw) * angleLength, camera.worldPos[0] + math.sin(camera.yaw) * angleLength]
+    drawLine(camOrigin, camNeedle, 1, 1, .5, 1, 1)
+    #display.drawLine(dir, (255, 100, 255), 1)
+    #display.drawPoint([camera.worldX, camera.worldY], (255, 255, 255), 2)
 
 while True:
 
