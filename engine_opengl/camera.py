@@ -11,12 +11,12 @@ class Camera(object):
         self.moveSpeed = .2
         self.moveDir = [0, 0] # x,y or strafe/fwd
         # look
+        self.lookSpeed = .2
         self.pitch = 0
         self.pitchMax = math.pi/2 - .05 # maximum rotation negative and positive for pitch
         self.pitchDelta = 0
         self.yaw = 0
         self.yawDelta = 0
-        self.lookSpeed = .2
 
     def moveForward(self):
         self.moveDir[1] = 1
@@ -48,6 +48,7 @@ class Camera(object):
             m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
             glTranslate(fwd * m[2], fwd * m[6], fwd * m[10])
             self.moveDir[1] = 0
+        # look
         if self.yawDelta != 0 or self.pitchDelta != 0:
             yawDeltaDegrees = self.yawDelta * self.lookSpeed
             yawDeltaRadians = yawDeltaDegrees * math.pi / 180
@@ -55,8 +56,7 @@ class Camera(object):
             pitchDeltaRadians = pitchDeltaDegrees * math.pi / 180
 
             M = glGetDoublev(GL_MODELVIEW_MATRIX)
-            c = (-1 * numpy.mat(M[:3,:3]) * \
-                numpy.mat(M[3,:3]).T).reshape(3,1)
+            c = (-1 * numpy.mat(M[:3,:3]) * numpy.mat(M[3,:3]).T).reshape(3,1)
             # c is camera center in absolute coordinates,
             # we need to move it back to (0,0,0)
             # before rotating the camera

@@ -63,23 +63,27 @@ surfaces = (
     (4,0,3,6)
 )
 
-def Cube():
+def Cube(x, y, z):
 
     # render colored surfaces as quads
     glBegin(GL_QUADS)
     for surface in surfaces:
-        x = 0
+        i = 0
         for vertex in surface:
-            x+=1
-            glColor3fv(colors[x])
-            glVertex3fv(vertices[vertex])
+            i+=1
+            v = vertices[vertex]
+            glColor3fv(colors[i])
+            glVertex3f(v[0] - x, v[1] - y, v[2] - z)
+            #glVertex3fv(vertices[vertex])
     glEnd()
 
     # render lines between vertices
     glBegin(GL_LINES)
     for edge in edges:
         for vertex in edge:
-            glVertex3fv(vertices[vertex])
+            v = vertices[vertex]
+            glVertex3f(v[0] - x, v[1] - y, v[2] - z)
+            #glVertex3fv(vertices[vertex])
     glEnd()
 
 
@@ -249,8 +253,10 @@ while True:
     gluPerspective(45, (width/height), .1, 50)
     # models
     glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
-    #glTranslatef(0.0, 0.0, -0.004) # move shit back
-    Cube()
+
+    Cube(-3, 3, 5)
+    Cube(0, 0, 10)
+    Cube(3, -3, 15)
 
     glPopMatrix() # optional
 
@@ -265,7 +271,6 @@ while True:
     #models
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-
 
     drawMap()
 
