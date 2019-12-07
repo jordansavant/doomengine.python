@@ -44,13 +44,11 @@ class Camera(object):
             m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
             glTranslate(strafe * m[0], strafe * m[4], strafe * m[8])
             self.moveDir[0] = 0
-            self.worldPos[0] += strafe # x
         if self.moveDir[1] != 0:
             fwd = self.moveDir[1] * self.moveSpeed
             m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
             glTranslate(fwd * m[2], fwd * m[6], fwd * m[10])
             self.moveDir[1] = 0
-            self.worldPos[2] += fwd # z
         # look
         if self.yawDelta != 0 or self.pitchDelta != 0:
             yawDeltaDegrees = self.yawDelta * self.lookSpeed
@@ -59,11 +57,11 @@ class Camera(object):
             pitchDeltaRadians = pitchDeltaDegrees * math.pi / 180
 
             M = glGetDoublev(GL_MODELVIEW_MATRIX)
-            c = (-1 * numpy.mat(M[:3,:3]) * numpy.mat(M[3,:3]).T).reshape(3,1)
-            # c is camera center in absolute coordinates,
+            c = (numpy.mat(M[:3,:3]) * numpy.mat(M[3,:3]).T).reshape(3,1)
+            # c is camera center in absolute coordinates (world pos)
             # we need to move it back to (0,0,0)
             # before rotating the camera
-            glTranslate(c[0],c[1],c[2])
+            glTranslate(-c[0], -c[1], -c[2])
             m = M.flatten()
             # yaw in y axis unlimited
             glRotate(yawDeltaDegrees, m[1], m[5], m[9])
@@ -78,13 +76,18 @@ class Camera(object):
             # compensate roll (not sure what this does yet)
             glRotated(-math.atan2(-m[4],m[5]) * 57.295779513082320876798154814105, m[2], m[6], m[10])
             # reset translation back to where we were
-            glTranslate(-c[0],-c[1],-c[2])
+            glTranslate(c[0], c[1], c[2])
 
             self.yawDelta = 0
             self.pitchDelta = 0
 
-        # get world position
-        m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
+        # get and set world position
+        M = glGetDoublev(GL_MODELVIEW_MATRIX)
+        C = (numpy.mat(M[:3,:3]) * numpy.mat(M[3,:3]).T).reshape(3,1).tolist()
+        self.worldPos = [C[0][0], C[1][0], C[2][0]]
+
+    def getYawRadians(self):
+        return self.yaw
 
     def __str__(self):
         return "{},{}".format((int)(self.worldX), (int)(self.worldY))
