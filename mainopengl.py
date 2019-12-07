@@ -117,6 +117,10 @@ polygons = [
 ]
 
 # Line Defs built Clockwise
+minLineX = None
+minLineY = None
+maxLineX = None
+minLineX = None
 allLineDefs = []
 for i, v in enumerate(polygons):
     polygon = polygons[i]
@@ -145,7 +149,6 @@ for i, v in enumerate(polygons):
 solidBsp = SolidBSPNode(allLineDefs)
 #print(solidBsp.toText())
 
-
 # TESTING WALL DRAWING
 wallTest = allLineDefs[4]
 # camPoint = [90, 150]
@@ -171,6 +174,8 @@ width = 1920
 height = 1080
 screen = pygame.display.set_mode((width,height), DOUBLEBUF|OPENGL) # build window with opengl
 camera = Camera(75, width, height) # build camera with projection matrix
+glEnable(GL_BLEND);
+glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 #glMatrixMode(GL_PROJECTION)
 #gluPerspective(75, (1920/1080), .1, 50)
 #glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
@@ -227,19 +232,63 @@ def inBoundLine(line, bounds):
     line2[1][1] += bounds[0][1]
     return line2
 
-def drawMap():
+def drawLine(start, end, r, g, b, a):
+    glBegin(GL_LINES)
+    glColor4f(r, g, b, a)
+    glVertex2f(start[0], start[1])
+    glVertex2f(end[0], end[1])
+    glEnd()
+
+def drawMap(offsetX, offsetY, width, height):
+    global allLineDefs
+    global camera
+
     # draw map bg
     glBegin(GL_QUADS)
-    glColor3f(.3, .3, .3)
-    glVertex2f(10, 10)
-    glVertex2f(210, 10)
-    glVertex2f(210, 210)
-    glVertex2f(10, 210)
+    glColor4f(0, 0, 0, .6)
+    glVertex2f(offsetX, offsetY)
+    glVertex2f(width + offsetX, offsetY)
+    glVertex2f(width + offsetX, height + offsetY)
+    glVertex2f(offsetX, height + offsetY)
     glEnd()
+
+    for lineDef in allLineDefs:
+        drawLine(lineDef.start, lineDef.end, 0.0, 0.0, 1.0, 1.0)
+        #display.drawLine([lineDef.start, lineDef.end], (0, 0, 255), 1)
+        ln = 7
+        mx = lineDef.mid[0]
+        my = lineDef.mid[1]
+        nx = lineDef.normals[lineDef.facing][0] * ln
+        ny = lineDef.normals[lineDef.facing][1] * ln
+        #if lineDef.facing == 1:
+        #    display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (0, 255, 255), 1)
+        #else:
+        #    display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
+
+    #if mode == 0:
+    #    for lineDef in allLineDefs:
+    #        display.drawLine([lineDef.start, lineDef.end], (0, 0, 255), 1)
+    #        ln = 7
+    #        mx = lineDef.mid[0]
+    #        my = lineDef.mid[1]
+    #        nx = lineDef.normals[lineDef.facing][0] * ln
+    #        ny = lineDef.normals[lineDef.facing][1] * ln
+    #        if lineDef.facing == 1:
+    #            display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (0, 255, 255), 1)
+    #        else:
+    #            display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
+    #if mode == 1:
+    #    solidBsp.drawSegs(display)
+    #if mode == 2:
+    #    solidBsp.drawFaces(display, camera.worldX, camera.worldY)
+    #if mode == 3:
+    #    for wall in walls:
+    #        display.drawLine([wall.start, wall.end], (0, 40, 255), 1)
 
 while True:
 
     listener.update()
+
     camera.update()
 
     # RENDER 3D
@@ -272,7 +321,7 @@ while True:
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
-    drawMap()
+    drawMap(10, 10, 400, 300)
 
     glPopMatrix()
 
