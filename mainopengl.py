@@ -88,7 +88,7 @@ def Cube(x, y, z):
 polygons = [
     # open room
     [
-        # x, y, facing, height
+        # x, z, facing, height (y)
         [30,  30, 0, 10],
         [300, 20, 0, 10],
         [400, 300, 0, 10],
@@ -96,7 +96,7 @@ polygons = [
     ],
     # inner col
     [
-        # x, y, facing
+        # x, z, facing, height (y)
         [50,  50, 1, 5],
         [100, 50, 1, 5],
         [75,  75, 1, 5],
@@ -105,6 +105,7 @@ polygons = [
     ],
     # inner room
     [
+        # x, z, facing, height (y)
         [55, 55, 0, 5],
         [70, 55, 0, 5],
         [70, 95, 0, 5],
@@ -138,7 +139,7 @@ for i, v in enumerate(polygons):
             allLineDefs.append(lineDef)
 
 solidBsp = SolidBSPNode(allLineDefs)
-#print(solidBsp.toText())
+print(solidBsp.toText())
 
 # GAME SETUP
 pygame.init()
@@ -234,7 +235,7 @@ def drawPoint(pos, radius, r, g, b, a):
         glVertex2f(x2, y2);
     glEnd()
 
-def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs):
+def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs, walls):
     # draw map bg
     glBegin(GL_QUADS)
     glColor4f(0, 0, 0, .6)
@@ -245,30 +246,42 @@ def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs):
     glEnd()
 
     # wall lines
+    # walls are position in with start and in in the x and z coordinates
+    # we want to render forward Z with -Y
+    # we want to render left X with -X
+    # we want to render their z along the maps x axis and their x along the y axis
     if mode == 0:
         for lineDef in allLineDefs:
-            drawLine(lineDef.start, lineDef.end, 1, 0.0, 0.0, 1.0, 1.0)
+            # draw wall
+            mapStart = [lineDef.start[0] + offsetX, lineDef.start[1] + offsetY]
+            mapEnd = [lineDef.end[0] + offsetX, lineDef.end[1] + offsetY]
+            drawLine(mapStart, mapEnd, 1, 0.0, 0.0, 1.0, 1.0)
+            # draw facing dir
             ln = 7
             mx = lineDef.mid[0]
             my = lineDef.mid[1]
             nx = lineDef.normals[lineDef.facing][0] * ln
             ny = lineDef.normals[lineDef.facing][1] * ln
             if lineDef.facing == 1:
-                drawLine([mx, my], [mx + nx, my + ny], 2, 0.0, 1.0, 1.0, 1.0)
+                drawLine([mx + offsetX, my + offsetY], [mx + nx + offsetX, my + ny + offsetY], 2, 0.0, 1.0, 1.0, 1.0)
             else:
-                drawLine([mx, my], [mx + nx, my + ny], 2, 1.0, 0.0, 1.0, 1.0)
-    #if mode == 1:
-    #    solidBsp.drawSegs(display)
-    #if mode == 2:
-    #    solidBsp.drawFaces(display, camera.worldX, camera.worldY)
-    #if mode == 3:
-    #    for wall in walls:
-    #        display.drawLine([wall.start, wall.end], (0, 40, 255), 1)
+                drawLine([mx + offsetX, my + offsetY], [mx + nx + offsetX, my + ny + offsetY], 2, 1.0, 0.0, 1.0, 1.0)
+    if mode == 1:
+        solidBsp.drawSegs(drawLine, offsetX, offsetY)
+    if mode == 2:
+        solidBsp.drawFaces(drawLine, camera.worldPos[0], camera.worldPos[2], offsetX, offsetY)
+    if mode == 3:
+        for wall in walls:
+            start = [wall.start[0] + offsetX, wall.start[1] + offsetY];
+            end = [wall.end[0] + offsetX, wall.end[1] + offsetY];
+            drawLine(start, end, 1, 0, .3, 1, 1)
+            #display.drawLine([start, end], (0, 40, 255), 1)
 
     # camera
     angleLength = 10
-    camOrigin = [camera.worldPos[2], -camera.worldPos[0]] # make -z in world on mapX, and x in world on mapY
-    camNeedle = [camOrigin[0] + math.cos(camera.yaw) * angleLength, camOrigin[1] + math.sin(camera.yaw) * angleLength]
+    camOrigin = [camera.worldPos[0] + offsetX, camera.worldPos[2] + offsetY] # mapX is worldX, mapY is worldZ
+    camNeedle = [camOrigin[0] + math.cos(camera.yaw + math.pi/2) * angleLength, camOrigin[1] + math.sin(camera.yaw + math.pi/2) * angleLength]
+    # yaw at 0 is straight down the positive z, which is down mapY
     drawLine(camOrigin, camNeedle, 1, 1, .5, 1, 1)
     drawPoint(camOrigin, 2, 1, 1, 1, 1)
 
@@ -277,6 +290,10 @@ def update():
     camera.update()
 
 def draw():
+    # sort walls around camera x and z
+    walls = []
+    solidBsp.getWallsSorted(camera.worldPos[0], camera.worldPos[2], walls)
+
     # RENDER 3D
     glPushMatrix()
 
@@ -308,7 +325,7 @@ def draw():
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
-    drawMap(10, 10, 400, 300, mode, camera, allLineDefs)
+    drawMap(20, 20, 400, 300, mode, camera, allLineDefs, walls)
 
     glPopMatrix()
     # END 2D

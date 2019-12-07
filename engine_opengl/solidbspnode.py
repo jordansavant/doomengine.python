@@ -1,5 +1,4 @@
-from engine import linedef
-from engine import display
+from engine_opengl import linedef
 
 class SolidBSPNode(object):
     def __init__(self, lineDefs):
@@ -23,7 +22,7 @@ class SolidBSPNode(object):
             # skip splitter self check
             if lineDef != self.splitter:
                 d = self.classifyLine(self.splitter, lineDef)
-                
+
                 if d == 1:
                     # Behind
                     backList.append(lineDef)
@@ -36,7 +35,7 @@ class SolidBSPNode(object):
                     splits = self.splitLine(self.splitter, lineDef)
                     backList.append(splits[0])
                     frontList.append(splits[1])
-        
+
         # all lines have been split and put into front or back list
         if len(frontList) == 0:
             # create an empty leaf node
@@ -46,7 +45,7 @@ class SolidBSPNode(object):
         else:
             # create our recursive front
             self.front = SolidBSPNode(frontList)
-        
+
         if len(backList) == 0:
             # create a solid back node
             self.back = SolidBSPNode([])
@@ -137,40 +136,54 @@ class SolidBSPNode(object):
         if self.back:
             self.back.drawWalls(camera, display, depth + 1)
 
-    def drawSegs(self, display, depth = 0):
+    def drawSegs(self, drawLineFunc, offX, offY, depth = 0):
         # draw self
         if self.isLeaf == False:
-            
+
             ln = 4
             mx = self.splitter.mid[0]
-            my = self.splitter.mid[1]
+            mz = self.splitter.mid[1]
             nx = self.splitter.normals[self.splitter.facing][0] * ln
-            ny = self.splitter.normals[self.splitter.facing][1] * ln
+            nz = self.splitter.normals[self.splitter.facing][1] * ln
             if self.splitter.facing == 1:
-                display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (0, 255, 255), 1)
+                drawLineFunc([mx + offX, mz + offY], [mx + nx + offX, mz + nz + offY], 1, 0, 1, 1, 1)
+                #display.drawLine([ [mx, mz] , [mx + nx, mz + nz] ], (0, 255, 255), 1)
             else:
-                display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
-            
-            display.drawLine([self.splitter.start, self.splitter.end], self.splitter.drawColor, 1)
+                drawLineFunc([mx + offX, mz + offY], [mx + nx + offX, mz + nz + offY], 1, 1, 0, 1, 1)
+                #display.drawLine([ [mx, mz] , [mx + nx, mz + nz] ], (255, 0, 255), 1)
+
+            r = self.splitter.drawColor[0] / 255
+            g = self.splitter.drawColor[1] / 255
+            b = self.splitter.drawColor[2] / 255
+            start = [self.splitter.start[0] + offX, self.splitter.start[1] + offY]
+            end = [self.splitter.end[0] + offX, self.splitter.end[1] + offY]
+            drawLineFunc(start, end, 1, r, g, b, 1)
+            #display.drawLine([self.splitter.start, self.splitter.end], self.splitter.drawColor, 1)
 
         if self.back:
-            self.back.drawSegs(display, depth + 1)
+            self.back.drawSegs(drawLineFunc, offX, offY, depth + 1)
         if self.front:
-            self.front.drawSegs(display, depth + 1)
+            self.front.drawSegs(drawLineFunc, offX, offY, depth + 1)
 
-    def drawFaces(self, display, posA, posB, depth = 0):
+    def drawFaces(self, drawLineFunc, posX, posZ, offX, offY, depth = 0):
         # draw self
         if self.isLeaf == False:
-            behind = self.splitter.isPointBehind(posA, posB)
+            behind = self.splitter.isPointBehind(posX, posZ)
             if not behind:
-                display.drawLine([self.splitter.start, self.splitter.end], (255, depth * 20, 0), 1)
+                start = [self.splitter.start[0] + offX, self.splitter.start[1] + offY]
+                end = [self.splitter.end[0] + offX, self.splitter.end[1] + offY]
+                drawLineFunc(start, end, 1, 1, depth/20, 0, 1)
+                #display.drawLine([self.splitter.start, self.splitter.end], (255, depth * 20, 0), 1)
             else:
-                display.drawLine([self.splitter.start, self.splitter.end], (60, depth * 5, 0), 1)
+                start = [self.splitter.start[0] + offX, self.splitter.start[1] + offY]
+                end = [self.splitter.end[0] + offX, self.splitter.end[1] + offY]
+                drawLineFunc(start, end, 1, 1, depth/5, 0, .3)
+                #display.drawLine([self.splitter.start, self.splitter.end], (60, depth * 5, 0), 1)
 
         if self.back:
-            self.back.drawFaces(display, posA, posB, depth + 1)
+            self.back.drawFaces(drawLineFunc, posX, posZ, offX, offY, depth + 1)
         if self.front:
-            self.front.drawFaces(display, posA, posB, depth + 1)
+            self.front.drawFaces(drawLineFunc, posX, posZ, offX, offY, depth + 1)
 
 
     def toText(self, depth = 0):

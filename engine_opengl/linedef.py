@@ -1,8 +1,8 @@
 import random
-from engine.mathdef import crossProductLine
-from engine.mathdef import normalize
-from engine.mathdef import intersection2d
-from engine.mathdef import pointBehindSegment
+from engine_opengl.mathdef import crossProductLine
+from engine_opengl.mathdef import normalize
+from engine_opengl.mathdef import intersection2d
+from engine_opengl.mathdef import pointBehindSegment
 
 # A polygon is a collection of lines, each line has a direction
 # All lines should be connected, meaning one should start where the last one ends
@@ -16,18 +16,20 @@ class LineDef(object):
         self.normals = []
         self.drawColor = (random.randint(10, 255), random.randint(10, 255), random.randint(50, 255))
         self.height = 10
+        self.isroot = False
         # TODO: get normals and stuff calculated here
 
-    def asRoot(self, startX, startY, endX, endY, facing, height):
-        self.start = [startX, startY]
-        self.end = [endX, endY]
+    def asRoot(self, startX, startZ, endX, endZ, facing, height):
+        self.start = [startX, startZ]
+        self.end = [endX, endZ]
         self.facing = facing
         self.height = height
+        self.isroot = True
         self.setup()
 
-    def asChild(self, preLineDef, endX, endY, facing, height):
+    def asChild(self, preLineDef, endX, endZ, facing, height):
         self.start = [preLineDef.end[0], preLineDef.end[1]]
-        self.end = [endX, endY]
+        self.end = [endX, endZ]
         self.facing = facing
         self.height = height
         self.setup()
@@ -54,9 +56,9 @@ class LineDef(object):
         self.normals.append(normalize(-dy, dx)) # First normal is the one facing in (if we are Clockwise)
         self.normals.append(normalize(dy, -dx)) # Second normal is the one facing out (if we are Clockwise)
 
-    def isPointBehind(self, a, b):
+    def isPointBehind(self, x, z):
         # If it is behind and we are facing left CW
-        beh = pointBehindSegment([a, b], self.start, self.end) # true, false or none (for on the same plane)
+        beh = pointBehindSegment([x, z], self.start, self.end) # true, false or none (for on the same plane)
         if beh != None:
             if self.facing == 1:
                 return beh
@@ -110,4 +112,4 @@ class LineDef(object):
         return intersection2d(self.start, self.end, other.start, other.end)
 
     def __str__(self):
-        return "[{}->{}:{}]".format(self.start, self.end, self.facing)
+        return "[{}->{}:{}:{}]".format(self.start, self.end, self.facing, self.isroot)
