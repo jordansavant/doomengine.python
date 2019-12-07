@@ -65,7 +65,7 @@ class Camera(object):
             m = M.flatten()
             # yaw in y axis unlimited
             glRotate(yawDeltaDegrees, m[1], m[5], m[9])
-            self.yaw += pitchDeltaRadians
+            self.yaw += yawDeltaRadians
 
             # pitch in x axis should be limited to -90 and +90 degrees
             newPitch = self.pitch + pitchDeltaRadians

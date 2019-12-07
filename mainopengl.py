@@ -183,6 +183,8 @@ height = targetHeight
 
 os.environ['SDL_VIDEO_CENTERED'] = '1' # center window on screen
 screen = pygame.display.set_mode((width, height), DOUBLEBUF|OPENGL) # build window with opengl
+pygame.mouse.set_visible(False)
+pygame.event.set_grab(True)
 camera = Camera()
 glEnable(GL_BLEND);
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -224,8 +226,12 @@ def on_f():
     else:
         width, height = targetWidth, targetHeight
         screen = pygame.display.set_mode((width,height), DOUBLEBUF|OPENGL) # build window with opengl
-    pygame.mouse.set_visible(not fullscreen)
-    pygame.event.set_grab(fullscreen)
+    # if fullscreen take over mouse
+    #pygame.mouse.set_visible(not fullscreen)
+    #pygame.event.set_grab(fullscreen)
+    pygame.mouse.set_visible(False)
+    pygame.event.set_grab(True)
+    # reapply window matrix
     glLoadMatrixf(m)
 listener.onKeyUp(pygame.K_f, on_f)
 
@@ -255,10 +261,21 @@ def inBoundLine(line, bounds):
 
 def drawLine(start, end, width, r, g, b, a):
     glLineWidth(width)
-    glBegin(GL_LINES)
     glColor4f(r, g, b, a)
+    glBegin(GL_LINES)
     glVertex2f(start[0], start[1])
     glVertex2f(end[0], end[1])
+    glEnd()
+
+def drawPoint(pos, radius, r, g, b, a):
+    glColor4f(r, g, b, a)
+    glBegin(GL_TRIANGLE_FAN)
+    glVertex2f(pos[0], pos[1]);
+    for angle in range(10, 3610, 2):
+        angle = angle / 10 # convert back down to degrees
+        x2 = pos[0] + math.sin(angle) * radius;
+        y2 = pos[1] + math.cos(angle) * radius;
+        glVertex2f(x2, y2);
     glEnd()
 
 def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs):
@@ -295,9 +312,10 @@ def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs):
 
     # camera
     angleLength = 10
-    camOrigin = [camera.worldPos[2], camera.worldPos[0]]
-    camNeedle = [camera.worldPos[2] + math.cos(camera.yaw) * angleLength, camera.worldPos[0] + math.sin(camera.yaw) * angleLength]
+    camOrigin = [camera.worldPos[2], -camera.worldPos[0]] # make -z in world on mapX, and x in world on mapY
+    camNeedle = [camOrigin[0] + math.cos(camera.yaw) * angleLength, camOrigin[1] + math.sin(camera.yaw) * angleLength]
     drawLine(camOrigin, camNeedle, 1, 1, .5, 1, 1)
+    drawPoint(camOrigin, 2, 1, 1, 1, 1)
     #display.drawLine(dir, (255, 100, 255), 1)
     #display.drawPoint([camera.worldX, camera.worldY], (255, 255, 255), 2)
 
