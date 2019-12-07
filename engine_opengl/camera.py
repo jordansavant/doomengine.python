@@ -1,4 +1,5 @@
 import pygame, math, numpy
+from engine.mathdef import *
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -24,7 +25,7 @@ class Camera(object):
     def strafeRight(self):
         self.moveDir[0] = -1
 
-    def applyMouseMove(self, deltaX, deltaY):
+    def applyMouseMove(self, deltaX, deltaY, screenX, screenY):
         bufer = glGetDoublev(GL_MODELVIEW_MATRIX)
         c = (-1 * numpy.mat(bufer[:3,:3]) * \
             numpy.mat(bufer[3,:3]).T).reshape(3,1)
@@ -53,6 +54,8 @@ class Camera(object):
 
     def update(self):
 
+        # normalize move vector so strafe + fwd is not faster
+        self.moveDir = normalize(self.moveDir[0], self.moveDir[1])
         if self.moveDir[0] != 0:
             strafe = self.moveDir[0] * self.moveSpeed
             m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()

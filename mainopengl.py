@@ -200,15 +200,11 @@ def on_f():
 listener.onKeyUp(pygame.K_f, on_f)
 
 # move controls
-# TODO: normalize simultaneous x and z movement
 listener.onKeyHold(pygame.K_a, camera.strafeLeft)
 listener.onKeyHold(pygame.K_d, camera.strafeRight)
 listener.onKeyHold(pygame.K_w, camera.moveForward)
 listener.onKeyHold(pygame.K_s, camera.moveBackward)
-def on_mousemove(deltaX, deltaY, mouseX, mouseY):
-    global camera
-    camera.applyMouseMove(deltaX, deltaY)
-listener.onMouseMove(on_mousemove)
+listener.onMouseMove(camera.applyMouseMove)
 
 
 def inBoundPoint(point, bounds):
