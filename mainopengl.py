@@ -232,16 +232,15 @@ def inBoundLine(line, bounds):
     line2[1][1] += bounds[0][1]
     return line2
 
-def drawLine(start, end, r, g, b, a):
+def drawLine(start, end, width, r, g, b, a):
+    glLineWidth(width)
     glBegin(GL_LINES)
     glColor4f(r, g, b, a)
     glVertex2f(start[0], start[1])
     glVertex2f(end[0], end[1])
     glEnd()
 
-def drawMap(offsetX, offsetY, width, height):
-    global allLineDefs
-    global camera
+def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs):
 
     # draw map bg
     glBegin(GL_QUADS)
@@ -252,31 +251,18 @@ def drawMap(offsetX, offsetY, width, height):
     glVertex2f(offsetX, height + offsetY)
     glEnd()
 
-    for lineDef in allLineDefs:
-        drawLine(lineDef.start, lineDef.end, 0.0, 0.0, 1.0, 1.0)
-        #display.drawLine([lineDef.start, lineDef.end], (0, 0, 255), 1)
-        ln = 7
-        mx = lineDef.mid[0]
-        my = lineDef.mid[1]
-        nx = lineDef.normals[lineDef.facing][0] * ln
-        ny = lineDef.normals[lineDef.facing][1] * ln
-        #if lineDef.facing == 1:
-        #    display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (0, 255, 255), 1)
-        #else:
-        #    display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
-
-    #if mode == 0:
-    #    for lineDef in allLineDefs:
-    #        display.drawLine([lineDef.start, lineDef.end], (0, 0, 255), 1)
-    #        ln = 7
-    #        mx = lineDef.mid[0]
-    #        my = lineDef.mid[1]
-    #        nx = lineDef.normals[lineDef.facing][0] * ln
-    #        ny = lineDef.normals[lineDef.facing][1] * ln
-    #        if lineDef.facing == 1:
-    #            display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (0, 255, 255), 1)
-    #        else:
-    #            display.drawLine([ [mx, my] , [mx + nx, my + ny] ], (255, 0, 255), 1)
+    if mode == 0:
+        for lineDef in allLineDefs:
+            drawLine(lineDef.start, lineDef.end, 1, 0.0, 0.0, 1.0, 1.0)
+            ln = 7
+            mx = lineDef.mid[0]
+            my = lineDef.mid[1]
+            nx = lineDef.normals[lineDef.facing][0] * ln
+            ny = lineDef.normals[lineDef.facing][1] * ln
+            if lineDef.facing == 1:
+                drawLine([mx, my], [mx + nx, my + ny], 2, 0.0, 1.0, 1.0, 1.0)
+            else:
+                drawLine([mx, my], [mx + nx, my + ny], 2, 1.0, 0.0, 1.0, 1.0)
     #if mode == 1:
     #    solidBsp.drawSegs(display)
     #if mode == 2:
@@ -321,7 +307,7 @@ while True:
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
-    drawMap(10, 10, 400, 300)
+    drawMap(10, 10, 400, 300, mode, camera, allLineDefs)
 
     glPopMatrix()
 
