@@ -164,7 +164,6 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 font = pygame.font.Font(None, 36)
 listener = EventListener()
 camera = Camera(solidBsp)
-camera.lockY = True
 
 # set base camera application for matrix
 glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
@@ -319,7 +318,7 @@ def draw():
     glViewport(0, 0, displayWidth, displayHeight)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(45, (displayWidth/displayHeight), .1, 5000)
+    gluPerspective(45, (displayWidth/displayHeight), .001, 5000)
     # models
     glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
 

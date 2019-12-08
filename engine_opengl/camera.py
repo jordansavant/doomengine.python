@@ -21,7 +21,8 @@ class Camera(object):
         self.yaw = 0
         self.yawDelta = 0
         # locks
-        self.lockY = False
+        self.lockMouseLook = True
+        self.lockFlight = True
 
     def moveForward(self):
         self.moveDir[1] = 1
@@ -37,7 +38,7 @@ class Camera(object):
 
     def applyMouseMove(self, deltaX, deltaY, screenX, screenY):
         self.yawDelta += deltaX
-        if not self.lockY:
+        if not self.lockMouseLook:
             self.pitchDelta += deltaY
 
     def setPosition(self, x, y, z):
@@ -75,11 +76,11 @@ class Camera(object):
             fwd = self.moveDir[1] * self.moveSpeed
             # move us there
             m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
-            glTranslate(fwd * m[2], fwd * m[6], fwd * m[10])
+            glTranslate(fwd * m[2], 0 if self.lockFlight else fwd * m[6], fwd * m[10])
             # test if it is valid
             if not self.checkMove():
                 # move us back
-                glTranslate(-fwd * m[2], -fwd * m[6], -fwd * m[10])
+                glTranslate(-fwd * m[2], 0 if self.lockFlight else -fwd * m[6], -fwd * m[10])
             self.moveDir[1] = 0
         # look
         if self.yawDelta != 0 or self.pitchDelta != 0:
