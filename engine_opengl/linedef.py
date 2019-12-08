@@ -15,7 +15,7 @@ class LineDef(object):
         self.mid = []
         self.normals = []
         self.drawColor = (random.randint(10, 255), random.randint(10, 255), random.randint(50, 255))
-        self.height = 10
+        self.height = 0
         self.isroot = False
         # TODO: get normals and stuff calculated here
 
@@ -112,4 +112,4 @@ class LineDef(object):
         return intersection2d(self.start, self.end, other.start, other.end)
 
     def __str__(self):
-        return "[{}->{}:{}:{}]".format(self.start, self.end, self.facing, self.isroot)
+        return "[{}->{}:{}:{}:{}]".format(self.start, self.end, self.height, self.facing, self.isroot)

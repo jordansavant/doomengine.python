@@ -69,7 +69,7 @@ def Cube(x, y, z):
             i+=1
             v = vertices[vertex]
             glColor3fv(colors[i])
-            glVertex3f(v[0] - x, v[1] - y, v[2] - z)
+            glVertex3f(v[0] + x, v[1] + y, v[2] + z)
             #glVertex3fv(vertices[vertex])
     glEnd()
 
@@ -78,7 +78,7 @@ def Cube(x, y, z):
     for edge in edges:
         for vertex in edge:
             v = vertices[vertex]
-            glVertex3f(v[0] - x, v[1] - y, v[2] - z)
+            glVertex3f(v[0] + x, v[1] + y, v[2] + z)
             #glVertex3fv(vertices[vertex])
     glEnd()
 
@@ -269,21 +269,31 @@ def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs, walls):
     if mode == 1:
         solidBsp.drawSegs(drawLine, offsetX, offsetY)
     if mode == 2:
-        solidBsp.drawFaces(drawLine, camera.worldPos[0], camera.worldPos[2], offsetX, offsetY)
+        solidBsp.drawFaces(drawLine, -camera.worldPos[0], -camera.worldPos[2], offsetX, offsetY)
     if mode == 3:
         for wall in walls:
             start = [wall.start[0] + offsetX, wall.start[1] + offsetY];
             end = [wall.end[0] + offsetX, wall.end[1] + offsetY];
             drawLine(start, end, 1, 0, .3, 1, 1)
-            #display.drawLine([start, end], (0, 40, 255), 1)
 
     # camera
     angleLength = 10
-    camOrigin = [camera.worldPos[0] + offsetX, camera.worldPos[2] + offsetY] # mapX is worldX, mapY is worldZ
-    camNeedle = [camOrigin[0] + math.cos(camera.yaw + math.pi/2) * angleLength, camOrigin[1] + math.sin(camera.yaw + math.pi/2) * angleLength]
+    camOrigin = [-camera.worldPos[0] + offsetX, -camera.worldPos[2] + offsetY] # mapX is worldX, mapY is worldZ
+    camNeedle = [camOrigin[0] + math.cos(camera.yaw - math.pi/2) * angleLength, camOrigin[1] + math.sin(camera.yaw - math.pi/2) * angleLength]
     # yaw at 0 is straight down the positive z, which is down mapY
     drawLine(camOrigin, camNeedle, 1, 1, .5, 1, 1)
     drawPoint(camOrigin, 2, 1, 1, 1, 1)
+
+def drawWalls(walls, camera):
+    for i, wall in enumerate(walls):
+        glBegin(GL_QUADS)
+        c = wall.drawColor
+        glColor3f(c[0]/255, c[1]/255, c[2]/255)
+        glVertex3f(wall.start[0],   0,              wall.start[1]) # low lef
+        glVertex3f(wall.start[0],   wall.height,    wall.start[1]) # up lef
+        glVertex3f(wall.end[0],     wall.height,    wall.end[1]) # up rig
+        glVertex3f(wall.end[0],     0,              wall.end[1]) # up lef
+        glEnd()
 
 def update():
     listener.update()
@@ -292,7 +302,8 @@ def update():
 def draw():
     # sort walls around camera x and z
     walls = []
-    solidBsp.getWallsSorted(camera.worldPos[0], camera.worldPos[2], walls)
+    solidBsp.getWallsSorted(-camera.worldPos[0], -camera.worldPos[2], walls)
+
 
     # RENDER 3D
     glPushMatrix()
@@ -302,13 +313,16 @@ def draw():
     glViewport(0, 0, width, height)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(45, (width/height), .1, 50)
+    gluPerspective(45, (width/height), .1, 5000)
     # models
     glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
 
+    Cube(20, 0, 20)
     Cube(-3, 3, 5)
     Cube(0, 0, 10)
     Cube(3, -3, 15)
+
+    drawWalls(walls, camera)
 
     glPopMatrix()
     # END 3D
