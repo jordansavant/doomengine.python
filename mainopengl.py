@@ -70,7 +70,6 @@ def Cube(x, y, z):
             v = vertices[vertex]
             glColor3fv(colors[i])
             glVertex3f(v[0] + x, v[1] + y, v[2] + z)
-            #glVertex3fv(vertices[vertex])
     glEnd()
 
     # render lines between vertices
@@ -79,7 +78,6 @@ def Cube(x, y, z):
         for vertex in edge:
             v = vertices[vertex]
             glVertex3f(v[0] + x, v[1] + y, v[2] + z)
-            #glVertex3fv(vertices[vertex])
     glEnd()
 
 # MAP ROOMS
@@ -173,9 +171,9 @@ os.environ['SDL_VIDEO_CENTERED'] = '1' # center window on screen
 screen = pygame.display.set_mode((displayWidth, displayHeight), DOUBLEBUF|OPENGL) # build window with opengl
 pygame.mouse.set_visible(False)
 pygame.event.set_grab(True)
-glEnable(GL_BLEND);
+glEnable(GL_BLEND); # allows for alpha transparency on color
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-font = pygame.font.Font(None, 36)
+font = pygame.font.Font(None, 36) # TODO not sure if we can use this
 listener = EventListener()
 camera = Camera(solidBsp)
 
@@ -250,20 +248,8 @@ def drawPoint(pos, radius, r, g, b, a):
     glEnd()
 
 def drawHud(offsetX, offsetY, width, height, mode, camera, allLineDefs, walls):
-    # draw map bg
-    #glBegin(GL_QUADS)
-    #glColor4f(0, 0, 0, .6)
-    #glVertex2f(offsetX, offsetY)
-    #glVertex2f(width + offsetX, offsetY)
-    #glVertex2f(width + offsetX, height + offsetY)
-    #glVertex2f(offsetX, height + offsetY)
-    #glEnd()
-
     # wall lines
     # walls are position in with start and in in the x and z coordinates
-    # we want to render forward Z with -Y
-    # we want to render left X with -X
-    # we want to render their z along the maps x axis and their x along the y axis
     if mode == 0:
         for lineDef in allLineDefs:
             # draw wall
@@ -331,7 +317,7 @@ def draw():
 
 
     # RENDER 3D
-    glPushMatrix()
+    glPushMatrix() # copies matrix below stack (in this case, our base camera matrix transformation)
 
     # projection
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
@@ -372,13 +358,31 @@ def draw():
     # update display
     pygame.display.flip() # buffer swap
 
+timer = 0
+actualTime = pygame.time.get_ticks() # ms
+FPS = 60
+dt = int(1 / FPS * 1000) # 60 fps in ms
+updateCounter = 0
+drawCounter = 0
 while True:
 
-    update()
+    # UPDATE at fixed intervals
+    newTime = pygame.time.get_ticks() # ms
+    frameTime = newTime - actualTime
+    if frameTime > 250:
+        fameTime = 250 # avoid spiral of death
+    timer += frameTime
+    while timer >= dt:
+        # TODO pass delta time in seconds
+        update()
+        updateCounter += 1
+        timer -= dt
 
     draw()
+    drawCounter += 1
 
-    pygame.time.wait(16) # dinky 60fps
+    actualTime = newTime # ms
+    #pygame.time.wait(16) # dinky 60fps
 
     # OLD RENDERING
     ## draw floor and ceiling
