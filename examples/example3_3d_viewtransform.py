@@ -1,4 +1,4 @@
-import sys, pygame, engine, math, time, numpy as np
+import sys, pygame, math, time, numpy as np
 
 
 # CONVENTIONS
