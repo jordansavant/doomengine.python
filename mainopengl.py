@@ -164,6 +164,7 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 font = pygame.font.Font(None, 36)
 listener = EventListener()
 camera = Camera()
+camera.lockY = True
 
 #glMatrixMode(GL_PROJECTION)
 #gluPerspective(75, (1920/1080), .1, 50)
@@ -322,10 +323,10 @@ def draw():
     # models
     glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
 
-    Cube(20, 0, 20)
-    Cube(-3, 3, 5)
-    Cube(0, 0, 10)
-    Cube(3, -3, 15)
+    #Cube(20, 0, 20)
+    #Cube(-3, 3, 5)
+    #Cube(0, 0, 10)
+    #Cube(3, -3, 15)
 
     drawWalls(walls, camera)
 

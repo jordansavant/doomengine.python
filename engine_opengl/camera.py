@@ -18,6 +18,8 @@ class Camera(object):
         self.pitchDelta = 0
         self.yaw = 0
         self.yawDelta = 0
+        # locks
+        self.lockY = False
 
     def moveForward(self):
         self.moveDir[1] = 1
@@ -33,7 +35,8 @@ class Camera(object):
 
     def applyMouseMove(self, deltaX, deltaY, screenX, screenY):
         self.yawDelta = deltaX
-        self.pitchDelta = deltaY
+        if not self.lockY:
+            self.pitchDelta = deltaY
 
     def update(self):
 
