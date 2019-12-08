@@ -303,6 +303,12 @@ def drawHud(offsetX, offsetY, width, height, mode, camera, allLineDefs, walls):
     drawLine([displayWidth/2 - 8, displayHeight/2], [displayWidth/2 + 8, displayHeight/2], 2, 1, .3, .3, 1)
     drawPoint([displayWidth/2, displayHeight/2], 2, 1, 1, 1, 1)
 
+    # collision flag dot
+    if camera.collisionDetection:
+        drawPoint([displayWidth - 50, 50], 10, 0, 1, 0, 1)
+    else:
+        drawPoint([displayWidth - 50, 50], 10, 1, 0, 0, 1)
+
 def drawWalls(walls, camera):
     for i, wall in enumerate(walls):
         glBegin(GL_QUADS)
