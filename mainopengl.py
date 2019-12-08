@@ -163,7 +163,7 @@ glEnable(GL_BLEND);
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 font = pygame.font.Font(None, 36)
 listener = EventListener()
-camera = Camera()
+camera = Camera(solidBsp)
 camera.lockY = True
 
 # set base camera application for matrix
@@ -185,8 +185,8 @@ def mode_down():
     mode = (mode - 1) % max_modes
 listener.onKeyUp(pygame.K_DOWN, mode_down)
 def on_x():
-    global collisionDetection
-    collisionDetection = not collisionDetection
+    global camera
+    camera.collisionDetection = not camera.collisionDetection
 listener.onKeyUp(pygame.K_x, on_x)
 def on_f():
     global fullscreen, screen, displayWidth, displayHeight
@@ -270,7 +270,7 @@ def drawHud(offsetX, offsetY, width, height, mode, camera, allLineDefs, walls):
     if mode == 1:
         solidBsp.drawSegs(drawLine, offsetX, offsetY)
     if mode == 2:
-        solidBsp.drawFaces(drawLine, -camera.worldPos[0], -camera.worldPos[2], offsetX, offsetY)
+        solidBsp.drawFaces(drawLine, camera.worldPos[0], camera.worldPos[2], offsetX, offsetY)
     if mode == 3:
         for wall in walls:
             start = [wall.start[0] + offsetX, wall.start[1] + offsetY];
@@ -279,7 +279,7 @@ def drawHud(offsetX, offsetY, width, height, mode, camera, allLineDefs, walls):
 
     # camera
     angleLength = 10
-    camOrigin = [-camera.worldPos[0] + offsetX, -camera.worldPos[2] + offsetY] # mapX is worldX, mapY is worldZ
+    camOrigin = [camera.worldPos[0] + offsetX, camera.worldPos[2] + offsetY] # mapX is worldX, mapY is worldZ
     camNeedle = [camOrigin[0] + math.cos(camera.yaw - math.pi/2) * angleLength, camOrigin[1] + math.sin(camera.yaw - math.pi/2) * angleLength]
     # yaw at 0 is straight down the positive z, which is down mapY
     drawLine(camOrigin, camNeedle, 1, 1, .5, 1, 1)
@@ -308,7 +308,7 @@ def update():
 def draw():
     # sort walls around camera x and z
     walls = []
-    solidBsp.getWallsSorted(-camera.worldPos[0], -camera.worldPos[2], walls)
+    solidBsp.getWallsSorted(camera.worldPos[0], camera.worldPos[2], walls)
 
 
     # RENDER 3D
