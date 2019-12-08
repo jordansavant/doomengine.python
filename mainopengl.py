@@ -110,7 +110,21 @@ polygons = [
         [70, 55, 0, 5],
         [70, 95, 0, 5],
         [55, 95, 0, 5],
+    ],
+    # concave room 2
+    [
+        # x, z, facing, height (y)
+        [125, 55, 1, 7],
+        [170, 55, 1, 7],
+        [170, 95, 1, 7],
+        [155, 95, 1, 7],
+        [155, 90, 1, 7],
+        [165, 90, 1, 7],
+        [165, 60, 1, 7],
+        [140, 60, 1, 7],
+        [135, 70, 1, 7],
     ]
+
 ]
 
 allLineDefs = []
@@ -287,7 +301,7 @@ def drawHud(offsetX, offsetY, width, height, mode, camera, allLineDefs, walls):
     # render crosshair
     drawLine([displayWidth/2, displayHeight/2 - 8], [displayWidth/2, displayHeight/2 + 8], 2, 1, .3, .3, 1)
     drawLine([displayWidth/2 - 8, displayHeight/2], [displayWidth/2 + 8, displayHeight/2], 2, 1, .3, .3, 1)
-    drawPoint([displayWidth/2, displayHeight/2], 3, 1, .3, .3, 1)
+    drawPoint([displayWidth/2, displayHeight/2], 2, 1, 1, 1, 1)
 
 def drawWalls(walls, camera):
     for i, wall in enumerate(walls):
