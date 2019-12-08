@@ -152,11 +152,11 @@ resolutionHeight = displayInfo.current_h
 # start with this resolution in windowed
 targetWidth = 1280
 targetHeight = 720
-width = targetWidth
-height = targetHeight
+displayWidth = targetWidth
+displayHeight = targetHeight
 
 os.environ['SDL_VIDEO_CENTERED'] = '1' # center window on screen
-screen = pygame.display.set_mode((width, height), DOUBLEBUF|OPENGL) # build window with opengl
+screen = pygame.display.set_mode((displayWidth, displayHeight), DOUBLEBUF|OPENGL) # build window with opengl
 pygame.mouse.set_visible(False)
 pygame.event.set_grab(True)
 glEnable(GL_BLEND);
@@ -188,17 +188,17 @@ def on_x():
     collisionDetection = not collisionDetection
 listener.onKeyUp(pygame.K_x, on_x)
 def on_f():
-    global fullscreen, screen, width, height
+    global fullscreen, screen, displayWidth, displayHeight
     global resolutionWidth, resolutionHeight, targetWidth, targetHeight
     fullscreen = not fullscreen
     # get world model matrix
     m = glGetDoublev(GL_MODELVIEW_MATRIX).flatten()
     if fullscreen:
-        width, height = resolutionWidth, resolutionHeight
-        screen = pygame.display.set_mode((width,height), DOUBLEBUF|OPENGL|FULLSCREEN) # build window with opengl
+        displayWidth, displayHeight = resolutionWidth, resolutionHeight
+        screen = pygame.display.set_mode((displayWidth,displayHeight), DOUBLEBUF|OPENGL|FULLSCREEN) # build window with opengl
     else:
-        width, height = targetWidth, targetHeight
-        screen = pygame.display.set_mode((width,height), DOUBLEBUF|OPENGL) # build window with opengl
+        displayWidth, displayHeight = targetWidth, targetHeight
+        screen = pygame.display.set_mode((displayWidth,displayHeight), DOUBLEBUF|OPENGL) # build window with opengl
     # if fullscreen take over mouse
     #pygame.mouse.set_visible(not fullscreen)
     #pygame.event.set_grab(fullscreen)
@@ -235,15 +235,15 @@ def drawPoint(pos, radius, r, g, b, a):
         glVertex2f(x2, y2);
     glEnd()
 
-def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs, walls):
+def drawHud(offsetX, offsetY, width, height, mode, camera, allLineDefs, walls):
     # draw map bg
-    glBegin(GL_QUADS)
-    glColor4f(0, 0, 0, .6)
-    glVertex2f(offsetX, offsetY)
-    glVertex2f(width + offsetX, offsetY)
-    glVertex2f(width + offsetX, height + offsetY)
-    glVertex2f(offsetX, height + offsetY)
-    glEnd()
+    #glBegin(GL_QUADS)
+    #glColor4f(0, 0, 0, .6)
+    #glVertex2f(offsetX, offsetY)
+    #glVertex2f(width + offsetX, offsetY)
+    #glVertex2f(width + offsetX, height + offsetY)
+    #glVertex2f(offsetX, height + offsetY)
+    #glEnd()
 
     # wall lines
     # walls are position in with start and in in the x and z coordinates
@@ -284,6 +284,11 @@ def drawMap(offsetX, offsetY, width, height, mode, camera, allLineDefs, walls):
     drawLine(camOrigin, camNeedle, 1, 1, .5, 1, 1)
     drawPoint(camOrigin, 2, 1, 1, 1, 1)
 
+    # render crosshair
+    drawLine([displayWidth/2, displayHeight/2 - 8], [displayWidth/2, displayHeight/2 + 8], 2, 1, .3, .3, 1)
+    drawLine([displayWidth/2 - 8, displayHeight/2], [displayWidth/2 + 8, displayHeight/2], 2, 1, .3, .3, 1)
+    drawPoint([displayWidth/2, displayHeight/2], 3, 1, .3, .3, 1)
+
 def drawWalls(walls, camera):
     for i, wall in enumerate(walls):
         glBegin(GL_QUADS)
@@ -310,10 +315,10 @@ def draw():
 
     # projection
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
-    glViewport(0, 0, width, height)
+    glViewport(0, 0, displayWidth, displayHeight)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(45, (width/height), .1, 5000)
+    gluPerspective(45, (displayWidth/displayHeight), .1, 5000)
     # models
     glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
 
@@ -334,12 +339,12 @@ def draw():
     # projection
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluOrtho2D(0.0, width, height, 0.0)
+    gluOrtho2D(0.0, displayWidth, displayHeight, 0.0)
     # models
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
-    drawMap(20, 20, 400, 300, mode, camera, allLineDefs, walls)
+    drawHud(20, 20, 400, 300, mode, camera, allLineDefs, walls)
 
     glPopMatrix()
     # END 2D

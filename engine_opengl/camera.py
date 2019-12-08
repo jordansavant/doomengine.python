@@ -8,7 +8,7 @@ class Camera(object):
 
     def __init__(self):
         # move
-        self.moveSpeed = .5
+        self.moveSpeed = .85
         self.moveDir = [0, 0] # x,y or strafe/fwd
         self.worldPos = [0, 0, 0] # x, y, z
         # look
