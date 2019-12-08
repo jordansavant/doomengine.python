@@ -166,10 +166,10 @@ listener = EventListener()
 camera = Camera()
 camera.lockY = True
 
-#glMatrixMode(GL_PROJECTION)
-#gluPerspective(75, (1920/1080), .1, 50)
-#glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
-#glTranslatef(0.0, 0.0, -5.0) # move shit back
+# set base camera application for matrix
+glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
+camera.setPosition(110, 2, 95);
+camera.setYaw(-math.pi/2)
 
 # render mode ops
 mode = 0
