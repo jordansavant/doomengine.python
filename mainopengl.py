@@ -125,6 +125,7 @@ polygons = [
 
 ]
 
+# Create SolidBSP for Level
 allLineDefs = []
 for i, v in enumerate(polygons):
     polygon = polygons[i]
@@ -285,9 +286,10 @@ def drawHud(offsetX, offsetY, width, height, mode, camera, allLineDefs, walls):
     drawPoint(camOrigin, 2, 1, 1, 1, 1)
 
     # render crosshair
-    drawLine([displayWidth/2, displayHeight/2 - 8], [displayWidth/2, displayHeight/2 + 8], 2, 1, .3, .3, 1)
-    drawLine([displayWidth/2 - 8, displayHeight/2], [displayWidth/2 + 8, displayHeight/2], 2, 1, .3, .3, 1)
-    drawPoint([displayWidth/2, displayHeight/2], 2, 1, 1, 1, 1)
+    drawLine([displayWidth/2, displayHeight/2 - 8], [displayWidth/2, displayHeight/2 - 2], 2, 1, .3, .3, 1)
+    drawLine([displayWidth/2, displayHeight/2 + 2], [displayWidth/2, displayHeight/2 + 8], 2, 1, .3, .3, 1)
+    drawLine([displayWidth/2 - 8, displayHeight/2], [displayWidth/2 - 2, displayHeight/2], 2, 1, .3, .3, 1)
+    drawLine([displayWidth/2 + 2, displayHeight/2], [displayWidth/2 + 8, displayHeight/2], 2, 1, .3, .3, 1)
 
     # collision flag dot
     if camera.collisionDetection:
@@ -324,7 +326,7 @@ def draw():
     glViewport(0, 0, displayWidth, displayHeight)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(45, (displayWidth/displayHeight), .001, 5000)
+    gluPerspective(45, (displayWidth/displayHeight), 0, 5000)
     # models
     glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
 
