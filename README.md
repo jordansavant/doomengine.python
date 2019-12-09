@@ -8,7 +8,7 @@ In awe of the 1993 doom engine rendering logic regarding Binary Space Partitioni
 
 ### Pass 1
 
-![](/jordansavant/doomengine.python/raw/master/resources/demo_pygame_render.gif)
+![](https://github.com/jordansavant/doomengine.python/raw/master/resources/demo_pygame_render.gif)
 
 *initial engine written purely in pygame worked but had a lot of projection issues*
 
