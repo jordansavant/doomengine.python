@@ -10,7 +10,7 @@ class Camera(object):
         self.solidBsp = solidBsp
         self.collisionDetection = True
         # move
-        self.moveSpeed = .3
+        self.moveSpeed = .4
         self.moveDir = [0, 0] # x,y or strafe/fwd
         self.worldPos = [0, 0, 0] # x, y, z
         # look
