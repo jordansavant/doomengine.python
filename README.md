@@ -39,24 +39,33 @@ The order of the resultant list could allow you to render them with the classic 
 
 Roughly, the DOOM method rendered closest to furthest. It would inspect the closest wall and would run a hardcoded *_3D_* projection matrix against the wall's position at every horizontal pixel on the screen. This would produce a number of vertical pixels (colored and textured) to render at that horizontal pixel position. From there it would test the next wall and if it produced a horizontal position of pixels that overlapped a prior wall's calculation it could be culled.
 
-### Pass 1
+### Pass 1 - Pure Pygame Polygons
 
-I am not an expert on 3D or Linear Algebra so at first I relied heavily on resources listed below to get it "right". In DOOM 
+I am not an expert on 3D or Linear Algebra so at first I relied heavily on resources listed below to get it "right". The world is defined in 2D space. Each of the LineDefs as well can have a height property.
 
-The world is defined in 2D space. Each of the LineDefs as well can have a height property.
+The Field of View was hard coded into the matrix mathematics to project the 2D wall into the camera very similarly to the DOOM engine.
 
-The Field of View is hard coded into the matrix mathematics to project the 2D wall into the camera.
-
-I leaned a lot on
+For rendering I went with Pygame's basic 2D shapes such as the polygon for rendering walls. I glued together various tutorials from other programmers such as Bisqwit to get my hardcoded projection matrices to produce the correct rendering. The result was as follows:
 
 ![](https://github.com/jordansavant/doomengine.python/raw/master/resources/demo_pygame_render.gif)
 
 *initial engine written purely in pygame worked but had a lot of projection issues*
 
-## Installation
+It worked and worked pretty well considering. I chose to render with the Painter's Algorithm instead of DOOM's method because testing and culling on a large resolution is very expensive, and the painter method is pretty simple to do.
 
-- Install python 3
-- Install pygame `pip install -U pygame --user`
+However the wall rendering had two major problems: 1, pygame did not handle rendering polygons that bled off screen well at all, so I had to cut out cross sections of the walls that would only project to the screen. 2, my math for this was not well done so at certain perspectives the wall heights would jump up and down as the projection thought the wall extended to infinity when it was cut at the screens edges. It was hard to understand and though ultimately proved that the engine worked left me a bit dissatisfied.
+
+### Pass 2 - OpenGL Rendering
+
+The separation of logic and rendering was done well enough I was confident I could implement an OpenGL renderer in lieu of pygame polygons. This would allow me to translate the 2d walls into 3d positions at render time and have OpenGL do the matrix mathematics in its natural manner to produce proper projection and offscreen culling.
+
+I learned a lot about matrix transformations: modelview scale, rotation and translation as well as view matrices and projection. I glued together more examples to bring FPS controls into the mix and after a lot of plugging away was able to replace the Pygame Polygon renderering engine with a 3D and 2D OpenGL rendering.
+
+![](https://github.com/jordansavant/doomengine.python/raw/master/resources/demo_opengl_render.gif)
+
+*opengl engine worked significantly better as expected*
+
+The result was a lot more stable and better looking than the pure pygame method.
 
 ## Resources
 - Bisqwit Tut: https://bisqwit.iki.fi/jutut/kuvat/programming_examples/portalrendering.html
@@ -64,3 +73,8 @@ I leaned a lot on
 - CS Resources: http://www.flipcode.com
 - Vector Maths: http://math.hws.edu/graphicsbook/c3/s5.html
 - Wolfenstein: https://lodev.org/cgtutor/raycasting.html
+- OpenGL surfaces: https://pythonprogramming.net/coloring-pyopengl-surfaces-python-opengl
+- FPS spectation: https://3dengine.org/Spectator_(PyOpenGL)/
+- 2D over 3D: https://stackoverflow.com/questions/43130842/python-opengl-issues-displaying-2d-graphics-over-a-3d-scene
+- Coding Train 3D Projection: https://www.youtube.com/watch?v=p4Iz0XJY-Qk
+- World, View and Projection Transformation Matrices: http://www.codinglabs.net/article_world_view_projection_matrix.aspx
