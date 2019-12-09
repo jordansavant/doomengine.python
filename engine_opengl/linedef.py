@@ -1,8 +1,5 @@
 import random
-from engine_opengl.mathdef import crossProductLine
-from engine_opengl.mathdef import normalize
-from engine_opengl.mathdef import intersection2d
-from engine_opengl.mathdef import pointBehindSegment
+from engine_opengl.mathdef import *
 
 # A polygon is a collection of lines, each line has a direction
 # All lines should be connected, meaning one should start where the last one ends
