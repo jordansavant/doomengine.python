@@ -52,6 +52,7 @@ class Camera(object):
         self.lockMouseLook = not self.lockMouseLook
         if self.lockMouseLook:
             # point camera back to horizon
+            # todo this is not perfect, it does not accurately reset to perfect zeo
             self.pitchDelta -= rad2deg(self.pitch) / self.lookSpeed
 
     def checkMove(self):
