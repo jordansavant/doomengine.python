@@ -152,7 +152,7 @@ for i, v in enumerate(polygons):
             allLineDefs.append(lineDef)
 
 solidBsp = SolidBSPNode(allLineDefs)
-print(solidBsp.toText())
+print(solidBsp.toText(), flush=True)
 
 # GAME SETUP
 pygame.init()
@@ -231,6 +231,14 @@ listener.onKeyHold(pygame.K_d, camera.strafeRight)
 listener.onKeyHold(pygame.K_w, camera.moveForward)
 listener.onKeyHold(pygame.K_s, camera.moveBackward)
 listener.onMouseMove(camera.applyMouseMove)
+
+# info
+print("m (mouselook)")
+print("x (noclip)")
+print("f (fullscreen)")
+print("up_arrow (map mode up)")
+print("down_arrow (map mode down)")
+print("wasd (movement)", flush=True)
 
 
 def drawLine(start, end, width, r, g, b, a):
