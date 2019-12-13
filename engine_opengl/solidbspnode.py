@@ -103,8 +103,9 @@ class SolidBSPNode(object):
         # recurse the tree until we find a leaf node
         if self.isLeaf:
             return self.isSolid == False
-        beh = self.splitter.isPointBehind(testPoint[0], testPoint[1])
-        if beh:
+        # if not a leaf node recurse the side of the tree the point is on
+        isBehind = self.splitter.isPointBehind(testPoint[0], testPoint[1])
+        if isBehind:
             return self.back.inEmpty(testPoint)
         else:
             return self.front.inEmpty(testPoint)

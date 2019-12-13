@@ -1,5 +1,5 @@
 import pygame, math, numpy
-from engine.mathdef import *
+from engine_opengl.mathdef import *
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -46,7 +46,13 @@ class Camera(object):
         glTranslate(-x, -y, -z)
 
     def setYaw(self, yawRadians):
-        self.yawDelta = yawRadians * 180 / math.pi / self.lookSpeed # convert to degree
+        self.yawDelta = rad2deg(yawRadians) / self.lookSpeed
+
+    def toggleMouseLook(self):
+        self.lockMouseLook = not self.lockMouseLook
+        if self.lockMouseLook:
+            # point camera back to horizon
+            self.pitchDelta -= rad2deg(self.pitch) / self.lookSpeed
 
     def checkMove(self):
         wp = self.findWorldPos()
@@ -85,9 +91,9 @@ class Camera(object):
         # look
         if self.yawDelta != 0 or self.pitchDelta != 0:
             yawDeltaDegrees = self.yawDelta * self.lookSpeed
-            yawDeltaRadians = yawDeltaDegrees * math.pi / 180
+            yawDeltaRadians = deg2rad(yawDeltaDegrees)
             pitchDeltaDegrees = self.pitchDelta * self.lookSpeed
-            pitchDeltaRadians = pitchDeltaDegrees * math.pi / 180
+            pitchDeltaRadians = deg2rad(pitchDeltaDegrees)
 
             M = glGetDoublev(GL_MODELVIEW_MATRIX)
             c = (numpy.mat(M[:3,:3]) * numpy.mat(M[3,:3]).T).reshape(3,1)

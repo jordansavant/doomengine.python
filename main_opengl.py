@@ -196,6 +196,10 @@ def mode_down():
     global mode
     mode = (mode - 1) % max_modes
 listener.onKeyUp(pygame.K_DOWN, mode_down)
+def on_m():
+    global camera
+    camera.toggleMouseLook()
+listener.onKeyUp(pygame.K_m, on_m)
 def on_x():
     global camera
     camera.collisionDetection = not camera.collisionDetection

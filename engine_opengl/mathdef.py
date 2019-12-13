@@ -13,6 +13,12 @@ def pointBehindSegment(point, a, b):
     if cross == 0:
         return None
 
+def rad2deg(rad):
+    return rad * 180 / math.pi
+
+def deg2rad(deg):
+    return deg * math.pi / 180
+
 def normalize(a, b):
     if a != 0 or b != 0:
         length = math.sqrt(a * a + b * b)
