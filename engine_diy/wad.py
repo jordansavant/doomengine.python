@@ -58,16 +58,17 @@ class WAD(object):
             offset = self.diroffset + 16 * i
             lumpOffset = self.loadInt(offset, 4)
             lumpSize = self.loadInt(offset + 4, 4)
-            lumpName = self.loadString(offset + 8, 4)
+            lumpName = self.loadString(offset + 8, 8)
             directory = Directory(lumpOffset, lumpSize, lumpName)
             self.dirs.append(directory)
 
-    def loadString(self, offset, length):
+    def loadString(self, offset, length, preserveNull = False):
         self.f.seek(offset)
         sss = ''
         for i in range(0, length):
             c = struct.unpack('<c', self.f.read(1))[0]
-            sss += str(c, 'utf-8')
+            if ord(c) != 0:
+                sss += str(c, 'ascii')
         return sss
 
     def loadInt(self, offset, length):
