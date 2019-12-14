@@ -28,9 +28,9 @@
 #
 # BIG-ENDIAN format
 
-import codecs, struct
+import struct
 
-class WADLoader(object):
+class WAD(object):
 
     def __init__(self, wadpath):
         self.wadpath = wadpath;
@@ -67,10 +67,10 @@ class WADLoader(object):
 
     def __str__(self):
         return "\
-WADLoader\n\
- WAD: {}\n\
- TYPE: {}\n\
- DIR_COUNT: {}\n\
- DIR_OFFSET: {}\
+WAD\n\
+ path ......... {}\n\
+ type ......... {}\n\
+ dir_count .... {}\n\
+ dir_offset ... {}\
 ".format(self.wadpath, self.type, self.dircount, self.diroffset)
 

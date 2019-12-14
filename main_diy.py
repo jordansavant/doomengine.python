@@ -1,5 +1,5 @@
 import sys, engine_diy
-from engine_diy.wad_loader import WADLoader
+from engine_diy.wad import WAD
 
 
 # path to wad
@@ -9,6 +9,6 @@ else:
     path = "wads/DOOM.WAD"
 
 
-wadl = WADLoader(path)
-print(wadl)
+wad = WAD(path)
+print(wad)
 
