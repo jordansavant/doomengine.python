@@ -8,7 +8,7 @@ if len(sys.argv) - 1 > 0:
 else:
     path = "wads/DOOM.WAD"
 
-
 wad = WAD(path)
-print(wad.info(True))
+print(wad.info(False))
+map = wad.loadMap("E1M1")
 
