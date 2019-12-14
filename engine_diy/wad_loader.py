@@ -70,7 +70,7 @@ class WADLoader(object):
 WADLoader\n\
  WAD: {}\n\
  TYPE: {}\n\
- DIRS: {}\n\
- DOFFSET: {}\
- ".format(self.wadpath, self.type, self.dircount, self.diroffset)
+ DIR_COUNT: {}\n\
+ DIR_OFFSET: {}\
+".format(self.wadpath, self.type, self.dircount, self.diroffset)
 
