@@ -29,6 +29,7 @@
 # BIG-ENDIAN format
 
 import struct
+from engine_diy.directory import Directory
 
 class WAD(object):
 
@@ -51,15 +52,13 @@ class WAD(object):
 
     def loadDirs(self):
         self.dirs = []
-        lumpOffset = self.loadInt(self.diroffset, 4)
-        lumpSize = self.loadInt(self.diroffset + 4, 4)
         for i in range(0, self.dircount):
-            # get dir info
             offset = self.diroffset + 16 * i
-            lumpOffset = self.loadInt(offset, 4)
-            lumpSize = self.loadInt(offset + 4, 4)
-            lumpName = self.loadString(offset + 8, 8)
-            directory = Directory(lumpOffset, lumpSize, lumpName)
+            # get dir info
+            directory = Directory()
+            directory.lumpOffset = self.loadInt(offset, 4)
+            directory.lumpSize = self.loadInt(offset + 4, 4)
+            directory.lumpName = self.loadString(offset + 8, 8)
             self.dirs.append(directory)
 
     def loadString(self, offset, length, preserveNull = False):
@@ -97,19 +96,3 @@ WAD\n\
                 wad += str(d) + "\n"
         return wad
 
-
-class Directory(object):
-
-    def __init__(self, lumpOffset, lumpSize, lumpName):
-        self.lumpOffset = lumpOffset
-        self.lumpSize = lumpSize
-        self.lumpName = lumpName
-
-
-    def __str__(self):
-        return "\
-DIRECTORY\n\
- offset ....... {}\n\
- size ......... {}\n\
- name ......... {}\
-".format(self.lumpOffset, self.lumpSize, self.lumpName)
