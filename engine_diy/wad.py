@@ -37,6 +37,7 @@ class WAD(object):
         self.f = open(self.wadpath, 'rb') # read-binary
 
         self.loadHeader()
+        self.loadDirs()
 
     def loadHeader(self):
         # The header has a total of 12 bytes (0x00 to 0x0b)
@@ -47,6 +48,19 @@ class WAD(object):
         self.type = self.loadString(0, 4)
         self.dircount = self.loadInt(4, 4)
         self.diroffset = self.loadInt(8, 4)
+
+    def loadDirs(self):
+        self.dirs = []
+        lumpOffset = self.loadInt(self.diroffset, 4)
+        lumpSize = self.loadInt(self.diroffset + 4, 4)
+        for i in range(0, self.dircount):
+            # get dir info
+            offset = self.diroffset + 16 * i
+            lumpOffset = self.loadInt(offset, 4)
+            lumpSize = self.loadInt(offset + 4, 4)
+            lumpName = self.loadString(offset + 8, 4)
+            directory = Directory(lumpOffset, lumpSize, lumpName)
+            self.dirs.append(directory)
 
     def loadString(self, offset, length):
         self.f.seek(offset)
@@ -65,12 +79,36 @@ class WAD(object):
             ii += (byte << (i * 8))
         return ii
 
-    def __str__(self):
-        return "\
+    def info(self, dirs=False):
+        wad = "\
 WAD\n\
  path ......... {}\n\
  type ......... {}\n\
  dir_count .... {}\n\
- dir_offset ... {}\
-".format(self.wadpath, self.type, self.dircount, self.diroffset)
+ dir_offset ... {}\n\
+ dir_1 ........ {}\n\
+ dir_2 ........ {}\n\
+ dir_3 ........ {}\
+".format(self.wadpath, self.type, self.dircount, self.diroffset, self.dirs[0].lumpName, self.dirs[1].lumpName, self.dirs[2].lumpName)
+        if dirs:
+            wad += "\n"
+            for i, d in enumerate(self.dirs):
+                wad += str(d) + "\n"
+        return wad
 
+
+class Directory(object):
+
+    def __init__(self, lumpOffset, lumpSize, lumpName):
+        self.lumpOffset = lumpOffset
+        self.lumpSize = lumpSize
+        self.lumpName = lumpName
+
+
+    def __str__(self):
+        return "\
+DIRECTORY\n\
+ offset ....... {}\n\
+ size ......... {}\n\
+ name ......... {}\
+".format(self.lumpOffset, self.lumpSize, self.lumpName)

@@ -10,5 +10,5 @@ else:
 
 
 wad = WAD(path)
-print(wad)
+print(wad.info())
 
