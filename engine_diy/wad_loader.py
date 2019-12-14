@@ -41,25 +41,12 @@ class WADLoader(object):
     def loadHeader(self):
         # The header has a total of 12 bytes (0x00 to 0x0b)
         # this 12-bytes is divided to 3 groups
-        # first 4 bytes is the WAD type
-
-        #self.f.seek(0)
-        #self.header = self.f.read(4)
-        #self.dircount = self.f.read(4)
-        #self.diroffset = self.f.read(4)
-        #self.type = self.read4bytes(0)
-        self.dircount = self.read4bytes(4)
-        self.diroffset = self.read4bytes(8)
+        # first 4 bytes is the WAD type as CHAR
+        # second 4 is count of directories as Int
+        # third 4 is Int offset of directories
         self.type = self.loadString(0, 4)
         self.dircount = self.loadInt(4, 4)
         self.diroffset = self.loadInt(8, 4)
-
-        # convert to string
-        #self.typestr = self.asstr(self.type)
-        #self.dircounti = self.asint(self.dircount)
-
-        #print(self.typestr, self.dircounti)
-        #print(self.get4s(0), self.get4i(4))
 
     def loadString(self, offset, length):
         self.f.seek(offset)
