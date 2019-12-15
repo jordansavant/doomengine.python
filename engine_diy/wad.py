@@ -52,6 +52,7 @@ class WAD(object):
 
     def loadDirs(self):
         self.dirs = []
+        self.dirMap = {}
         for i in range(0, self.dircount):
             offset = self.diroffset + 16 * i
             # get dir info
@@ -60,6 +61,8 @@ class WAD(object):
             directory.lumpSize = self.load_uint32(offset + 4)
             directory.lumpName = self.loadString(offset + 8, 8)
             self.dirs.append(directory)
+            # keep hashmap of directory name to its index
+            self.dirMap[directory.lumpName] = len(self.dirs) - 1
 
     def readVertexData(self, offset):
         v = Vertex()
@@ -79,23 +82,17 @@ class WAD(object):
         return l
 
     def findMapIndex(self, map):
-        # non performant loop, need to make hashmap
-        for i, d in enumerate(self.dirs):
-            if d.lumpName == map.name:
-                return i
+        if map.name in self.dirMap:
+            return self.dirMap[map.name] # get index
         return -1
 
-    def readMapVertex(self, map):
-        mapIndex = self.findMapIndex(map)
-        if mapIndex == -1:
-            return False
-
-        mapIndex += MapLumpsIndex.VERTEXES
+    def readMapVertex(self, map, mapIndex):
+        mapIndex += Map.Indices.VERTEXES
         directory = self.dirs[mapIndex]
         if directory.lumpName != "VERTEXES":
             return False
 
-        vertexBytes = 4
+        vertexBytes = Vertex.sizeof()
         verticesCount = int(directory.lumpSize / vertexBytes) # vertex size in bytes
 
         for i in range(0, verticesCount):
@@ -104,17 +101,13 @@ class WAD(object):
 
         return True
 
-    def readMapLinedef(self, map):
-        mapIndex = self.findMapIndex(map)
-        if mapIndex == -1:
-            return False
-
-        mapIndex += MapLumpsIndex.LINEDEFS
+    def readMapLinedef(self, map, mapIndex):
+        mapIndex += Map.Indices.LINEDEFS
         directory = self.dirs[mapIndex]
         if directory.lumpName != "LINEDEFS":
             return False
 
-        linedefBytes = 14
+        linedefBytes = Linedef.sizeof()
         linedefCount = int(directory.lumpSize / linedefBytes)
 
         for i in range(0, linedefCount):
@@ -125,14 +118,18 @@ class WAD(object):
 
 
     def loadMapData(self, map):
-        if self.readMapVertex(map) == False:
+        mapIndex = self.findMapIndex(map)
+        if mapIndex == -1:
+            return False
+
+        if self.readMapVertex(map, mapIndex) == False:
             print("ERROR: Failed to load map vertices " + map.name)
             return False
-        if self.readMapLinedef(map) == False:
+        if self.readMapLinedef(map, mapIndex) == False:
             print("ERROR: Failed to load map linedefs " + map.name)
             return False
         # run some helpers to define the map
-        map.calcMinMax()
+        map.createMetaData()
         return True
 
     def loadMap(self, mapName):
