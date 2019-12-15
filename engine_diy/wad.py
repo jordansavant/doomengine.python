@@ -101,7 +101,6 @@ class WAD(object):
         for i in range(0, verticesCount):
             vertex = self.readVertexData(directory.lumpOffset + i * vertexBytes)
             map.vertices.append(vertex)
-            #print(vertex)
 
         return True
 
@@ -121,7 +120,6 @@ class WAD(object):
         for i in range(0, linedefCount):
             linedef = self.readLinedefData(directory.lumpOffset + i * linedefBytes)
             map.linedefs.append(linedef)
-            print(linedef)
 
         return True
 
