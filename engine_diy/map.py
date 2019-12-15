@@ -9,6 +9,8 @@ class Map(object):
         self.maxx = None
         self.miny = None
         self.maxy = None
+        self.width = None
+        self.height = None
     # helper method to get min and
     # max values of the maps coords
     def calcMinMax(self):
@@ -33,6 +35,8 @@ class Map(object):
                 self.miny = end.y
             if self.maxy == None or self.maxy < end.y:
                 self.maxy = end.y
+        self.width = self.maxx - self.minx
+        self.height = self.maxy - self.miny
 
 class MapLumpsIndex:
     THINGS    = 1

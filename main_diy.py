@@ -41,16 +41,12 @@ while True:
     # calculate map scale to fit screen minus padding
     pad = 10
     gw = (game.width - pad*2)
-    mw = map.maxx - map.minx
     gh = (game.height - pad*2)
-    mh = map.maxy - map.miny
-    scaleX = gw/mw
-    scaleY = gh/mh
-    scale = min(scaleX, scaleY)
+    scale = min(gw/map.width, gh/map.height)
 
     # center the map on the screen
-    xoff = (game.width - (mw * scale))/2 - (map.minx * scale)
-    yoff = (game.height - (mh *scale))/2 + (map.maxy * scale)
+    xoff = (game.width - (map.width * scale))/2 - (map.minx * scale)
+    yoff = (game.height - (map.height *scale))/2 + (map.maxy * scale)
 
     # loop over linedefs
     for i, ld in enumerate(map.linedefs):
