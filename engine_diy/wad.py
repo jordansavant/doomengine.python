@@ -136,7 +136,6 @@ class WAD(object):
 
         for i in range(0, thingCount):
             thing = self.readThingData(directory.lumpOffset + i * thingBytes)
-            print(thing)
             map.things.append(thing)
 
         return True

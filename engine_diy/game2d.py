@@ -1,4 +1,4 @@
-import pygame, os
+import pygame, os, math
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -48,3 +48,13 @@ class Game2D(object):
         glVertex2f(end[0], end[1])
         glEnd()
 
+    def drawPoint(self, pos, rgba, radius):
+        glColor4f(rgba[0], rgba[1], rgba[2], rgba[3])
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex2f(pos[0], pos[1]);
+        for angle in range(10, 3610, 2):
+            angle = angle / 10 # convert back down to degrees
+            x2 = pos[0] + math.sin(angle) * radius;
+            y2 = pos[1] + math.cos(angle) * radius;
+            glVertex2f(x2, y2);
+        glEnd()

@@ -25,7 +25,7 @@ if map == None:
 
 # setup game
 game = Game2D()
-game.setupWindow(1024, 768)
+game.setupWindow(1600, 1200)
 
 while True:
 
@@ -59,6 +59,12 @@ while True:
         ey = -end.y * scale + yoff
         # draw the line
         game.drawLine([sx, sy], [ex, ey], (1,1,1,1), 1)
+
+    # render things as dots
+    for i, thing in enumerate(map.things):
+        x = thing.x * scale + xoff
+        y = -thing.y * scale + yoff # cartesian flip
+        game.drawPoint([x,y], (1,0,0,0), 2)
 
     game.drawEnd()
 
