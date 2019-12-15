@@ -18,6 +18,7 @@ class Map(object):
         self.vertices = []
         self.linedefs = []
         self.things = []
+        self.playerThing = None # a thing
         self.minx = None
         self.maxx = None
         self.miny = None
@@ -92,6 +93,9 @@ class Linedef(object):
                 self.frontSideDef, self.backSideDef)
 
 class Thing(object):
+    # TODO more types
+    class Types:
+        PLAYER = 1
     def __init__(self):
         self.x = 0 # int16
         self.y = 0 # int16

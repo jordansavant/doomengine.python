@@ -1,6 +1,8 @@
 import sys, engine_diy
 from engine_diy.wad import WAD
 from engine_diy.game2d import Game2D
+from engine_diy.map import *
+from engine_diy.player import Player
 
 
 # path to wad
@@ -22,6 +24,13 @@ map = wad.loadMap(mapname)
 if map == None:
     print("ERROR: invalid map {}".format(mapname))
     quit()
+
+# build player
+player = Player()
+player.id = 1
+player.x = map.playerThing.x
+player.y = map.playerThing.y
+player.angle = map.playerThing.angle
 
 # setup game
 game = Game2D()
@@ -60,11 +69,16 @@ while True:
         # draw the line
         game.drawLine([sx, sy], [ex, ey], (1,1,1,1), 1)
 
-    # render things as dots
+    # render things as dots (things list does not contain player thing)
     for i, thing in enumerate(map.things):
         x = thing.x * scale + xoff
         y = -thing.y * scale + yoff # cartesian flip
-        game.drawPoint([x,y], (1,0,0,0), 2)
+        game.drawPoint([x,y], (1,0,0,1), 2)
+
+    # render player
+    px = player.x * scale + xoff
+    py = -player.y * scale + yoff
+    game.drawPoint([px,py], (0,1,0,1), 2)
 
     game.drawEnd()
 

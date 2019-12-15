@@ -136,7 +136,11 @@ class WAD(object):
 
         for i in range(0, thingCount):
             thing = self.readThingData(directory.lumpOffset + i * thingBytes)
-            map.things.append(thing)
+            # TODO should I add player to list of things?
+            if thing.type == Thing.Types.PLAYER:
+                map.playerThing = thing
+            else:
+                map.things.append(thing)
 
         return True
 

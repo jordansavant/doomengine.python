@@ -1,5 +1,5 @@
 class Player(object):
-    def __init(self)__:
+    def __init__(self):
         self.id = 0 # int32
         self.x = 0 # int32
         self.y = 0 # int32
