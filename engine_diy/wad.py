@@ -131,12 +131,16 @@ class WAD(object):
         if self.readMapLinedef(map) == False:
             print("ERROR: Failed to load map linedefs " + map.name)
             return False
+        # run some helpers to define the map
+        map.calcMinMax()
         return True
 
     def loadMap(self, mapName):
         map = Map()
         map.name = mapName
-        return self.loadMapData(map)
+        if self.loadMapData(map):
+            return map
+        return None
 
     def loadString(self, offset, length, preserveNull = False):
         self.f.seek(offset)

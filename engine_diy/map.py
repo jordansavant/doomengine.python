@@ -5,6 +5,34 @@ class Map(object):
         self.name = ""
         self.vertices = []
         self.linedefs = []
+        self.minx = None
+        self.maxx = None
+        self.miny = None
+        self.maxy = None
+    # helper method to get min and
+    # max values of the maps coords
+    def calcMinMax(self):
+        for i, ld in enumerate(self.linedefs):
+            start = self.vertices[ld.startVertex]
+            end = self.vertices[ld.endVertex]
+
+            if self.minx == None or self.minx > start.x:
+                self.minx = start.x
+            if self.maxx == None or self.maxx < start.x:
+                self.maxx = start.x
+            if self.minx == None or self.minx > end.x:
+                self.minx = end.x
+            if self.maxx == None or self.maxx < end.x:
+                self.maxx = end.x
+
+            if self.miny == None or self.miny > start.y:
+                self.miny = start.y
+            if self.maxy == None or self.maxy < start.y:
+                self.maxy = start.y
+            if self.miny == None or self.miny > end.y:
+                self.miny = end.y
+            if self.maxy == None or self.maxy < end.y:
+                self.maxy = end.y
 
 class MapLumpsIndex:
     THINGS    = 1
