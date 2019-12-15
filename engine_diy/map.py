@@ -17,6 +17,7 @@ class Map(object):
         self.name = ""
         self.vertices = []
         self.linedefs = []
+        self.things = []
         self.minx = None
         self.maxx = None
         self.miny = None
@@ -97,4 +98,9 @@ class Thing(object):
         self.angle = 0 # uint16
         self.type = 0 # uint16
         self.flags = 0 # uint16
+    def sizeof():
+        return 10
+    def __str__(self):
+        return "{},{} {} {} {}"\
+                .format(self.x, self.y, self.angle, self.type, self.flags)
 

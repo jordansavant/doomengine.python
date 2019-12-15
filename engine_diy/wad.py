@@ -81,6 +81,15 @@ class WAD(object):
         l.backSideDef = self.load_ushort(offset + 12)
         return l
 
+    def readThingData(self, offset):
+        t = Thing()
+        t.x = self.load_sshort(offset)
+        t.y = self.load_sshort(offset + 2)
+        t.angle = self.load_ushort(offset + 4)
+        t.type = self.load_ushort(offset + 6)
+        t.flags = self.load_ushort(offset + 8)
+        return t
+
     def findMapIndex(self, map):
         if map.name in self.dirMap:
             return self.dirMap[map.name] # get index
@@ -116,6 +125,21 @@ class WAD(object):
 
         return True
 
+    def readMapThing(self, map, mapIndex):
+        mapIndex += Map.Indices.THINGS
+        directory = self.dirs[mapIndex]
+        if directory.lumpName != "THINGS":
+            return False
+
+        thingBytes = Thing.sizeof()
+        thingCount = int(directory.lumpSize / thingBytes)
+
+        for i in range(0, thingCount):
+            thing = self.readThingData(directory.lumpOffset + i * thingBytes)
+            print(thing)
+            map.things.append(thing)
+
+        return True
 
     def loadMapData(self, map):
         mapIndex = self.findMapIndex(map)
@@ -127,6 +151,9 @@ class WAD(object):
             return False
         if self.readMapLinedef(map, mapIndex) == False:
             print("ERROR: Failed to load map linedefs " + map.name)
+            return False
+        if self.readMapThing(map, mapIndex) == False:
+            print("ERROR: Failed to load map things " + map.name)
             return False
         # run some helpers to define the map
         map.createMetaData()
