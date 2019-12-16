@@ -2,6 +2,7 @@ from enum import Enum
 
 class Map(object):
     class Indices:
+        NAME      = 0
         THINGS    = 1
         LINEDEFS  = 2
         SIDEDEFS  = 3
@@ -19,6 +20,7 @@ class Map(object):
         self.linedefs = []
         self.things = []
         self.playerThing = None # a thing
+        self.nodes = []
         self.minx = None
         self.maxx = None
         self.miny = None
@@ -219,4 +221,36 @@ class Thing(object):
     def __str__(self):
         return "{},{} {} {} {}"\
                 .format(self.x, self.y, self.angle, self.type, self.flags)
+
+# BSP Node
+class Node(object):
+    def __init__(self):
+        # coords of slitter
+        self.xPartition = 0 # int16
+        self.yPartition = 0 # int16
+        # directional length to reach end of splitter
+        self.xChangePartition = 0 # int16
+        self.yChangePartition = 0 # int16
+        # corners of front box
+        self.frontBoxTop = 0 # int16
+        self.frontBoxBottom = 0 # int16
+        self.frontBoxLeft = 0 # int16
+        self.frontBoxRight = 0 # int16
+        # corners of back box
+        self.backBoxTop = 0 # int16
+        self.backBoxBottom = 0 # int16
+        self.backBoxLeft = 0 # int16
+        self.backBoxRight = 0 # int16
+        # indexes of children + subsector indicator
+        self.frontChildID = 0 # uint16
+        self.backChildID = 0 # uint16
+    def sizeof():
+        return 28
+    def __str__(self):
+        return "{},{} {},{} FTB:{},{} FLR:{},{}"\
+                .format(self.xPartition, self.yPartition,\
+                self.xChangePartition, self.yChangePartition,\
+                self.frontBoxTop, self.frontBoxBottom,\
+                self.frontBoxLeft, self.frontBoxRight,\
+                )
 

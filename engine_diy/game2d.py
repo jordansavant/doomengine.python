@@ -14,6 +14,8 @@ class Game2D(object):
         pygame.init()
         os.environ['SDL_VIDEO_CENTERED'] = '1' # center window on screen
         screen = pygame.display.set_mode((width, height), DOUBLEBUF|OPENGL) # build window with opengl
+        glEnable(GL_BLEND); # allows for alpha transparency on color
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     def events(self):
         for event in pygame.event.get():

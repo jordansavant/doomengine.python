@@ -90,6 +90,28 @@ class WAD(object):
         t.flags = self.load_ushort(offset + 8)
         return t
 
+    def readNodeData(self, offset):
+        n = Node()
+        n.xPartition = self.load_sshort(offset)
+        n.yPartition = self.load_sshort(offset + 2)
+        n.xChangePartition = self.load_sshort(offset + 4)
+        n.yChangePartition = self.load_sshort(offset + 6)
+
+        n.frontBoxTop = self.load_sshort(offset + 8)
+        n.frontBoxBottom = self.load_sshort(offset + 10)
+        n.frontBoxLeft = self.load_sshort(offset + 12)
+        n.frontBoxRight = self.load_sshort(offset + 14)
+
+        n.backBoxTop = self.load_sshort(offset + 16)
+        n.backBoxBottom = self.load_sshort(offset + 18)
+        n.backBoxLeft = self.load_sshort(offset + 20)
+        n.backBoxRight = self.load_sshort(offset + 22)
+
+        n.frontChildID = self.load_ushort(offset + 24)
+        n.backChildID = self.load_ushort(offset + 26)
+        return n
+
+
     def findMapIndex(self, map):
         if map.name in self.dirMap:
             return self.dirMap[map.name] # get index
@@ -144,6 +166,21 @@ class WAD(object):
 
         return True
 
+    def readMapNode(self, map, mapIndex):
+        mapIndex += Map.Indices.NODES
+        directory = self.dirs[mapIndex]
+        if directory.lumpName != "NODES":
+            return False
+
+        nodeBytes = Node.sizeof()
+        nodeCount = int(directory.lumpSize / nodeBytes)
+
+        for i in range(0, nodeCount):
+            node = self.readNodeData(directory.lumpOffset + i * nodeBytes)
+            map.nodes.append(node)
+
+        return True
+
     def loadMapData(self, map):
         mapIndex = self.findMapIndex(map)
         if mapIndex == -1:
@@ -157,6 +194,9 @@ class WAD(object):
             return False
         if self.readMapThing(map, mapIndex) == False:
             print("ERROR: Failed to load map things " + map.name)
+            return False
+        if self.readMapNode(map, mapIndex) == False:
+            print("ERROR: Failed to load map nodes " + map.name)
             return False
         # run some helpers to define the map
         map.createMetaData()

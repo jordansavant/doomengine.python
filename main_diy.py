@@ -4,6 +4,24 @@ from engine_diy.game2d import Game2D
 from engine_diy.map import *
 from engine_diy.player import Player
 
+class Plot(object):
+    def __init__(self, map, game):
+        # calculate map scale to fit screen minus padding
+        self.pad = pad = 10
+        gw = (game.width - self.pad*2)
+        gh = (game.height - self.pad*2)
+        self.scale = scale = min(gw/map.width, gh/map.height)
+
+        # center the map on the screen
+        self.xoff = (game.width - (map.width * scale))/2 - (map.minx * scale)
+        self.yoff = (game.height - (map.height *scale))/2 + (map.maxy * scale)
+    def ot(self, x, y):
+        # flip cartesian, scale and translate
+        x = x * self.scale + self.xoff
+        y = -y * self.scale + self.yoff
+        return x, y
+
+
 
 # path to wad
 if len(sys.argv) > 1:
@@ -36,6 +54,8 @@ player.angle = map.playerThing.angle
 game = Game2D()
 game.setupWindow(1600, 1200)
 
+pl = Plot(map, game)
+
 while True:
 
     game.events()
@@ -47,41 +67,54 @@ while True:
     # draw
     game.drawStart()
 
-    # calculate map scale to fit screen minus padding
-    pad = 10
-    gw = (game.width - pad*2)
-    gh = (game.height - pad*2)
-    scale = min(gw/map.width, gh/map.height)
-
-    # center the map on the screen
-    xoff = (game.width - (map.width * scale))/2 - (map.minx * scale)
-    yoff = (game.height - (map.height *scale))/2 + (map.maxy * scale)
-
     # loop over linedefs
     for i, ld in enumerate(map.linedefs):
         start = map.vertices[ld.startVertex]
         end = map.vertices[ld.endVertex]
         # map is in cartesian, flip to screen y
-        sx = start.x * scale + xoff
-        sy = -start.y * scale + yoff
-        ex = end.x * scale + xoff
-        ey = -end.y * scale + yoff
+        sx, sy = pl.ot(start.x, start.y)
+        ex, ey = pl.ot(end.x, end.y)
         # draw the line
         game.drawLine([sx, sy], [ex, ey], (1,1,1,1), 1)
 
     # render things as dots (things list does not contain player thing)
     for i, thing in enumerate(map.things):
-        x = thing.x * scale + xoff
-        y = -thing.y * scale + yoff # cartesian flip
+        x, y = pl.ot(thing.x, thing.y)
         game.drawPoint([x,y], (1,0,0,1), 2)
 
-    # render player
-    px = player.x * scale + xoff
-    py = -player.y * scale + yoff
+    ## render player
+    px, py = pl.ot(player.x, player.y)
     game.drawPoint([px,py], (0,1,0,1), 2)
+
+    ## render last sector node
+    node = map.nodes[len(map.nodes)-1]
+    ## draw front box
+    rgba = (1, 1, 0, .5)
+    fl, ft = pl.ot(node.frontBoxLeft, node.frontBoxTop)
+    fr, fb = pl.ot(node.frontBoxRight, node.frontBoxBottom)
+    game.drawLine([fl, ft], [fr, ft], rgba, 2)
+    game.drawLine([fr, ft], [fr, fb], rgba, 2)
+    game.drawLine([fr, fb], [fl, fb], rgba, 2)
+    game.drawLine([fl, fb], [fl, ft], rgba, 2)
+
+    ## draw back box
+    rgba = (1, 0, 1, .5)
+    bl, bt = pl.ot(node.backBoxLeft, node.backBoxTop)
+    br, bb = pl.ot(node.backBoxRight, node.backBoxBottom)
+    game.drawLine([bl, bt], [br, bt], rgba, 2)
+    game.drawLine([br, bt], [br, bb], rgba, 2)
+    game.drawLine([br, bb], [bl, bb], rgba, 2)
+    game.drawLine([bl, bb], [bl, bt], rgba, 2)
+
+    ## draw the node seg splitterd
+    rgba = (1, 1, 0, 1)
+    xp, yp = pl.ot(node.xPartition, node.yPartition)
+    xc, yc = pl.ot(node.xPartition + node.xChangePartition, node.yPartition + node.yChangePartition)
+    game.drawLine([xp, yp], [xc, yc], (0,0,1,1), 3)
 
     game.drawEnd()
 
 
     # dinky gameloop
     game.sleep()
+
