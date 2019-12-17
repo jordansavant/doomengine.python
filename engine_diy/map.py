@@ -53,6 +53,8 @@ class Map(object):
                 self.maxy = end.y
         self.width = self.maxx - self.minx
         self.height = self.maxy - self.miny
+    def getRootNode(self):
+        return self.nodes[len(self.nodes) - 1]
 
 class Vertex(object):
     def __init__(self):

@@ -87,24 +87,18 @@ while True:
     game.drawPoint([px,py], (0,1,0,1), 2)
 
     ## render last sector node
-    node = map.nodes[len(map.nodes)-1]
+    node = map.getRootNode()
     ## draw front box
-    rgba = (1, 1, 0, .5)
+    rgba = (0, 1, 0, .5)
     fl, ft = pl.ot(node.frontBoxLeft, node.frontBoxTop)
     fr, fb = pl.ot(node.frontBoxRight, node.frontBoxBottom)
-    game.drawLine([fl, ft], [fr, ft], rgba, 2)
-    game.drawLine([fr, ft], [fr, fb], rgba, 2)
-    game.drawLine([fr, fb], [fl, fb], rgba, 2)
-    game.drawLine([fl, fb], [fl, ft], rgba, 2)
+    game.drawBox([fl, ft], [fr, ft], [fr, fb], [fl, fb], rgba, 2)
 
     ## draw back box
-    rgba = (1, 0, 1, .5)
+    rgba = (1, 0, 0, .5)
     bl, bt = pl.ot(node.backBoxLeft, node.backBoxTop)
     br, bb = pl.ot(node.backBoxRight, node.backBoxBottom)
-    game.drawLine([bl, bt], [br, bt], rgba, 2)
-    game.drawLine([br, bt], [br, bb], rgba, 2)
-    game.drawLine([br, bb], [bl, bb], rgba, 2)
-    game.drawLine([bl, bb], [bl, bt], rgba, 2)
+    game.drawBox([bl, bt], [br, bt], [br, bb], [bl, bb], rgba, 2)
 
     ## draw the node seg splitterd
     rgba = (1, 1, 0, 1)

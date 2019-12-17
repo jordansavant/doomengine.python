@@ -60,3 +60,9 @@ class Game2D(object):
             y2 = pos[1] + math.cos(angle) * radius;
             glVertex2f(x2, y2);
         glEnd()
+
+    def drawBox(self, tl, tr, br, bl, rgba, width):
+        self.drawLine(tl, tr, rgba, width)
+        self.drawLine(tr, br, rgba, width)
+        self.drawLine(br, bl, rgba, width)
+        self.drawLine(bl, tl, rgba, width)
