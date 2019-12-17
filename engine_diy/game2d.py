@@ -105,6 +105,15 @@ class Game2D(object):
             glVertex2f(x2, y2);
         glEnd()
 
+    def drawRectangle(self, pos, width, height, rgba):
+        glColor4f(rgba[0], rgba[1], rgba[2], rgba[3])
+        glBegin(GL_QUADS)
+        glVertex2f(pos[0], pos[1])
+        glVertex2f(pos[0] + width, pos[1])
+        glVertex2f(pos[0] + width, pos[1] + height)
+        glVertex2f(pos[0], pos[1] + height)
+        glEnd()
+
     def drawBox(self, tl, tr, br, bl, rgba, width):
         self.drawLine(tl, tr, rgba, width)
         self.drawLine(tr, br, rgba, width)

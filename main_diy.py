@@ -111,11 +111,11 @@ while True:
     if mode == 1:
         for i, thing in enumerate(map.things):
             x, y = pl.ot(thing.x, thing.y)
-            game.drawPoint([x,y], (1,0,0,1), 2)
+            game.drawRectangle([x-2,y-2], 4, 4, (1,0,0,1))
 
         ## render player
         px, py = pl.ot(player.x, player.y)
-        game.drawPoint([px,py], (0,1,0,1), 2)
+        game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
 
     ## render last sector node
     if mode == 2:
