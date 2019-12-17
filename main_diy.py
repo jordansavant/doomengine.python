@@ -1,4 +1,4 @@
-import sys, engine_diy
+import sys, engine_diy, pygame
 from engine_diy.wad import WAD
 from engine_diy.game2d import Game2D
 from engine_diy.map import *
@@ -21,7 +21,25 @@ class Plot(object):
         y = -y * self.scale + self.yoff
         return x, y
 
+# helper method to draw map nodes
+def drawNode(game, node):
+    ## draw front box
+    rgba = (0, 1, 0, .5)
+    fl, ft = pl.ot(node.frontBoxLeft, node.frontBoxTop)
+    fr, fb = pl.ot(node.frontBoxRight, node.frontBoxBottom)
+    game.drawBox([fl, ft], [fr, ft], [fr, fb], [fl, fb], rgba, 2)
 
+    ## draw back box
+    rgba = (1, 0, 0, .5)
+    bl, bt = pl.ot(node.backBoxLeft, node.backBoxTop)
+    br, bb = pl.ot(node.backBoxRight, node.backBoxBottom)
+    game.drawBox([bl, bt], [br, bt], [br, bb], [bl, bb], rgba, 2)
+
+    ## draw the node seg splitterd
+    rgba = (1, 1, 0, 1)
+    xp, yp = pl.ot(node.xPartition, node.yPartition)
+    xc, yc = pl.ot(node.xPartition + node.xChangePartition, node.yPartition + node.yChangePartition)
+    game.drawLine([xp, yp], [xc, yc], (0,0,1,1), 3)
 
 # path to wad
 if len(sys.argv) > 1:
@@ -56,6 +74,18 @@ game.setupWindow(1600, 1200)
 
 pl = Plot(map, game)
 
+# render helpers
+mode = 0
+max_modes = 4
+def mode_up():
+    global mode
+    mode = (mode + 1) % max_modes
+game.onKeyUp(pygame.K_UP, mode_up)
+def mode_down():
+    global mode
+    mode = (mode - 1) % max_modes
+game.onKeyUp(pygame.K_DOWN, mode_down)
+
 while True:
 
     game.events()
@@ -78,33 +108,21 @@ while True:
         game.drawLine([sx, sy], [ex, ey], (1,1,1,1), 1)
 
     # render things as dots (things list does not contain player thing)
-    for i, thing in enumerate(map.things):
-        x, y = pl.ot(thing.x, thing.y)
-        game.drawPoint([x,y], (1,0,0,1), 2)
+    if mode == 1:
+        for i, thing in enumerate(map.things):
+            x, y = pl.ot(thing.x, thing.y)
+            game.drawPoint([x,y], (1,0,0,1), 2)
 
-    ## render player
-    px, py = pl.ot(player.x, player.y)
-    game.drawPoint([px,py], (0,1,0,1), 2)
+        ## render player
+        px, py = pl.ot(player.x, player.y)
+        game.drawPoint([px,py], (0,1,0,1), 2)
 
     ## render last sector node
-    node = map.getRootNode()
-    ## draw front box
-    rgba = (0, 1, 0, .5)
-    fl, ft = pl.ot(node.frontBoxLeft, node.frontBoxTop)
-    fr, fb = pl.ot(node.frontBoxRight, node.frontBoxBottom)
-    game.drawBox([fl, ft], [fr, ft], [fr, fb], [fl, fb], rgba, 2)
-
-    ## draw back box
-    rgba = (1, 0, 0, .5)
-    bl, bt = pl.ot(node.backBoxLeft, node.backBoxTop)
-    br, bb = pl.ot(node.backBoxRight, node.backBoxBottom)
-    game.drawBox([bl, bt], [br, bt], [br, bb], [bl, bb], rgba, 2)
-
-    ## draw the node seg splitterd
-    rgba = (1, 1, 0, 1)
-    xp, yp = pl.ot(node.xPartition, node.yPartition)
-    xc, yc = pl.ot(node.xPartition + node.xChangePartition, node.yPartition + node.yChangePartition)
-    game.drawLine([xp, yp], [xc, yc], (0,0,1,1), 3)
+    if mode == 2:
+        drawNode(game, map.getRootNode())
+    if mode == 3:
+        for i, n in enumerate(map.nodes):
+            drawNode(game, n)
 
     game.drawEnd()
 
