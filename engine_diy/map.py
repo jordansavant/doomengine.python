@@ -1,6 +1,7 @@
 from enum import Enum
 
 class Map(object):
+    SUBSECTORIDENTIFIER = 0x8000
     class Indices:
         NAME      = 0
         THINGS    = 1
@@ -55,6 +56,33 @@ class Map(object):
         self.height = self.maxy - self.miny
     def getRootNode(self):
         return self.nodes[len(self.nodes) - 1]
+    # traverse the BSP tree
+    def isOnBackSide(self, x, y, node):
+        dx = x - node.xPartition
+        dy = y - node.yPartition
+        # use cross product to determine which direction
+        cross = dx * node.xChangePartition - dy * node.yChangePartition
+        return cross <= 0
+    def renderBspNodes(self, x, y, renderSubsector, nodeId = None):
+        if nodeId == None:
+            nodeId = len(self.nodes) - 1
+
+        # see if this is a subsector
+        # they used the last bit of the nodeId to set if it was
+        # a node that was a subsector (if last bit was 1)
+        inSubsector = nodeId & Map.SUBSECTORIDENTIFIER
+        if inSubsector > 0:
+            subsectorId = nodeId & (~Map.SUBSECTORIDENTIFIER)
+            renderSubsector(subsectorId)
+            return
+
+        node = self.nodes[nodeId]
+
+        isOnBack = self.isOnBackSide(x, y, node)
+        if isOnBack:
+            self.renderBspNodes(x, y, renderSubsector, node.backChildID)
+        else:
+            self.renderBspNodes(x, y, renderSubsector, node.frontChildID)
 
 class Vertex(object):
     def __init__(self):
@@ -255,4 +283,21 @@ class Node(object):
                 self.frontBoxTop, self.frontBoxBottom,\
                 self.frontBoxLeft, self.frontBoxRight,\
                 )
+
+# Sub sector
+# a smaller portion of a Sector
+# comprised of segs, which are portions of lines
+# added together the segs create a subsector
+# segs are formed via BSP tree so subsectors
+# are used to isolate a player within the map
+class Subsector(object):
+    def __init__(self):
+        self.segCount = 0 # unit16
+        self.firstSegID = 0 # unit16
+    def sizeof():
+        return 4
+    def __str__(self):
+        return "{} {}".format(self.segCount, self.firstSegID)
+
+
 

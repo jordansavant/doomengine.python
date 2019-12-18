@@ -41,6 +41,10 @@ def drawNode(game, node):
     xc, yc = pl.ot(node.xPartition + node.xChangePartition, node.yPartition + node.yChangePartition)
     game.drawLine([xp, yp], [xc, yc], (0,0,1,1), 3)
 
+def drawSubsector(subsectorId):
+    global game
+    print("DRAW SUBSECTOR", subsectorId)
+
 # path to wad
 if len(sys.argv) > 1:
     path = sys.argv[1]
@@ -76,7 +80,7 @@ pl = Plot(map, game)
 
 # render helpers
 mode = 0
-max_modes = 4
+max_modes = 5
 def mode_up():
     global mode
     mode = (mode + 1) % max_modes
@@ -123,6 +127,8 @@ while True:
     if mode == 3:
         for i, n in enumerate(map.nodes):
             drawNode(game, n)
+    if mode == 4:
+        map.renderBspNodes(player.x, player.y, drawSubsector)
 
     game.drawEnd()
 
