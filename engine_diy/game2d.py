@@ -68,8 +68,8 @@ class Game2D(object):
     def onMouseMove(self, func):
         self.mouseMoveCallbacks.append(func)
 
-    def sleep(self):
-        pygame.time.wait(16) # dinky 60fps
+    def sleep(self, ms=16):
+        pygame.time.wait(ms) # dinky 60fps
 
     def drawStart(self):
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)

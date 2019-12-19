@@ -72,8 +72,8 @@ class WAD(object):
 
     def readLinedefData(self, offset):
         l = Linedef()
-        l.startVertex = self.load_ushort(offset)
-        l.endVertex = self.load_ushort(offset + 2)
+        l.startVertexID = self.load_ushort(offset)
+        l.endVertexID = self.load_ushort(offset + 2)
         l.flags = self.load_ushort(offset + 4)
         l.lineType = self.load_ushort(offset + 6)
         l.sectorTag = self.load_ushort(offset + 8)
@@ -110,6 +110,22 @@ class WAD(object):
         n.frontChildID = self.load_ushort(offset + 24)
         n.backChildID = self.load_ushort(offset + 26)
         return n
+
+    def readSubsectorData(self, offset):
+        ss = Subsector()
+        ss.segCount = self.load_ushort(offset)
+        ss.firstSegID = self.load_ushort(offset + 2)
+        return ss
+
+    def readSegData(self, offset):
+        s = Seg()
+        s.startVertexID = self.load_ushort(offset)
+        s.endVertexID = self.load_ushort(offset + 2)
+        s.angle = self.load_ushort(offset + 4)
+        s.linedefID = self.load_ushort(offset + 6)
+        s.direction = self.load_ushort(offset + 8)
+        s.offset = self.load_ushort(offset + 10)
+        return s
 
 
     def findMapIndex(self, map):
@@ -181,6 +197,36 @@ class WAD(object):
 
         return True
 
+    def readMapSubsector(self, map, mapIndex):
+        mapIndex += Map.Indices.SSECTORS
+        directory = self.dirs[mapIndex]
+        if directory.lumpName != "SSECTORS":
+            return False
+
+        subsectorBytes = Subsector.sizeof()
+        subsectorCount = int(directory.lumpSize / subsectorBytes)
+
+        for i in range(0, subsectorCount):
+            subsector = self.readSubsectorData(directory.lumpOffset + i * subsectorBytes)
+            map.subsectors.append(subsector)
+
+        return True
+
+    def readMapSeg(self, map, mapIndex):
+        mapIndex += Map.Indices.SEGS
+        directory = self.dirs[mapIndex]
+        if directory.lumpName != "SEGS":
+            return False
+
+        segBytes = Seg.sizeof()
+        segCount = int(directory.lumpSize / segBytes)
+
+        for i in range(0, segCount):
+            seg = self.readSegData(directory.lumpOffset + i * segBytes)
+            map.segs.append(seg)
+
+        return True
+
     def loadMapData(self, map):
         mapIndex = self.findMapIndex(map)
         if mapIndex == -1:
@@ -197,6 +243,12 @@ class WAD(object):
             return False
         if self.readMapNode(map, mapIndex) == False:
             print("ERROR: Failed to load map nodes " + map.name)
+            return False
+        if self.readMapSubsector(map, mapIndex) == False:
+            print("ERROR: Failed to load map subsectors " + map.name)
+            return False
+        if self.readMapSeg(map, mapIndex) == False:
+            print("ERROR: Failed to load map segs " + map.name)
             return False
         # run some helpers to define the map
         map.createMetaData()

@@ -8,7 +8,7 @@ class Map(object):
         LINEDEFS  = 2
         SIDEDEFS  = 3
         VERTEXES  = 4
-        SEAGS     = 5
+        SEGS      = 5
         SSECTORS  = 6
         NODES     = 7
         SECTORS   = 8
@@ -22,6 +22,8 @@ class Map(object):
         self.things = []
         self.playerThing = None # a thing
         self.nodes = []
+        self.subsectors = []
+        self.segs = []
         self.minx = None
         self.maxx = None
         self.miny = None
@@ -32,8 +34,8 @@ class Map(object):
     # max values of the maps coords
     def createMetaData(self):
         for i, ld in enumerate(self.linedefs):
-            start = self.vertices[ld.startVertex]
-            end = self.vertices[ld.endVertex]
+            start = self.vertices[ld.startVertexID]
+            end = self.vertices[ld.endVertexID]
 
             if self.minx == None or self.minx > start.x:
                 self.minx = start.x
@@ -107,8 +109,8 @@ class Linedef(object):
 
     def __init__(self):
         # all 2 bytes (14 bytes)
-        self.startVertex = 0 # uint16
-        self.endVertex = 0 # uint16
+        self.startVertexID = 0 # uint16
+        self.endVertexID = 0 # uint16
         self.flags = 0 # uint16
         self.lineType = 0 # uint16
         self.sectorTag = 0 # uint16
@@ -120,7 +122,7 @@ class Linedef(object):
 
     def __str__(self):
         return "s.{},e.{} f.{} t.{} s.{} f.{} b.{}"\
-                .format(self.startVertex, self.endVertex,\
+                .format(self.startVertexID, self.endVertexID,\
                 self.flags, self.lineType, self.sectorTag,\
                 self.frontSideDef, self.backSideDef)
 
@@ -299,5 +301,17 @@ class Subsector(object):
     def __str__(self):
         return "{} {}".format(self.segCount, self.firstSegID)
 
+# Portion of a linedef, when combined with
+# other segs form a sub sector
+class Seg(object):
+    def __init__(self):
+        self.startVertexID = 0 # uint16
+        self.endVertexID = 0 # uint16
+        self.angle = 0 # uint16 (degrees)
+        self.linedefID = 0 # uint16
+        self.direction = 0 # uint16 (0=same as linedef, 1=opposite of linedef)
+        self.offset = 0 # uint16 (distance along linedef to start of seg)
+    def sizeof():
+        return 12
 
 

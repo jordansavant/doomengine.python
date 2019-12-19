@@ -1,4 +1,4 @@
-import sys, engine_diy, pygame
+import sys, engine_diy, pygame, random
 from engine_diy.wad import WAD
 from engine_diy.game2d import Game2D
 from engine_diy.map import *
@@ -42,8 +42,16 @@ def drawNode(game, node):
     game.drawLine([xp, yp], [xc, yc], (0,0,1,1), 3)
 
 def drawSubsector(subsectorId):
-    global game
-    print("DRAW SUBSECTOR", subsectorId)
+    global game, map, pl
+    subsector = map.subsectors[subsectorId]
+    for i in range(0, subsector.segCount):
+        seg = map.segs[subsector.firstSegID + i]
+        startVertex = map.vertices[seg.startVertexID]
+        endVertex = map.vertices[seg.endVertexID]
+        sx, sy = pl.ot(startVertex.x, startVertex.y)
+        ex, ey = pl.ot(endVertex.x, endVertex.y)
+        rgba = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), 1)
+        game.drawLine([sx,sy], [ex,ey], rgba, 1)
 
 # path to wad
 if len(sys.argv) > 1:
@@ -80,7 +88,7 @@ pl = Plot(map, game)
 
 # render helpers
 mode = 0
-max_modes = 5
+max_modes = 6
 def mode_up():
     global mode
     mode = (mode + 1) % max_modes
@@ -103,8 +111,8 @@ while True:
 
     # loop over linedefs
     for i, ld in enumerate(map.linedefs):
-        start = map.vertices[ld.startVertex]
-        end = map.vertices[ld.endVertex]
+        start = map.vertices[ld.startVertexID]
+        end = map.vertices[ld.endVertexID]
         # map is in cartesian, flip to screen y
         sx, sy = pl.ot(start.x, start.y)
         ex, ey = pl.ot(end.x, end.y)
@@ -128,6 +136,12 @@ while True:
         for i, n in enumerate(map.nodes):
             drawNode(game, n)
     if mode == 4:
+        for i, ss in enumerate(map.subsectors):
+            drawSubsector(i)
+        game.sleep(100)
+    if mode == 5:
+        # TODO, this is wrong and not working
+        # render player subsector
         map.renderBspNodes(player.x, player.y, drawSubsector)
 
     game.drawEnd()
