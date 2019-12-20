@@ -7,6 +7,7 @@ class Game2D(object):
 
     def __init__(self):
         self.over = False
+        self.fps = 60
         self.keyUpCallbacks = {}
         self.keyDownCallbacks = {}
         self.keyHoldCallbacks = {}
@@ -68,7 +69,12 @@ class Game2D(object):
     def onMouseMove(self, func):
         self.mouseMoveCallbacks.append(func)
 
-    def sleep(self, ms=16):
+    def setFPS(self, fps):
+        self.fps = fps
+
+    def sleep(self, ms=None):
+        if ms is None:
+            ms = (int)(1000 / self.fps)
         pygame.time.wait(ms) # dinky 60fps
 
     def drawStart(self):

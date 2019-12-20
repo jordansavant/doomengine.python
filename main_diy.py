@@ -41,17 +41,18 @@ def drawNode(game, node):
     xc, yc = pl.ot(node.xPartition + node.xChangePartition, node.yPartition + node.yChangePartition)
     game.drawLine([xp, yp], [xc, yc], (0,0,1,1), 3)
 
-def drawSubsector(subsectorId):
+def drawSubsector(subsectorId, rgba=None):
     global game, map, pl
     subsector = map.subsectors[subsectorId]
+    if rgba is None:
+        rgba = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), 1)
     for i in range(0, subsector.segCount):
         seg = map.segs[subsector.firstSegID + i]
         startVertex = map.vertices[seg.startVertexID]
         endVertex = map.vertices[seg.endVertexID]
         sx, sy = pl.ot(startVertex.x, startVertex.y)
         ex, ey = pl.ot(endVertex.x, endVertex.y)
-        rgba = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), 1)
-        game.drawLine([sx,sy], [ex,ey], rgba, 1)
+        game.drawLine([sx,sy], [ex,ey], rgba, 2)
 
 # path to wad
 if len(sys.argv) > 1:
@@ -98,6 +99,7 @@ def mode_down():
     mode = (mode - 1) % max_modes
 game.onKeyUp(pygame.K_DOWN, mode_down)
 
+modeSSrenderIndex = 0
 while True:
 
     game.events()
@@ -119,6 +121,7 @@ while True:
         # draw the line
         game.drawLine([sx, sy], [ex, ey], (1,1,1,1), 1)
 
+    game.setFPS(60)
     # render things as dots (things list does not contain player thing)
     if mode == 1:
         for i, thing in enumerate(map.things):
@@ -128,17 +131,15 @@ while True:
         ## render player
         px, py = pl.ot(player.x, player.y)
         game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
-
-    ## render last sector node
     if mode == 2:
         drawNode(game, map.getRootNode())
     if mode == 3:
         for i, n in enumerate(map.nodes):
             drawNode(game, n)
     if mode == 4:
-        for i, ss in enumerate(map.subsectors):
-            drawSubsector(i)
-        game.sleep(100)
+        game.setFPS(10)
+        modeSSrenderIndex = ( modeSSrenderIndex + 1 ) % len(map.subsectors)
+        drawSubsector(modeSSrenderIndex, (1, 0, 0, 1))
     if mode == 5:
         # TODO, this is wrong and not working
         # render player subsector
