@@ -1,6 +1,9 @@
 from enum import Enum
 
 class Map(object):
+    # used to identify if a node id has the sector bit on the end
+    # 0x8000 in binary 1000000000000000
+    # 0x8000 in decimal 32768
     SUBSECTORIDENTIFIER = 0x8000
     class Indices:
         NAME      = 0
@@ -63,28 +66,33 @@ class Map(object):
         dx = x - node.xPartition
         dy = y - node.yPartition
         # use cross product to determine which direction
-        cross = dx * node.xChangePartition - dy * node.yChangePartition
+        cross = dx * node.yChangePartition - dy * node.xChangePartition
         return cross <= 0
-    def renderBspNodes(self, x, y, renderSubsector, nodeId = None):
-        if nodeId == None:
-            nodeId = len(self.nodes) - 1
-
+    def getSubsector(self, x, y):
+        nodeId = len(self.nodes) - 1
+        return self.recurseFindSubsector(x, y, nodeId)
+    def recurseFindSubsector(self, x, y, nodeId):
         # see if this is a subsector
         # they used the last bit of the nodeId to set if it was
         # a node that was a subsector (if last bit was 1)
+        # x & y:
+        # Does a "bitwise and". Each bit of the output is 1
+        # if the corresponding bit of x AND of y is 1, otherwise it's 0
         inSubsector = nodeId & Map.SUBSECTORIDENTIFIER
         if inSubsector > 0:
+            # ~ x:
+            # Returns the complement of x - the number you get by
+            # switching each 1 for a 0 and each 0 for a 1.
+            # This is the same as -x - 1.
             subsectorId = nodeId & (~Map.SUBSECTORIDENTIFIER)
-            renderSubsector(subsectorId)
-            return
+            return subsectorId
 
         node = self.nodes[nodeId]
-
         isOnBack = self.isOnBackSide(x, y, node)
         if isOnBack:
-            self.renderBspNodes(x, y, renderSubsector, node.backChildID)
+            return self.recurseFindSubsector(x, y, node.backChildID)
         else:
-            self.renderBspNodes(x, y, renderSubsector, node.frontChildID)
+            return self.recurseFindSubsector(x, y, node.frontChildID)
 
 class Vertex(object):
     def __init__(self):

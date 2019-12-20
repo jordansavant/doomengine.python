@@ -143,7 +143,9 @@ while True:
     if mode == 5:
         # TODO, this is wrong and not working
         # render player subsector
-        map.renderBspNodes(player.x, player.y, drawSubsector)
+        ssId = map.getSubsector(player.x, player.y)
+        drawSubsector(ssId)
+        #map.renderBspNodes(player.x, player.y, drawSubsector)
 
     game.drawEnd()
 
