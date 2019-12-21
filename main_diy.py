@@ -81,6 +81,7 @@ player.x = map.playerThing.x
 player.y = map.playerThing.y
 player.angle = map.playerThing.angle
 
+
 # setup game
 game = Game2D()
 game.setupWindow(1600, 1200)
@@ -89,7 +90,7 @@ pl = Plot(map, game)
 
 # render helpers
 mode = 0
-max_modes = 6
+max_modes = 7
 def mode_up():
     global mode
     mode = (mode + 1) % max_modes
@@ -100,6 +101,7 @@ def mode_down():
 game.onKeyUp(pygame.K_DOWN, mode_down)
 
 modeSSrenderIndex = 0
+modeAngleIndex = 0
 while True:
 
     game.events()
@@ -141,11 +143,25 @@ while True:
         modeSSrenderIndex = ( modeSSrenderIndex + 1 ) % len(map.subsectors)
         drawSubsector(modeSSrenderIndex, (1, 0, 0, 1))
     if mode == 5:
-        # TODO, this is wrong and not working
         # render player subsector
         ssId = map.getSubsector(player.x, player.y)
         drawSubsector(ssId)
-        #map.renderBspNodes(player.x, player.y, drawSubsector)
+    if mode == 6:
+        game.setFPS(10)
+        modeAngleIndex = (modeAngleIndex + 1) % len(map.vertices)
+        # render player
+        px, py = pl.ot(player.x, player.y)
+        game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
+        # render target vertex
+        vertex = map.vertices[modeAngleIndex]
+        vx, vy = pl.ot(vertex.x, vertex.y)
+        game.drawRectangle([vx-3,vy-3], 6, 6, (1,0,0,1))
+        # test angle
+        a = player.angleToVertex(vertex)
+        dirx, diry = a.toVector()
+        # render angle
+        endx, endy = pl.ot(player.x + dirx*50, player.y + diry*50)
+        game.drawLine([px, py], [endx, endy], (0,1,1,1), 2)
 
     game.drawEnd()
 
