@@ -33,7 +33,7 @@ class Player(object):
         v1Angle = self.angleToVertex(v1)
         v2Angle = self.angleToVertex(v2)
         spanAngle = v1Angle.subA(v2Angle)
-        if spanAngle.geF(180):
+        if spanAngle.gteF(180):
             return None
 
     def clipSegToFov(self, seg, fovd = 90):
@@ -47,7 +47,7 @@ class Player(object):
         v1Angle = self.angleToVertex(v1)
         v2Angle = self.angleToVertex(v2)
         spanAngle = v1Angle.subA(v2Angle)
-        if spanAngle.geF(180):
+        if spanAngle.gteF(180):
             return None
         # Cases
         #  ~: Seg left and right are in fov and fully visible
@@ -78,7 +78,7 @@ class Player(object):
             # by comparing how far v1 is away from fov
             # if more than dist v1 to v2 then the angle outside fov
             v1MovedAngle = v1Moved.subA(fov)
-            if v1MovedAngle.geA(spanAngle):
+            if v1MovedAngle.gteA(spanAngle):
                 return None
 
             # v2 is valid, clip v1

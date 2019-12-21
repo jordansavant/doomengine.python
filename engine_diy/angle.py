@@ -79,21 +79,21 @@ class Angle(object):
     # comparison
     def ltF(self, d): # <
         return self.deg < d
-    def leF(self, d): # <=
+    def lteF(self, d): # <=
         return self.deg <= d
     def ltA(self, a):
         return self.ltF(a.deg)
-    def leA(self, a):
-        return self.leF(a.deg)
+    def lteA(self, a):
+        return self.lteF(a.deg)
 
     def gtF(self, d): # >
         return self.deg > d
-    def geF(self, d): # >=
+    def gteF(self, d): # >=
         return self.deg >= d
     def gtA(self, a):
         return self.gtF(a.deg)
-    def geA(self, a):
-        return self.geF(a.deg)
+    def gteA(self, a):
+        return self.gteF(a.deg)
 
     def __str__(self):
         return "A:{}".format(self.deg)

@@ -98,6 +98,14 @@ def mode_down():
     global mode
     mode = (mode - 1) % max_modes
 game.onKeyUp(pygame.K_DOWN, mode_down)
+def on_left():
+    global player
+    player.angle.iaddF(2) # rotate left
+game.onKeyHold(pygame.K_LEFT, on_left)
+def on_right():
+    global player
+    player.angle.isubF(2) # rotate right
+game.onKeyHold(pygame.K_RIGHT, on_right)
 
 modeSSrenderIndex = 0
 modeAngleIndex = 0
@@ -142,6 +150,9 @@ while True:
         modeSSrenderIndex = ( modeSSrenderIndex + 1 ) % len(map.subsectors)
         drawSubsector(modeSSrenderIndex, (1, 0, 0, 1))
     if mode == 5:
+        # render player
+        px, py = pl.ot(player.x, player.y)
+        game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
         # render player subsector
         ssId = map.getSubsector(player.x, player.y)
         drawSubsector(ssId)
