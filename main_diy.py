@@ -89,7 +89,7 @@ pl = Plot(map, game)
 
 # render helpers
 mode = 0
-max_modes = 7
+max_modes = 8
 def mode_up():
     global mode
     mode = (mode + 1) % max_modes
@@ -161,6 +161,21 @@ while True:
         # render angle
         endx, endy = pl.ot(player.x + dirx*50, player.y + diry*50)
         game.drawLine([px, py], [endx, endy], (0,1,1,1), 2)
+    if mode == 7:
+        # test segs that are in 90deg FOV of player
+        # render player
+        px, py = pl.ot(player.x, player.y)
+        game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
+        # iterate all of the segs and test them, if they have angles render seg
+        for i, seg in enumerate(map.segs):
+            v1 = map.vertices[seg.startVertexID]
+            v2 = map.vertices[seg.endVertexID]
+            angles = player.clipVerticesToFov(v1, v2, 90)
+            if angles is not None:
+                # render the seg
+                v1x, v1y = pl.ot(v1.x, v1.y)
+                v2x, v2y = pl.ot(v2.x, v2.y)
+                game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
 
     game.drawEnd()
 

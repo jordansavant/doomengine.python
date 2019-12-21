@@ -24,48 +24,79 @@ class Angle(object):
         if self.deg < 0:
             self.deg += 360
 
-    def __add__(self, d): # +
+    # addition
+    def addF(self, d):
         return Angle(self.deg + d)
-    def __iadd__(self, d): # +=
+    def iaddF(self, d):
         self.deg += d
         self.normalize()
         return self
+    def addA(self, a):
+        return self.addF(a.deg)
+    def iaddA(self, a):
+        return self.iaddF(a.deg)
 
-    def __sub__(self, d): # -
+    # subtraction
+    def subF(self, d):
         return Angle(self.deg - d)
-    def __isub__(self, d): # -=
+    def isubF(self, d):
         self.deg -= d
         self.normalize()
         return self
-    def __neg__(self): # -a
+    def subA(self, a):
+        return self.subF(a.deg)
+    def isubA(self, a):
+        return self.isubF(a.deg)
+
+    # negate
+    def neg(self):
         return Angle(360 - self.deg)
 
-    def __mul__(self, d): # *
+    # multiplication
+    def mulF(self, d):
         return Angle(self.deg * d)
-    def __imul__(self, d): # *=
+    def imulF(self, d):
         self.deg *= d
         self.normalize()
         return self
+    def mulA(self, a):
+        return self.mulF(a.deg)
+    def imulA(self, a):
+        return self.imulF(a.deg)
 
-    def __truediv__(self, d): # /
+    # division
+    def divF(self, d): # /
         return Angle(self.deg / d)
-    def __itruediv__(self, d): # /=
+    def idivF(self, d): # /=
         self.deg /= d
         self.normalize()
         return self
+    def divA(self, a):
+        return self.divF(a.deg)
+    def idivA(self, a):
+        return self.idivF(a.deg)
 
-    def __lt__(self, d): # <
+    # comparison
+    def ltF(self, d): # <
         return self.deg < d
-    def __le__(self, d): # <=
+    def leF(self, d): # <=
         return self.deg <= d
+    def ltA(self, a):
+        return self.ltF(a.deg)
+    def leA(self, a):
+        return self.leF(a.deg)
 
-    def __gt__(self, d): # >
+    def gtF(self, d): # >
         return self.deg > d
-    def __ge__(self, d): # >=
+    def geF(self, d): # >=
         return self.deg >= d
+    def gtA(self, a):
+        return self.gtF(a.deg)
+    def geA(self, a):
+        return self.geF(a.deg)
 
     def __str__(self):
-        return "{}".format(self.deg)
+        return "A:{}".format(self.deg)
 
     def toVector(self):
         rad = self.deg * math.pi / 180
