@@ -77,9 +77,8 @@ if map == None:
 # build player
 player = Player()
 player.id = 1
-player.x = map.playerThing.x
-player.y = map.playerThing.y
-player.angle = map.playerThing.angle
+player.setPosition(map.playerThing.x, map.playerThing.y)
+player.setAngle(map.playerThing.angle)
 
 
 # setup game

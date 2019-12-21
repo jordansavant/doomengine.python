@@ -124,10 +124,8 @@ class Linedef(object):
         self.sectorTag = 0 # uint16
         self.frontSideDef = 0 # uint16
         self.backSideDef = 0 # uint16
-
     def sizeof():
         return 14
-
     def __str__(self):
         return "s.{},e.{} f.{} t.{} s.{} f.{} b.{}"\
                 .format(self.startVertexID, self.endVertexID,\
