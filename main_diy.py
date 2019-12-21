@@ -106,6 +106,22 @@ def on_right():
     global player
     player.angle.isubF(2) # rotate right
 game.onKeyHold(pygame.K_RIGHT, on_right)
+def on_w():
+    global player
+    player.y += 5 # move "up"/"forward" (positive y in game world)
+game.onKeyHold(pygame.K_w, on_w)
+def on_s():
+    global player
+    player.y -= 5 # move "down"/"backward" (negative y in game world)
+game.onKeyHold(pygame.K_s, on_s)
+def on_a():
+    global player
+    player.x -= 5 # move "left"
+game.onKeyHold(pygame.K_a, on_a)
+def on_d():
+    global player
+    player.x += 5 # move "left"
+game.onKeyHold(pygame.K_d, on_d)
 
 modeSSrenderIndex = 0
 modeAngleIndex = 0
