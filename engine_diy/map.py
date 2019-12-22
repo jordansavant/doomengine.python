@@ -27,6 +27,8 @@ class Map(object):
         self.nodes = []
         self.subsectors = []
         self.segs = []
+        self.sectors = []
+        self.sidedefs = []
         self.minx = None
         self.maxx = None
         self.miny = None
@@ -93,6 +95,24 @@ class Map(object):
             return self.recurseFindSubsector(x, y, node.backChildID)
         else:
             return self.recurseFindSubsector(x, y, node.frontChildID)
+    def renderBspNodes(self, x, y, renderSubsector):
+        nodeId = len(self.nodes) - 1
+        return self.recurseRenderBspNodes(x, y, nodeId, renderSubsector)
+    def recurseRenderBspNodes(self, x, y, nodeId, renderSubsector):
+        inSubsector = nodeId & Map.SUBSECTORIDENTIFIER
+        if inSubsector > 0:
+            subsectorId = nodeId & (~Map.SUBSECTORIDENTIFIER)
+            renderSubsector(subsectorId)
+            return
+
+        node = self.nodes[nodeId]
+        isOnBack = self.isOnBackSide(x, y, node)
+        if isOnBack:
+            self.recurseRenderBspNodes(x, y, node.backChildID, renderSubsector)
+            self.recurseRenderBspNodes(x, y, node.frontChildID, renderSubsector)
+        else:
+            self.recurseRenderBspNodes(x, y, node.frontChildID, renderSubsector)
+            self.recurseRenderBspNodes(x, y, node.backChildID, renderSubsector)
 
 class Vertex(object):
     def __init__(self):
@@ -325,4 +345,34 @@ class Seg(object):
     def sizeof():
         return 12
 
+class Sector(object):
+    def __init__(self):
+        # TODO LEFT OFF HERE
+        # NEED TO PORT SECTOR AND SIDEDEF LOADERS
+        # THEN NEED TO UPDATE CLIPPING LOGIC TO RENDER
+        # COLORS BASED ON TEXTURES (not lines) THEN
+        # I NEED TO REFACTOR ALL THAT SHIT SO ITS
+        # GOT PROPER SCOPE AND METHODS
+        self.floorHeight = 0 # int16
+        self.ceilingHeight = 0 # int16
+        self.floorTexture = "" # char[8] 8x1bit = 8
+        self.ceilingTexture = "" # char[8]
+        self.lightLevel = 0 # uint16
+        self.type = 0 # uint16
+        self.tag = 0 # uint16
+    def sizeof():
+        # 5 shorts, 2 char[8]
+        return 10 + 8 + 8
+
+class Sidedef(object):
+    def __init__(self):
+        self.xOffset = 0 # int16
+        self.yOffset = 0 # int16
+        self.upperTexture = "" # char[8]
+        self.lowerTexture = "" # char[8]
+        self.middleTexture = "" # char[8]
+        self.sectorID = 0 # uint16
+    def sizeof():
+        # 3 shorts and 3 char[8]
+        return 6 + 8 + 8 + 8
 

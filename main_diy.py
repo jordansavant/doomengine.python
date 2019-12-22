@@ -29,11 +29,11 @@ def angleToScreen(angle, fov, screenWidth):
     if angle.gtF(fov):
         # left side
         angle.isubF(fov)
-        ix = halfWidth - round(math.tan(angle.toRadians()) * halfWidth)
+        ix = halfWidth - (int)(math.tan(angle.toRadians()) * halfWidth)
     else:
         # right side
         angle = Angle(fov - angle.deg)
-        ix = round(math.tan(angle.toRadians()) * halfWidth)
+        ix = (int)(math.tan(angle.toRadians()) * halfWidth)
         ix += halfWidth
     return ix
 
@@ -142,48 +142,9 @@ def on_d():
 game.onKeyHold(pygame.K_d, on_d)
 
 
-# takes screen projected wall and builds
-# updates the segList to render
-def clipWall(segList, wallStart, wallEnd):
-    node = segList
-    while node != None and node.range.xEnd < wallStart - 1:
-        node = node.next
-    # should always have a node since we cap our ends with
-    # "infinity"
-    if wallStart < node.range.xStart:
-        # found a position in the node list
-        # are they overlapping?
-        if wallEnd < node.range.xStart - 1:
-            # all of the wall is visible to insert it
-            p = node.insertPrevious(wallStart, wallEnd)
-            # go to next wall
-            print(p, " vs ", segList, " vs ", node)
-            return
-        # if not overlapping, end is already included
-        # so just update the start
-        node.setRange(wallStart, node.range.xStart - 1)
-    # this part is already occupied
-    if wallEnd <= node.range.xEnd:
-        return # go to next wall
-
-    #
-    nextNode = node
-    while nextNode.range.xEnd >= nextNode.next.range.xStart - 1:
-        # this wall partially clipped by other walls
-        # so store each fragment
-        # StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
-        nextNode = nextNode.next
-        if wallEnd <= nextNode.range.xEnd:
-            node.xEnd = nextNode.range.xEnd
-            if nextNode != node:
-                # delete range of walls
-                node = node.next
-                nextNode = nextNode.next
-                # garbage collector erase
-                # m_SolidWallRanges.erase(FoundClipWall, NextWall);
-            return
-    return
-def clipWall2(segList, wallStart, wallEnd):
+# TODO take a seg and implement StoreWallRange
+# so that we can update the segs display range
+def clipWall(segId, segList, wallStart, wallEnd, clippings, renderRange):
     segRange = None
     segIndex = None
     # skip all segments that end before this wall starts
@@ -202,6 +163,8 @@ def clipWall2(segList, wallStart, wallEnd):
             # all of the wall is visible to insert it
             # STOREWALL
             # StoreWallRange(seg, CurrentWall.XStart, CurrentWall.XEnd);
+            clippings[segId] = (wallStart, wallEnd)
+            renderRange(segId, clippings[segId])
             segList.insert(segIndex, SolidSegmentRange(wallStart, wallEnd))
             # go to next wall
             return
@@ -209,6 +172,8 @@ def clipWall2(segList, wallStart, wallEnd):
         # so just update the start
         # STOREWALL
         # StoreWallRange(seg, CurrentWall.XStart, FoundClipWall->XStart - 1);
+        clippings[segId] = (wallStart,  segRange.xStart - 1)
+        renderRange(segId, clippings[segId])
         segRange.xStart = wallStart
     # FULL OVERLAPPED
     # this part is already occupied
@@ -221,11 +186,13 @@ def clipWall2(segList, wallStart, wallEnd):
     nextSegIndex = segIndex
     nextSegRange = segRange
     while wallEnd >= segList[nextSegIndex + 1].xStart - 1:
+        # STOREWALL
+        # StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
+        clippings[segId] = (nextSegRange.xEnd + 1,  segList[nextSegIndex + 1].xStart - 1)
+        renderRange(segId, clippings[segId])
         nextSegIndex += 1
         nextSegRange = segList[nextSegIndex]
         # partially clipped by other walls, store each fragment
-        # STOREWALL
-        # StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
         if wallEnd <= nextSegRange.xEnd:
             segRange.xEnd = nextSegRange.xEnd
             if nextSegIndex != segIndex:
@@ -237,13 +204,15 @@ def clipWall2(segList, wallStart, wallEnd):
     # wall precedes all known segments
     # STOREWALL
     # StoreWallRange(seg, NextWall->XEnd + 1, CurrentWall.XEnd);
+    clippings[segId] = (nextSegRange.xEnd + 1,  wallEnd)
+    renderRange(segId, clippings[segId])
     segRange.xEnd = wallEnd
     if (nextSegIndex != segIndex):
         segIndex += 1
         nextSegIndex += 1
         del segList[segIndex:nextSegIndex]
-
     return
+
 def printSegList(segList):
     for i,r in enumerate(segList):
         if i+1 < len(segList):
@@ -251,6 +220,14 @@ def printSegList(segList):
         else:
             print(r, end='')
     print('')
+
+wallColors = {}
+def getWallColor(textureId):
+    if textureId in wallColors:
+        return wallColors[textureId]
+    rgba = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), 1)
+    wallColors[textureId] = rgba
+    return rgba
 
 # python DIY linked lists are a nightmare
 # because of the pass-object-by-reference
@@ -260,61 +237,48 @@ def printSegList(segList):
 # variable, and not for the underlying reference
 
 # test with straight lists
-segList = [SolidSegmentRange(-100000, -1)]
-segList.append(SolidSegmentRange(320, 100000))
-printSegList(segList)
-
-# new wall
-clipWall2(segList, 68, 80) # -i 68,80 +i
-printSegList(segList)
-
-# free start, overlap end
-clipWall2(segList, 46, 69) # -i 46,80 +i
-printSegList(segList)
-
-# completely overlapped
-clipWall2(segList, 70, 75) # -i 46,80 +i
-printSegList(segList)
-
-# add some segments that will partially overlap
-clipWall2(segList, 107, 195)
-clipWall2(segList, 198, 210)
-clipWall2(segList, 223, 291)
-# -100000,-1 > 46,80 > 107,195 > 198,210 > 223,291 > 320,100000
-printSegList(segList)
-
-# chopped and merged
-clipWall2(segList, 76, 107)
-# -100000,-1 > 46,195 > 198,210 > 223,291 > 320,100000
-printSegList(segList)
-clipWall2(segList, 2, 316)
-# -100000,-1 > 2,316 > 320,100000
-printSegList(segList)
+#clippings = {}
+#segList = [SolidSegmentRange(-100000, -1)]
+#segList.append(SolidSegmentRange(320, 100000))
+#printSegList(segList)
+#
+## new wall
+#clipWall(0, segList, 68, 80, clippings) # -i 68,80 +i
+#printSegList(segList)
+#
+## free start, overlap end
+#clipWall(1, segList, 46, 69, clippings) # -i 46,80 +i
+#printSegList(segList)
+#
+## completely overlapped
+#clipWall(2, segList, 70, 75, clippings) # -i 46,80 +i
+#printSegList(segList)
+#
+## add some segments that will partially overlap
+#clipWall(3, segList, 107, 195, clippings)
+#clipWall(4, segList, 198, 210, clippings)
+#clipWall(5, segList, 223, 291, clippings)
+## -100000,-1 > 46,80 > 107,195 > 198,210 > 223,291 > 320,100000
+#printSegList(segList)
+#
+## chopped and merged
+#clipWall(6, segList, 76, 107, clippings)
+## -100000,-1 > 46,195 > 198,210 > 223,291 > 320,100000
+#printSegList(segList)
+#clipWall(7, segList, 2, 316, clippings)
+## -100000,-1 > 2,316 > 320,100000
+#printSegList(segList)
+#print(clippings)
+#quit()
 
 # not in list at all yet
-segList = [SolidSegmentRange(-100000, -1)]
-segList.append(SolidSegmentRange(46,210))
-segList.append(SolidSegmentRange(223,291))
-segList.append(SolidSegmentRange(320,100000))
-printSegList(segList)
-clipWall2(segList, 0, 42)
-printSegList(segList)
-
-quit()
-
-# test wall clipping
-segList = SegmentNode()
-segList.setRange(-100000, -1)
-segList.insertNext(320, 100000)
-print(segList)
-clipWall(segList, 68,80)
-#segList = clipWall(segList, 68,80)
-print(segList)
-#clipWall(segList, 46,80)
-#print(segList)
-
-
-quit()
+#segList = [SolidSegmentRange(-100000, -1)]
+#segList.append(SolidSegmentRange(46,210))
+#segList.append(SolidSegmentRange(223,291))
+#segList.append(SolidSegmentRange(320,100000))
+#printSegList(segList)
+#clipWall(segList, 0, 42)
+#printSegList(segList)
 
 
 modeSSrenderIndex = 0
@@ -423,30 +387,43 @@ while True:
         game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
         # test rendering segs with wall culling
         # start with the linked list ends being "infinity"
-        segListNode = SegmentNode()
-        segListNode.setRange(-10000, -1)
-        segListNode.setNext(fpsWinWidth, 10000)
-        print(segListNode, flush=True);
+        segList = [SolidSegmentRange(-100000, -1)]
+        segList.append(SolidSegmentRange(320, 100000))
+        clippings = {} # dict of segIds to screenXs
         # iterate the valid walls
         # TODO, optimize the map by having a list of
         # only solid wall linedefs and segs
-        for i, seg in enumerate(map.segs):
-            linedef = map.linedefs[seg.linedefID]
-            if linedef.isSolid() is False:
-                continue
-            v1 = map.vertices[seg.startVertexID]
-            v2 = map.vertices[seg.endVertexID]
-            angles = player.clipVerticesToFov(v1, v2, fov)
-            if angles is not None:
-                # render the seg (helper)
-                v1x, v1y = pl.ot(v1.x, v1.y)
-                v2x, v2y = pl.ot(v2.x, v2.y)
-                game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
-                # get screen projection Xs
-                v1xScreen = angleToScreen(angles[0], fov, fpsWinWidth)
-                v2xScreen = angleToScreen(angles[1], fov, fpsWinWidth)
-                # see if what section of this wall should be culled
-                clipWall(segListNode, v1xScreen, v2xScreen)
+        def renderRange(segId, segPair):
+            # get unique color for this line
+            linedef = map.linedefs[map.segs[segId].linedefID]
+            sidedef = map.sidedefs[linedef.frontSideDef]
+            rgba = getWallColor(sidedef.middleTexture)
+            # hardcoded helper to render the range
+            fpsStart = [segPair[0] + fpsWinOffX, fpsWinOffY]
+            width = segPair[1] - segPair[0]
+            game.drawRectangle(fpsStart, width, fpsWinHeight, rgba)
+        def renderSubsector(subsectorId):
+            subsector = map.subsectors[subsectorId]
+            for i in range(subsector.segCount):
+                segId = subsector.firstSegID + i
+                seg = map.segs[segId]
+                linedef = map.linedefs[seg.linedefID]
+                if linedef.isSolid() is False: # skip non-solid walls for now
+                    continue
+                v1 = map.vertices[seg.startVertexID]
+                v2 = map.vertices[seg.endVertexID]
+                angles = player.clipVerticesToFov(v1, v2, fov)
+                if angles is not None:
+                    # render the seg (helper)
+                    v1x, v1y = pl.ot(v1.x, v1.y)
+                    v2x, v2y = pl.ot(v2.x, v2.y)
+                    game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
+                    # get screen projection Xs
+                    v1xScreen = angleToScreen(angles[0], fov, fpsWinWidth)
+                    v2xScreen = angleToScreen(angles[1], fov, fpsWinWidth)
+                    # build wall clippings
+                    clipWall(segId, segList, v1xScreen, v2xScreen, clippings, renderRange)
+        map.renderBspNodes(player.x, player.y, renderSubsector)
 
     game.drawEnd()
 

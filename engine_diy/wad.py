@@ -127,6 +127,27 @@ class WAD(object):
         s.offset = self.load_ushort(offset + 10)
         return s
 
+    def readSectorData(self, offset):
+        s = Sector()
+        s.floorHeight = self.load_sshort(offset)
+        s.ceilingHeight = self.load_sshort(offset + 2)
+        s.floorTexture = self.loadString(offset + 4, 8)
+        s.ceilingTexture = self.loadString(offset + 12, 8)
+        s.lightLevel = self.load_ushort(offset + 20)
+        s.type = self.load_ushort(offset + 22)
+        s.tag = self.load_ushort(offset + 24)
+        return s
+
+    def readSidedefData(self, offset):
+        s = Sidedef()
+        s.xOffset = self.load_sshort(offset)
+        s.yOffset = self.load_sshort(offset + 2)
+        s.upperTexture = self.loadString(offset + 4, 8)
+        s.lowerTexture = self.loadString(offset + 12, 8)
+        s.middleTexture = self.loadString(offset + 20, 8)
+        s.sectorID = self.load_ushort(offset + 28)
+        return s
+
 
     def findMapIndex(self, map):
         if map.name in self.dirMap:
@@ -227,6 +248,36 @@ class WAD(object):
 
         return True
 
+    def readMapSector(self, map, mapIndex):
+        mapIndex += Map.Indices.SECTORS
+        directory = self.dirs[mapIndex]
+        if directory.lumpName != "SECTORS":
+            return False
+
+        sectorBytes = Sector.sizeof()
+        sectorCount = int(directory.lumpSize / sectorBytes)
+
+        for i in range(0, sectorCount):
+            sector = self.readSectorData(directory.lumpOffset + i * sectorBytes)
+            map.sectors.append(sector)
+
+        return True
+
+    def readMapSidedef(self, map, mapIndex):
+        mapIndex += Map.Indices.SIDEDEFS
+        directory = self.dirs[mapIndex]
+        if directory.lumpName != "SIDEDEFS":
+            return False
+
+        sidedefBytes = Sidedef.sizeof()
+        sidedefCount = int(directory.lumpSize / sidedefBytes)
+
+        for i in range(0, sidedefCount):
+            sidedef = self.readSidedefData(directory.lumpOffset + i * sidedefBytes)
+            map.sidedefs.append(sidedef)
+
+        return True
+
     def loadMapData(self, map):
         mapIndex = self.findMapIndex(map)
         if mapIndex == -1:
@@ -249,6 +300,12 @@ class WAD(object):
             return False
         if self.readMapSeg(map, mapIndex) == False:
             print("ERROR: Failed to load map segs " + map.name)
+            return False
+        if self.readMapSector(map, mapIndex) == False:
+            print("ERROR: Failed to load map sectors " + map.name)
+            return False
+        if self.readMapSidedef(map, mapIndex) == False:
+            print("ERROR: Failed to load map sidedefs " + map.name)
             return False
         # run some helpers to define the map
         map.createMetaData()
