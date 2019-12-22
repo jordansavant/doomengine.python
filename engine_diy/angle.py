@@ -101,6 +101,8 @@ class Angle(object):
     def toVector(self):
         rad = self.deg * math.pi / 180
         return math.cos(rad), math.sin(rad)
+    def toRadians(self):
+        return self.deg * math.pi / 180
 
     def fromRadians(radians):
         return Angle(radians * 180 / math.pi)

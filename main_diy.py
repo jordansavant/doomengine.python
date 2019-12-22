@@ -1,25 +1,42 @@
-import sys, engine_diy, pygame, random
+import sys, engine_diy, pygame, random, math
 from engine_diy.wad import WAD
 from engine_diy.game2d import Game2D
 from engine_diy.map import *
 from engine_diy.player import Player
+from engine_diy.angle import Angle
 
 class Plot(object):
-    def __init__(self, map, game):
+    def __init__(self, map, surfWidth, surfHeight):
         # calculate map scale to fit screen minus padding
         self.pad = pad = 10
-        gw = (game.width - self.pad*2)
-        gh = (game.height - self.pad*2)
+        gw = (surfWidth - self.pad*2)
+        gh = (surfHeight - self.pad*2)
         self.scale = scale = min(gw/map.width, gh/map.height)
 
         # center the map on the screen
-        self.xoff = (game.width - (map.width * scale))/2 - (map.minx * scale)
-        self.yoff = (game.height - (map.height *scale))/2 + (map.maxy * scale)
+        self.xoff = (surfWidth - (map.width * scale))/2 - (map.minx * scale)
+        self.yoff = (surfHeight - (map.height *scale))/2 + (map.maxy * scale)
     def ot(self, x, y):
         # flip cartesian, scale and translate
         x = x * self.scale + self.xoff
         y = -y * self.scale + self.yoff
         return x, y
+
+
+def angleToScreen(angle, fov, screenWidth):
+    ix = 0
+    halfWidth = (int)(screenWidth/2)
+    if angle.gtF(fov):
+        # left side
+        angle.isubF(fov)
+        ix = halfWidth - round(math.tan(angle.toRadians()) * halfWidth)
+    else:
+        # right side
+        angle = Angle(fov - angle.deg)
+        ix = round(math.tan(angle.toRadians()) * halfWidth)
+        ix += halfWidth
+    return ix
+
 
 # helper method to draw map nodes
 def drawNode(game, node):
@@ -85,7 +102,8 @@ player.setAngle(map.playerThing.angle)
 game = Game2D()
 game.setupWindow(1600, 1200)
 
-pl = Plot(map, game)
+# main screen plot
+pl = Plot(map, game.width, game.height)
 
 # render helpers
 mode = 0
@@ -191,18 +209,32 @@ while True:
     if mode == 7:
         # test segs that are in 90deg FOV of player
         # render player
+        fov = 90
+        fpsWinWidth = 320
+        fpsWinHeight = 200
+        fpsWinOffX = 20
+        fpsWinOffY = 20
         px, py = pl.ot(player.x, player.y)
         game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
         # iterate all of the segs and test them, if they have angles render seg
         for i, seg in enumerate(map.segs):
             v1 = map.vertices[seg.startVertexID]
             v2 = map.vertices[seg.endVertexID]
-            angles = player.clipVerticesToFov(v1, v2, 90)
+            angles = player.clipVerticesToFov(v1, v2, fov)
             if angles is not None:
                 # render the seg
                 v1x, v1y = pl.ot(v1.x, v1.y)
                 v2x, v2y = pl.ot(v2.x, v2.y)
                 game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
+                # render fps window
+                v1xScreen = angleToScreen(angles[0], fov, fpsWinWidth)
+                v2xScreen = angleToScreen(angles[1], fov, fpsWinWidth)
+                fpsStart = [v1xScreen + fpsWinOffX, fpsWinOffY]
+                fpsEnd = [v1xScreen + fpsWinOffX, fpsWinHeight + fpsWinOffY]
+                game.drawLine(fpsStart, fpsEnd, (1,1,0,1), 1)
+                fpsStart = [v2xScreen + fpsWinOffX, fpsWinOffY]
+                fpsEnd = [v2xScreen + fpsWinOffX, fpsWinHeight + fpsWinOffY]
+                game.drawLine(fpsStart, fpsEnd, (1,0,1,1), 1)
 
     game.drawEnd()
 
