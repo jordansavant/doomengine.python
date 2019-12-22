@@ -114,7 +114,7 @@ class Linedef(object):
         SOUNDBLOCK    = 32,
         DONTDRAW      = 64,
         DRAW          = 128
-
+    nullSideDef = 0xFFFF
     def __init__(self):
         # all 2 bytes (14 bytes)
         self.startVertexID = 0 # uint16
@@ -126,6 +126,11 @@ class Linedef(object):
         self.backSideDef = 0 # uint16
     def sizeof():
         return 14
+    def isSolid(self):
+        # a linedef wall is solid if it only has front side
+        # and no back side
+        return self.backSideDef == Linedef.nullSideDef
+
     def __str__(self):
         return "s.{},e.{} f.{} t.{} s.{} f.{} b.{}"\
                 .format(self.startVertexID, self.endVertexID,\

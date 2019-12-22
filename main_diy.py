@@ -107,7 +107,7 @@ pl = Plot(map, game.width, game.height)
 
 # render helpers
 mode = 0
-max_modes = 8
+max_modes = 9
 def mode_up():
     global mode
     mode = (mode + 1) % max_modes
@@ -206,7 +206,7 @@ while True:
         # render angle
         endx, endy = pl.ot(player.x + dirx*50, player.y + diry*50)
         game.drawLine([px, py], [endx, endy], (0,1,1,1), 2)
-    if mode == 7:
+    if mode == 7 or mode == 8:
         # test segs that are in 90deg FOV of player
         # render player
         fov = 90
@@ -218,6 +218,12 @@ while True:
         game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
         # iterate all of the segs and test them, if they have angles render seg
         for i, seg in enumerate(map.segs):
+            linedef = map.linedefs[seg.linedefID]
+            # if in mode 8 only render solid walls
+            if mode == 8:
+                if linedef.isSolid() is False:
+                    continue
+
             v1 = map.vertices[seg.startVertexID]
             v2 = map.vertices[seg.endVertexID]
             angles = player.clipVerticesToFov(v1, v2, fov)
@@ -226,7 +232,7 @@ while True:
                 v1x, v1y = pl.ot(v1.x, v1.y)
                 v2x, v2y = pl.ot(v2.x, v2.y)
                 game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
-                # render fps window
+                # render fps window for all walls
                 v1xScreen = angleToScreen(angles[0], fov, fpsWinWidth)
                 v2xScreen = angleToScreen(angles[1], fov, fpsWinWidth)
                 fpsStart = [v1xScreen + fpsWinOffX, fpsWinOffY]
