@@ -400,7 +400,9 @@ while True:
             rgba = getWallColor(sidedef.middleTexture)
             # hardcoded helper to render the range
             fpsStart = [segPair[0] + fpsWinOffX, fpsWinOffY]
-            width = segPair[1] - segPair[0]
+            # ranges are exclusive of eachothers start and end
+            # so add +1 to width (not for now because I like the line)
+            width = segPair[1] - segPair[0] # + 1
             game.drawRectangle(fpsStart, width, fpsWinHeight, rgba)
         def renderSubsector(subsectorId):
             subsector = map.subsectors[subsectorId]
