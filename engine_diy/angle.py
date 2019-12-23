@@ -98,6 +98,17 @@ class Angle(object):
     def __str__(self):
         return "A:{}".format(self.deg)
 
+    def getCos(self):
+        return math.cos(self.toRadians())
+    def getSin(self):
+        return math.sin(self.toRadians())
+    def getTan(self):
+        return math.tan(self.toRadians())
+    def getSigned(self):
+        if self.deg > 180:
+            return self.deg - 360
+        return self.deg
+
     def toVector(self):
         rad = self.deg * math.pi / 180
         return math.cos(rad), math.sin(rad)

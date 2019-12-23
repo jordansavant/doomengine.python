@@ -7,6 +7,8 @@ class Player(object):
         self.id = 0 # int32
         self.x = 0 # int32
         self.y = 0 # int32
+        self.z = 0 # TODO needs to be set from floor he's on
+        self.eyeHeight = 41 # from doom engine
         self.angle = Angle(0) # Angle object
 
     def setPosition(self, x, y):
@@ -15,6 +17,12 @@ class Player(object):
 
     def setAngle(self, deg):
         self.angle = Angle(deg)
+
+    def getEyeZ(self):
+        return self.z + self.eyeHeight
+
+    def distanceToVertex(self, vertex):
+        return math.sqrt((self.x - vertex.x) ** 2 + (self.y - vertex.y) ** 2)
 
     def angleToVertex(self, vertex):
         vdx = vertex.x - self.x
