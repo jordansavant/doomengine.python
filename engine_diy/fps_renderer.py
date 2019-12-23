@@ -333,10 +333,12 @@ class FpsRenderer(object):
         distanceToV2 = self.player.distanceToVertex(v2)
 
         # fix that clipped seg angles are weird
-        #if v1xScreen <= 0:
-        #    distanceToV1 = self.partialSegWolf(seg, v1, v2, v1Angle, v2Angle, distanceToV1, True)
-        #if v2xScreen >= self.width - 1:
-        #    distanceToV2 = self.partialSegWolf(seg, v1, v2, v1Angle, v2Angle, distanceToV2, False)
+        # cant get this to not divide by zero so commenting out
+        # it was temporary wolfenstein walls anyways
+        # if v1xScreen <= 0:
+        #     distanceToV1 = self.partialSegWolf(seg, v1, v2, v1Angle, v2Angle, distanceToV1, True)
+        # if v2xScreen >= self.width - 1:
+        #     distanceToV2 = self.partialSegWolf(seg, v1, v2, v1Angle, v2Angle, distanceToV2, False)
 
         # get projected positions on screen
         ceilingV1onScreen, floorV1onScreen = self.calculateCeilingFloorHeight(seg, v1xScreen, distanceToV1)
@@ -349,16 +351,23 @@ class FpsRenderer(object):
 
         # draw polygon of wall
         # left side
-        self.game.drawLine([v1xScreen, ceilingV1onScreen], [v1xScreen, floorV1onScreen], rgba, 1)
+        lx = v1xScreen + self.xOffset
+        rx = v2xScreen + self.xOffset
+        lcy = ceilingV1onScreen + self.yOffset
+        rcy = ceilingV2onScreen + self.yOffset
+        lfy = floorV1onScreen + self.yOffset
+        rfy = floorV2onScreen + self.yOffset
+        self.game.drawLine([lx, lcy], [lx, lfy], rgba, 1)
         # right side
-        self.game.drawLine([v2xScreen, ceilingV2onScreen], [v2xScreen, floorV2onScreen], rgba, 1)
+        self.game.drawLine([rx, rcy], [rx, rfy], rgba, 1)
         # top
-        self.game.drawLine([v1xScreen, ceilingV1onScreen], [v2xScreen, ceilingV2onScreen], rgba, 1)
+        self.game.drawLine([lx, lcy], [rx, rcy], rgba, 1)
         # bottom
-        self.game.drawLine([v1xScreen, floorV1onScreen], [v2xScreen, floorV2onScreen], rgba, 1)
+        self.game.drawLine([lx, lfy], [rx, rfy], rgba, 1)
 
     def partialSegWolf(self, seg, v1, v2, v1Angle, v2Angle, distanceToV, isLeftSide):
         # dunno wtf is going on here
+        # and I cant get it to work because it divides by zero
         sideC = math.sqrt((v1.x - v2.x) ** 2 + (v1.y - v2.y) ** 2)
         v1v2Span = Angle(v1Angle.deg - v2Angle.deg)
         sineAngleB = distanceToV * v1v2Span.getSin() / sideC
@@ -372,7 +381,7 @@ class FpsRenderer(object):
             angleVtoFov = Angle((self.player.angle.deg - self.fov/2) - v2Angle.deg)
 
         newAngleB = Angle(180 - angleVtoFov.deg - angleA.deg)
-        distanceToV = distanceToV * angleA.getSin() / newAngleB.getSin()
+        distanceToV = distanceToV * angleA.getSin() / newAngleB.getSin() # divde by 0 error
 
         return distanceToV
 
