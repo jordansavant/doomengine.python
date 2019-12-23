@@ -26,7 +26,7 @@ class FpsRenderer(object):
         step = fov / (width + 1) # why +1?
         for i in range(0, width + 1):
             self.screenXtoAngleLookup.append(screenAngle)
-            screenAngle.isubF(step)
+            screenAngle = screenAngle.subF(step)
         self.halfScreenWidth = width / 2
         self.halfScreenHeight = height / 2
         self.halfFov = Angle(fov / 2)
@@ -88,6 +88,20 @@ class FpsRenderer(object):
 
         # render 3d viewport
         self.map.renderBspNodes(self.player.x, self.player.y, self.renderSubsector)
+
+    def renderDoomWalls(self, onSegInspect = None):
+        # optional function pointer when we inspect a visible seg
+        self.onSegInspect = onSegInspect
+        self.wallRenderer = self.renderDoomWall
+
+        # clear our clipping list of walls
+        self.segList = [SolidSegmentRange(-100000, -1)]
+        self.segList.append(SolidSegmentRange(self.width, 100000))
+        self.clippings = {} # dict of segIds to screenXs
+
+        # render 3d viewport
+        self.map.renderBspNodes(self.player.x, self.player.y, self.renderSubsector)
+
 
     def renderSubsector(self, subsectorId):
         # iterate segs in subsector
@@ -217,6 +231,8 @@ class FpsRenderer(object):
     # TODO take a seg and implement StoreWallRange
     # so that we can update the segs display range
     def clipWall(self, segId, segList, wallStart, wallEnd, clippings, angles, renderRange):
+        if len(segList) < 2:
+            return
         segRange = None
         segIndex = None
         # skip all segments that end before this wall starts
@@ -262,6 +278,7 @@ class FpsRenderer(object):
             # StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
             clippings[segId] = (nextSegRange.xEnd + 1,  segList[nextSegIndex + 1].xStart - 1)
             renderRange(segId, clippings[segId], angles)
+
             nextSegIndex += 1
             nextSegRange = segList[nextSegIndex]
             # partially clipped by other walls, store each fragment
@@ -279,6 +296,7 @@ class FpsRenderer(object):
         clippings[segId] = (nextSegRange.xEnd + 1,  wallEnd)
         renderRange(segId, clippings[segId], angles)
         segRange.xEnd = wallEnd
+
         if (nextSegIndex != segIndex):
             segIndex += 1
             nextSegIndex += 1
@@ -385,4 +403,89 @@ class FpsRenderer(object):
 
         return distanceToV
 
+    def renderDoomWall(self, segId, segPair, angles):
+        seg = self.map.segs[segId]
+        self.calculateWallHeightDoom(seg, segPair[0], segPair[1], angles[0], angles[1])
 
+    def calculateWallHeightDoom(self, seg, v1xScreen, v2xScreen, v1Angle, v2Angle):
+        # get seg data
+        v1 = self.map.vertices[seg.startVertexID]
+        v2 = self.map.vertices[seg.endVertexID]
+        linedef = self.map.linedefs[seg.linedefID]
+        frontSidedef = self.map.sidedefs[linedef.frontSideDef]
+        frontSector = self.map.sectors[frontSidedef.sectorID]
+        rgba = self.getWallColor(frontSidedef.middleTexture)
+
+        # calculate distance to first edge of the wall
+        angle90 = Angle(90)
+        segToNormalAngle = Angle(seg.angle + angle90.deg)
+        normalToV1Angle = segToNormalAngle.subA(v1Angle)
+
+        # normal angle is 90deg to wall
+        segToPlayerAngle = angle90.subA(normalToV1Angle)
+
+        distanceToV1 = self.player.distanceToVertex(v1)
+        distanceToNormal = segToPlayerAngle.getSin() * distanceToV1
+
+        debug = v1.x == 832
+        v1ScaleFactor = self.getDoomScaleFactor(v1xScreen, segToNormalAngle, distanceToNormal, debug)
+        v2ScaleFactor = self.getDoomScaleFactor(v2xScreen, segToNormalAngle, distanceToNormal, debug)
+
+        # TODO I added this because of divide by zero
+        # I think my wall clipping is adding walls with
+        # the same xscreen for both ends
+        # this would be walls that are exactly ahead of us
+        # and I think they should be culled
+        if v2xScreen == v1xScreen:
+            steps = 1
+        else:
+            steps = (v2ScaleFactor - v1ScaleFactor) / (v2xScreen - v1xScreen)
+
+        if debug:
+            print(v1xScreen, v2xScreen, v1, v2)
+            print(v1xScreen, v2xScreen, v1ScaleFactor, v2ScaleFactor, steps, flush=True)
+
+        # get heights relative to eye position of player (camera)
+        ceiling = frontSector.ceilingHeight - self.player.getEyeZ()
+        floor = frontSector.floorHeight - self.player.getEyeZ()
+
+        ceilingStep = -(ceiling * steps)
+        ceilingEnd = self.halfScreenHeight - (ceiling * v1ScaleFactor)
+
+        floorStep = -(floor * steps)
+        floorStart = self.halfScreenHeight - (floor * v1ScaleFactor)
+
+        iXCurrent = v1xScreen
+        while iXCurrent <= v2xScreen:
+            drawStart = [iXCurrent + self.xOffset, ceilingEnd + self.yOffset]
+            drawEnd = [iXCurrent + self.xOffset, floorStart + self.yOffset]
+            if iXCurrent % 2 == 0:
+                self.game.drawLine(drawStart, drawEnd, rgba, 1)
+            iXCurrent += 1
+            ceilingEnd += ceilingStep
+            floorStart += floorStep
+
+    # Method in DOOM engine that calculated a wall height
+    # scale factor given a distance of the wall from the screen
+    # and the distance of that same angle from the player to screen
+    def getDoomScaleFactor(self, vxScreen, segToNormalAngle, distanceToNormal, debug=False):
+        # constants used with some issues for DOOM textures
+        MAX_SCALEFACTOR = 64.0
+        MIN_SCALEFACTOR = 0.00390625
+
+        angle90 = Angle(90)
+        screenXAngle = self.screenXtoAngleLookup[vxScreen] # Angle object
+        skewAngle = screenXAngle.addA(self.player.angle).subA(segToNormalAngle)
+        #skewAngle = Angle(screenXAngle.deg + self.player.angle.deg - segToNormalAngle.deg)
+
+        if debug:
+            print(vxScreen, screenXAngle, skewAngle)
+
+        # get scale factor
+        screenXAngleCos = screenXAngle.getCos()
+        skewAngleCos = skewAngle.getCos()
+        scaleFactor = (self.distancePlayerToScreen * skewAngleCos) / (distanceToNormal * screenXAngleCos)
+
+        # clamp
+        scaleFactor = min(MAX_SCALEFACTOR, max(MIN_SCALEFACTOR, scaleFactor))
+        return scaleFactor

@@ -21,7 +21,7 @@ class Angle(object):
 
     def normalize(self):
         self.deg = self.deg % 360
-        if self.deg < 0:
+        while self.deg < 0:
             self.deg += 360
 
     # addition
