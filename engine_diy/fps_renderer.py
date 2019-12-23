@@ -110,26 +110,6 @@ class FpsRenderer(object):
             ix += halfWidth
         return ix
 
-    def angleToVertex(self, vertex):
-        vdx = vertex.x - self.player.x
-        vdy = vertex.y - self.player.y
-
-        radians = math.atan2(vdy, vdx)
-        return Angle.fromRadians(radians)
-
-    def isSegFacingUs(self, seg):
-        # if angle to vertex1 > vertex2
-        # then the seg is facing us
-        # this is because the placement of a seg
-        # vertices indicate which way it faces
-        v1 = self.map.vertices[seg.startVertexID]
-        v2 = self.map.vertices[seg.endVertexID]
-        v1Angle = self.angleToVertex(v1)
-        v2Angle = self.angleToVertex(v2)
-        spanAngle = v1Angle.subA(v2Angle)
-        if spanAngle.gteF(self.fov * 2):
-            return None
-
     def clipSegToFov(self, seg):
         fov = Angle(self.fov)
         v1 = self.map.vertices[seg.startVertexID]
@@ -138,8 +118,8 @@ class FpsRenderer(object):
 
     def clipVerticesToFov(self, v1, v2):
         fov = Angle(self.fov)
-        v1Angle = self.angleToVertex(v1)
-        v2Angle = self.angleToVertex(v2)
+        v1Angle = self.player.angleToVertex(v1)
+        v2Angle = self.player.angleToVertex(v2)
         spanAngle = v1Angle.subA(v2Angle)
         if spanAngle.gteF(self.fov * 2):
             return None
