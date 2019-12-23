@@ -38,6 +38,7 @@ class Map(object):
     # helper method to get min and
     # max values of the maps coords
     def createMetaData(self):
+        # map sizing
         for i, ld in enumerate(self.linedefs):
             start = self.vertices[ld.startVertexID]
             end = self.vertices[ld.endVertexID]
@@ -61,6 +62,12 @@ class Map(object):
                 self.maxy = end.y
         self.width = self.maxx - self.minx
         self.height = self.maxy - self.miny
+
+        # player 1 start thing
+        for i,thing in enumerate(self.things):
+            if thing.type == Thing.Types.O_PLAYER1:
+                self.playerThing = thing
+
     def getRootNode(self):
         return self.nodes[len(self.nodes) - 1]
     # traverse the BSP tree

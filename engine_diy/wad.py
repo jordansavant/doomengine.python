@@ -46,7 +46,7 @@ class WAD(object):
         # first 4 bytes is the WAD type as CHAR
         # second 4 is count of directories as Int
         # third 4 is Int offset of directories
-        self.type = self.loadString(0, 4) # char[]
+        self.type = self.load_string(0, 4) # char[]
         self.dircount = self.load_uint32(4) # uint32
         self.diroffset = self.load_uint32(8) # unit32
 
@@ -59,7 +59,7 @@ class WAD(object):
             directory = Directory()
             directory.lumpOffset = self.load_uint32(offset)
             directory.lumpSize = self.load_uint32(offset + 4)
-            directory.lumpName = self.loadString(offset + 8, 8)
+            directory.lumpName = self.load_string(offset + 8, 8)
             self.dirs.append(directory)
             # keep hashmap of directory name to its index
             self.dirMap[directory.lumpName] = len(self.dirs) - 1
@@ -131,8 +131,8 @@ class WAD(object):
         s = Sector()
         s.floorHeight = self.load_sshort(offset)
         s.ceilingHeight = self.load_sshort(offset + 2)
-        s.floorTexture = self.loadString(offset + 4, 8)
-        s.ceilingTexture = self.loadString(offset + 12, 8)
+        s.floorTexture = self.load_string(offset + 4, 8)
+        s.ceilingTexture = self.load_string(offset + 12, 8)
         s.lightLevel = self.load_ushort(offset + 20)
         s.type = self.load_ushort(offset + 22)
         s.tag = self.load_ushort(offset + 24)
@@ -142,139 +142,27 @@ class WAD(object):
         s = Sidedef()
         s.xOffset = self.load_sshort(offset)
         s.yOffset = self.load_sshort(offset + 2)
-        s.upperTexture = self.loadString(offset + 4, 8)
-        s.lowerTexture = self.loadString(offset + 12, 8)
-        s.middleTexture = self.loadString(offset + 20, 8)
+        s.upperTexture = self.load_string(offset + 4, 8)
+        s.lowerTexture = self.load_string(offset + 12, 8)
+        s.middleTexture = self.load_string(offset + 20, 8)
         s.sectorID = self.load_ushort(offset + 28)
         return s
-
 
     def findMapIndex(self, map):
         if map.name in self.dirMap:
             return self.dirMap[map.name] # get index
         return -1
 
-    def readMapVertex(self, map, mapIndex):
-        mapIndex += Map.Indices.VERTEXES
-        directory = self.dirs[mapIndex]
-        if directory.lumpName != "VERTEXES":
+    # used for reading any list from the WAD
+    def readMapDataList(self, map, indexOffset, lumpName, byteSize, reader, mapList):
+        directory = self.dirs[indexOffset]
+        if directory.lumpName != lumpName:
             return False
 
-        vertexBytes = Vertex.sizeof()
-        verticesCount = int(directory.lumpSize / vertexBytes) # vertex size in bytes
-
-        for i in range(0, verticesCount):
-            vertex = self.readVertexData(directory.lumpOffset + i * vertexBytes)
-            map.vertices.append(vertex)
-
-        return True
-
-    def readMapLinedef(self, map, mapIndex):
-        mapIndex += Map.Indices.LINEDEFS
-        directory = self.dirs[mapIndex]
-        if directory.lumpName != "LINEDEFS":
-            return False
-
-        linedefBytes = Linedef.sizeof()
-        linedefCount = int(directory.lumpSize / linedefBytes)
-
-        for i in range(0, linedefCount):
-            linedef = self.readLinedefData(directory.lumpOffset + i * linedefBytes)
-            map.linedefs.append(linedef)
-
-        return True
-
-    def readMapThing(self, map, mapIndex):
-        mapIndex += Map.Indices.THINGS
-        directory = self.dirs[mapIndex]
-        if directory.lumpName != "THINGS":
-            return False
-
-        thingBytes = Thing.sizeof()
-        thingCount = int(directory.lumpSize / thingBytes)
-
-        for i in range(0, thingCount):
-            thing = self.readThingData(directory.lumpOffset + i * thingBytes)
-            # TODO should I add player to list of things?
-            if thing.type == Thing.Types.O_PLAYER1:
-                map.playerThing = thing
-            else:
-                map.things.append(thing)
-
-        return True
-
-    def readMapNode(self, map, mapIndex):
-        mapIndex += Map.Indices.NODES
-        directory = self.dirs[mapIndex]
-        if directory.lumpName != "NODES":
-            return False
-
-        nodeBytes = Node.sizeof()
-        nodeCount = int(directory.lumpSize / nodeBytes)
-
-        for i in range(0, nodeCount):
-            node = self.readNodeData(directory.lumpOffset + i * nodeBytes)
-            map.nodes.append(node)
-
-        return True
-
-    def readMapSubsector(self, map, mapIndex):
-        mapIndex += Map.Indices.SSECTORS
-        directory = self.dirs[mapIndex]
-        if directory.lumpName != "SSECTORS":
-            return False
-
-        subsectorBytes = Subsector.sizeof()
-        subsectorCount = int(directory.lumpSize / subsectorBytes)
-
-        for i in range(0, subsectorCount):
-            subsector = self.readSubsectorData(directory.lumpOffset + i * subsectorBytes)
-            map.subsectors.append(subsector)
-
-        return True
-
-    def readMapSeg(self, map, mapIndex):
-        mapIndex += Map.Indices.SEGS
-        directory = self.dirs[mapIndex]
-        if directory.lumpName != "SEGS":
-            return False
-
-        segBytes = Seg.sizeof()
-        segCount = int(directory.lumpSize / segBytes)
-
-        for i in range(0, segCount):
-            seg = self.readSegData(directory.lumpOffset + i * segBytes)
-            map.segs.append(seg)
-
-        return True
-
-    def readMapSector(self, map, mapIndex):
-        mapIndex += Map.Indices.SECTORS
-        directory = self.dirs[mapIndex]
-        if directory.lumpName != "SECTORS":
-            return False
-
-        sectorBytes = Sector.sizeof()
-        sectorCount = int(directory.lumpSize / sectorBytes)
-
-        for i in range(0, sectorCount):
-            sector = self.readSectorData(directory.lumpOffset + i * sectorBytes)
-            map.sectors.append(sector)
-
-        return True
-
-    def readMapSidedef(self, map, mapIndex):
-        mapIndex += Map.Indices.SIDEDEFS
-        directory = self.dirs[mapIndex]
-        if directory.lumpName != "SIDEDEFS":
-            return False
-
-        sidedefBytes = Sidedef.sizeof()
-        sidedefCount = int(directory.lumpSize / sidedefBytes)
-
-        for i in range(0, sidedefCount):
-            sidedef = self.readSidedefData(directory.lumpOffset + i * sidedefBytes)
-            map.sidedefs.append(sidedef)
+        count = int(directory.lumpSize / byteSize)
+        for i in range(0, count):
+            item = reader(directory.lumpOffset + i * byteSize)
+            mapList.append(item)
 
         return True
 
@@ -283,32 +171,35 @@ class WAD(object):
         if mapIndex == -1:
             return False
 
-        if self.readMapVertex(map, mapIndex) == False:
+        # load map data
+        if self.readMapDataList(map, mapIndex + Map.Indices.VERTEXES, "VERTEXES", Vertex.sizeof(), self.readVertexData, map.vertices) is False:
             print("ERROR: Failed to load map vertices " + map.name)
             return False
-        if self.readMapLinedef(map, mapIndex) == False:
+        if self.readMapDataList(map, mapIndex + Map.Indices.LINEDEFS, "LINEDEFS", Linedef.sizeof(), self.readLinedefData, map.linedefs) is False:
             print("ERROR: Failed to load map linedefs " + map.name)
             return False
-        if self.readMapThing(map, mapIndex) == False:
+        if self.readMapDataList(map, mapIndex + Map.Indices.THINGS, "THINGS", Thing.sizeof(), self.readThingData, map.things) is False:
             print("ERROR: Failed to load map things " + map.name)
             return False
-        if self.readMapNode(map, mapIndex) == False:
+        if self.readMapDataList(map, mapIndex + Map.Indices.NODES, "NODES", Node.sizeof(), self.readNodeData, map.nodes) is False:
             print("ERROR: Failed to load map nodes " + map.name)
             return False
-        if self.readMapSubsector(map, mapIndex) == False:
+        if self.readMapDataList(map, mapIndex + Map.Indices.SSECTORS, "SSECTORS", Subsector.sizeof(), self.readSubsectorData, map.subsectors) is False:
             print("ERROR: Failed to load map subsectors " + map.name)
             return False
-        if self.readMapSeg(map, mapIndex) == False:
+        if self.readMapDataList(map, mapIndex + Map.Indices.SEGS, "SEGS", Seg.sizeof(), self.readSegData, map.segs) is False:
             print("ERROR: Failed to load map segs " + map.name)
             return False
-        if self.readMapSector(map, mapIndex) == False:
+        if self.readMapDataList(map, mapIndex + Map.Indices.SECTORS, "SECTORS", Sector.sizeof(), self.readSectorData, map.sectors) is False:
             print("ERROR: Failed to load map sectors " + map.name)
             return False
-        if self.readMapSidedef(map, mapIndex) == False:
+        if self.readMapDataList(map, mapIndex + Map.Indices.SIDEDEFS, "SIDEDEFS", Sidedef.sizeof(), self.readSidedefData, map.sidedefs) is False:
             print("ERROR: Failed to load map sidedefs " + map.name)
             return False
+
         # run some helpers to define the map
         map.createMetaData()
+
         return True
 
     def loadMap(self, mapName):
@@ -318,7 +209,10 @@ class WAD(object):
             return map
         return None
 
-    def loadString(self, offset, length, preserveNull = False):
+    # DATA TYPE LOADERS
+    # Gets raw byte data from WAD
+    # in expected format
+    def load_string(self, offset, length, preserveNull = False):
         self.f.seek(offset)
         sss = ''
         for i in range(0, length):
