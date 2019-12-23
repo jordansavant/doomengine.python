@@ -182,7 +182,8 @@ while True:
 
     # MODE LOOPS
     game.setFPS(60)
-    # render things as dots (things list does not contain player thing)
+
+    # RENDER THINGS AS DOTS
     if mode == 1:
         for i, thing in enumerate(map.things):
             x, y = pl.ot(thing.x, thing.y)
@@ -191,15 +192,23 @@ while True:
         ## render player
         px, py = pl.ot(player.x, player.y)
         game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
+
+    # RENDER ROOT NODE BSP BOXES
     if mode == 2:
         drawNode(game, map.getRootNode())
+
+    # RENDER ALL NODE BSP BOXES
     if mode == 3:
         for i, n in enumerate(map.nodes):
             drawNode(game, n)
+
+    # RENDER SUBSECTORS VIA BSP TRAVERSAL
     if mode == 4:
         game.setFPS(10)
         modeSSrenderIndex = ( modeSSrenderIndex + 1 ) % len(map.subsectors)
         drawSubsector(modeSSrenderIndex, (1, 0, 0, 1))
+
+    # RENDER SUBSECTOR OF PLAYER
     if mode == 5:
         # render player
         px, py = pl.ot(player.x, player.y)
@@ -207,6 +216,8 @@ while True:
         # render player subsector
         ssId = map.getSubsector(player.x, player.y)
         drawSubsector(ssId)
+
+    # RENDER ANGLE FROM PLAYER TO EACH VERTEX
     if mode == 6:
         game.setFPS(10)
         modeAngleIndex = (modeAngleIndex + 1) % len(map.vertices)
@@ -223,12 +234,14 @@ while True:
         # render angle
         endx, endy = pl.ot(player.x + dirx*50, player.y + diry*50)
         game.drawLine([px, py], [endx, endy], (0,1,1,1), 2)
+
+    # RENDER FPS FOR WALL EDGES ONLY
     if mode == 7 or mode == 8:
-        # test segs that are in 90deg FOV of player
         # render player
         px, py = pl.ot(player.x, player.y)
         game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
 
+        # render only the wall edges
         def onSegInspect(seg, v1, v2):
             # render the seg (helper)
             v1x, v1y = pl.ot(v1.x, v1.y)
@@ -236,20 +249,21 @@ while True:
             game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
 
         fpsRenderer.renderEdgesOnly(mode == 8, onSegInspect)
+
+    # RENDER FPS WITH WALL CULLING ONLY
     if mode == 9:
         # render player
         px, py = pl.ot(player.x, player.y)
         game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
-        # test rendering segs with wall culling
-        # start with the linked list ends being "infinity"
 
+        # test rendering segs with wall culling
         def onSegInspect(seg, v1, v2):
             # render the seg (helper)
             v1x, v1y = pl.ot(v1.x, v1.y)
             v2x, v2y = pl.ot(v2.x, v2.y)
             game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
 
-        fpsRenderer.render(onSegInspect)
+        fpsRenderer.renderWallCullingOnly(onSegInspect)
 
     game.drawEnd()
 

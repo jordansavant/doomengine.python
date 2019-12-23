@@ -47,7 +47,7 @@ class FpsRenderer(object):
                 fpsEnd = [v2xScreen + self.xOffset, self.height + self.yOffset]
                 self.game.drawLine(fpsStart, fpsEnd, (1,0,1,1), 1)
 
-    def render(self, onSegInspect = None):
+    def renderWallCullingOnly(self, onSegInspect = None):
 
         # optional function pointer when we inspect a visible seg
         self.onSegInspect = onSegInspect
