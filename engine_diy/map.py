@@ -19,16 +19,19 @@ class Map(object):
         BLOCKMAP  = 10
         COUNT     = 11
     def __init__(self):
+        # WAD Data
         self.name = ""
         self.vertices = []
         self.linedefs = []
         self.things = []
-        self.playerThing = None # a thing
         self.nodes = []
         self.subsectors = []
         self.segs = []
         self.sectors = []
         self.sidedefs = []
+        # Meta Data
+        self.playerThing = None # a thing
+        self.solidLinedefs = []
         self.minx = None
         self.maxx = None
         self.miny = None
@@ -67,6 +70,11 @@ class Map(object):
         for i,thing in enumerate(self.things):
             if thing.type == Thing.Types.O_PLAYER1:
                 self.playerThing = thing
+
+        # list of only lines that are solid (have 1 side)
+        for i,linedef in enumerate(self.linedefs):
+            if linedef.isSolid():
+                self.solidLinedefs.append(linedef)
 
     def getRootNode(self):
         return self.nodes[len(self.nodes) - 1]

@@ -64,6 +64,10 @@ class WAD(object):
             # keep hashmap of directory name to its index
             self.dirMap[directory.lumpName] = len(self.dirs) - 1
 
+    # OBJECT LOADERS
+    # objects are stored in lists in the WAD
+    # and these methods take a single object
+    # and create our map object
     def readVertexData(self, offset):
         v = Vertex()
         v.x = self.load_sshort(offset)
@@ -153,7 +157,10 @@ class WAD(object):
             return self.dirMap[map.name] # get index
         return -1
 
-    # used for reading any list from the WAD
+    # LIST LOADER
+    # Takes a pointer to a list location in
+    # the WAD and loads the data into the
+    # relevant map list
     def readMapDataList(self, map, indexOffset, lumpName, byteSize, reader, mapList):
         directory = self.dirs[indexOffset]
         if directory.lumpName != lumpName:

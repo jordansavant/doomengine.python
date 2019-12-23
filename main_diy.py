@@ -5,6 +5,7 @@ from engine_diy.map import *
 from engine_diy.player import Player
 from engine_diy.angle import Angle
 from engine_diy.segment_range import *
+from engine_diy.fps_renderer import FpsRenderer
 
 
 #############
@@ -29,20 +30,6 @@ class Plot(object):
         y = -y * self.scale + self.yoff
         return x, y
 
-def angleToScreen(angle, fov, screenWidth):
-    ix = 0
-    halfWidth = (int)(screenWidth/2)
-    if angle.gtF(fov):
-        # left side
-        angle.isubF(fov)
-        ix = halfWidth - (int)(math.tan(angle.toRadians()) * halfWidth)
-    else:
-        # right side
-        angle = Angle(fov - angle.deg)
-        ix = (int)(math.tan(angle.toRadians()) * halfWidth)
-        ix += halfWidth
-    return ix
-
 
 # helper method to draw map nodes
 def drawNode(game, node):
@@ -64,6 +51,7 @@ def drawNode(game, node):
     xc, yc = pl.ot(node.xPartition + node.xChangePartition, node.yPartition + node.yChangePartition)
     game.drawLine([xp, yp], [xc, yc], (0,0,1,1), 3)
 
+# helper method to highlight a single subsector
 def drawSubsector(subsectorId, rgba=None):
     global game, map, pl
     subsector = map.subsectors[subsectorId]
@@ -76,99 +64,6 @@ def drawSubsector(subsectorId, rgba=None):
         sx, sy = pl.ot(startVertex.x, startVertex.y)
         ex, ey = pl.ot(endVertex.x, endVertex.y)
         game.drawLine([sx,sy], [ex,ey], rgba, 2)
-
-# python DIY linked lists are a nightmare
-# because of the pass-object-by-reference
-# nature of variables
-# when I change next and prev values on a
-# node it changes it for that copy of the
-# variable, and not for the underlying reference
-# TODO take a seg and implement StoreWallRange
-# so that we can update the segs display range
-def clipWall(segId, segList, wallStart, wallEnd, clippings, renderRange):
-    segRange = None
-    segIndex = None
-    # skip all segments that end before this wall starts
-    i=0
-    while (i < len(segList) and segList[i].xEnd < wallStart - 1):
-        i += 1
-    segIndex = i
-    segRange = segList[segIndex]
-    # should always have a node since we cap our ends with
-    # "infinity"
-    # START to OVERLAP
-    if wallStart < segRange.xStart:
-        # found a position in the node list
-        # are they overlapping?
-        if wallEnd < segRange.xStart - 1:
-            # all of the wall is visible to insert it
-            # STOREWALL
-            # StoreWallRange(seg, CurrentWall.XStart, CurrentWall.XEnd);
-            clippings[segId] = (wallStart, wallEnd)
-            renderRange(segId, clippings[segId])
-            segList.insert(segIndex, SolidSegmentRange(wallStart, wallEnd))
-            # go to next wall
-            return
-        # if not overlapping, end is already included
-        # so just update the start
-        # STOREWALL
-        # StoreWallRange(seg, CurrentWall.XStart, FoundClipWall->XStart - 1);
-        clippings[segId] = (wallStart,  segRange.xStart - 1)
-        renderRange(segId, clippings[segId])
-        segRange.xStart = wallStart
-    # FULL OVERLAPPED
-    # this part is already occupied
-    if wallEnd <= segRange.xEnd:
-        return # go to next wall
-
-    # CHOP AND MERGE
-    # start by looking at the next entry in the list
-    # is the next entry within the current wall range?
-    nextSegIndex = segIndex
-    nextSegRange = segRange
-    while wallEnd >= segList[nextSegIndex + 1].xStart - 1:
-        # STOREWALL
-        # StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
-        clippings[segId] = (nextSegRange.xEnd + 1,  segList[nextSegIndex + 1].xStart - 1)
-        renderRange(segId, clippings[segId])
-        nextSegIndex += 1
-        nextSegRange = segList[nextSegIndex]
-        # partially clipped by other walls, store each fragment
-        if wallEnd <= nextSegRange.xEnd:
-            segRange.xEnd = nextSegRange.xEnd
-            if nextSegIndex != segIndex:
-                segIndex += 1
-                nextSegIndex += 1
-                del segList[segIndex:nextSegIndex]
-            return
-
-    # wall precedes all known segments
-    # STOREWALL
-    # StoreWallRange(seg, NextWall->XEnd + 1, CurrentWall.XEnd);
-    clippings[segId] = (nextSegRange.xEnd + 1,  wallEnd)
-    renderRange(segId, clippings[segId])
-    segRange.xEnd = wallEnd
-    if (nextSegIndex != segIndex):
-        segIndex += 1
-        nextSegIndex += 1
-        del segList[segIndex:nextSegIndex]
-    return
-
-def printSegList(segList):
-    for i,r in enumerate(segList):
-        if i+1 < len(segList):
-            print("{} > ".format(r), end='')
-        else:
-            print(r, end='')
-    print('')
-
-wallColors = {}
-def getWallColor(textureId):
-    if textureId in wallColors:
-        return wallColors[textureId]
-    rgba = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), 1)
-    wallColors[textureId] = rgba
-    return rgba
 
 
 
@@ -210,6 +105,14 @@ game.setupWindow(1600, 1200)
 
 # main screen plot
 pl = Plot(map, game.width, game.height)
+
+# fps window
+fov = 90
+fpsWinWidth = 320
+fpsWinHeight = 200
+fpsWinOffX = 20
+fpsWinOffY = 20
+fpsRenderer = FpsRenderer(map, player, game, fov, fpsWinWidth, fpsWinHeight, fpsWinOffX, fpsWinOffY)
 
 # render helpers
 mode = 0
@@ -277,11 +180,7 @@ while True:
         # draw the line
         game.drawLine([sx, sy], [ex, ey], (1,1,1,1), 1)
 
-    fov = 90
-    fpsWinWidth = 320
-    fpsWinHeight = 200
-    fpsWinOffX = 20
-    fpsWinOffY = 20
+    # MODE LOOPS
     game.setFPS(60)
     # render things as dots (things list does not contain player thing)
     if mode == 1:
@@ -329,76 +228,28 @@ while True:
         # render player
         px, py = pl.ot(player.x, player.y)
         game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
-        # iterate all of the segs and test them, if they have angles render seg
-        for i, seg in enumerate(map.segs):
-            linedef = map.linedefs[seg.linedefID]
-            # if in mode 8 only render solid walls
-            if mode == 8:
-                if linedef.isSolid() is False:
-                    continue
 
-            v1 = map.vertices[seg.startVertexID]
-            v2 = map.vertices[seg.endVertexID]
-            angles = player.clipVerticesToFov(v1, v2, fov)
-            if angles is not None:
-                # render the seg
-                v1x, v1y = pl.ot(v1.x, v1.y)
-                v2x, v2y = pl.ot(v2.x, v2.y)
-                game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
-                # render fps window for all walls
-                v1xScreen = angleToScreen(angles[0], fov, fpsWinWidth)
-                v2xScreen = angleToScreen(angles[1], fov, fpsWinWidth)
-                fpsStart = [v1xScreen + fpsWinOffX, fpsWinOffY]
-                fpsEnd = [v1xScreen + fpsWinOffX, fpsWinHeight + fpsWinOffY]
-                game.drawLine(fpsStart, fpsEnd, (1,1,0,1), 1)
-                fpsStart = [v2xScreen + fpsWinOffX, fpsWinOffY]
-                fpsEnd = [v2xScreen + fpsWinOffX, fpsWinHeight + fpsWinOffY]
-                game.drawLine(fpsStart, fpsEnd, (1,0,1,1), 1)
+        def onSegInspect(seg, v1, v2):
+            # render the seg (helper)
+            v1x, v1y = pl.ot(v1.x, v1.y)
+            v2x, v2y = pl.ot(v2.x, v2.y)
+            game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
+
+        fpsRenderer.renderEdgesOnly(mode == 8, onSegInspect)
     if mode == 9:
         # render player
         px, py = pl.ot(player.x, player.y)
         game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
         # test rendering segs with wall culling
         # start with the linked list ends being "infinity"
-        segList = [SolidSegmentRange(-100000, -1)]
-        segList.append(SolidSegmentRange(320, 100000))
-        clippings = {} # dict of segIds to screenXs
-        # iterate the valid walls
-        # TODO, optimize the map by having a list of
-        # only solid wall linedefs and segs
-        def renderRange(segId, segPair):
-            # get unique color for this line
-            linedef = map.linedefs[map.segs[segId].linedefID]
-            sidedef = map.sidedefs[linedef.frontSideDef]
-            rgba = getWallColor(sidedef.middleTexture)
-            # hardcoded helper to render the range
-            fpsStart = [segPair[0] + fpsWinOffX, fpsWinOffY]
-            # ranges are exclusive of eachothers start and end
-            # so add +1 to width (not for now because I like the line)
-            width = segPair[1] - segPair[0] # + 1
-            game.drawRectangle(fpsStart, width, fpsWinHeight, rgba)
-        def renderSubsector(subsectorId):
-            subsector = map.subsectors[subsectorId]
-            for i in range(subsector.segCount):
-                segId = subsector.firstSegID + i
-                seg = map.segs[segId]
-                linedef = map.linedefs[seg.linedefID]
-                if linedef.isSolid() is False: # skip non-solid walls for now
-                    continue
-                v1 = map.vertices[seg.startVertexID]
-                v2 = map.vertices[seg.endVertexID]
-                angles = player.clipVerticesToFov(v1, v2, fov)
-                if angles is not None:
-                    # render the seg (helper)
-                    v1x, v1y = pl.ot(v1.x, v1.y)
-                    v2x, v2y = pl.ot(v2.x, v2.y)
-                    game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
-                    # get screen projection Xs
-                    v1xScreen = angleToScreen(angles[0], fov, fpsWinWidth)
-                    v2xScreen = angleToScreen(angles[1], fov, fpsWinWidth)
-                    # build wall clippings
-                    clipWall(segId, segList, v1xScreen, v2xScreen, clippings, renderRange)
-        map.renderBspNodes(player.x, player.y, renderSubsector)
+
+        def onSegInspect(seg, v1, v2):
+            # render the seg (helper)
+            v1x, v1y = pl.ot(v1.x, v1.y)
+            v2x, v2y = pl.ot(v2.x, v2.y)
+            game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
+
+        fpsRenderer.render(onSegInspect)
 
     game.drawEnd()
 
