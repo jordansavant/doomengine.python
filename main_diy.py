@@ -6,6 +6,12 @@ from engine_diy.player import Player
 from engine_diy.angle import Angle
 from engine_diy.segment_range import *
 
+
+#############
+## HELPERS ##
+#############
+#############
+
 class Plot(object):
     def __init__(self, map, surfWidth, surfHeight):
         # calculate map scale to fit screen minus padding
@@ -71,77 +77,12 @@ def drawSubsector(subsectorId, rgba=None):
         ex, ey = pl.ot(endVertex.x, endVertex.y)
         game.drawLine([sx,sy], [ex,ey], rgba, 2)
 
-# path to wad
-if len(sys.argv) > 1:
-    path = sys.argv[1]
-else:
-    path = "wads/DOOM.WAD"
-# map name
-if len(sys.argv) > 2:
-    mapname = sys.argv[2]
-else:
-    mapname = "E1M1"
-
-# load WAD
-wad = WAD(path)
-
-# choose a map
-map = wad.loadMap(mapname)
-if map == None:
-    print("ERROR: invalid map {}".format(mapname))
-    quit()
-
-# build player
-player = Player()
-player.id = 1
-player.setPosition(map.playerThing.x, map.playerThing.y)
-player.setAngle(map.playerThing.angle)
-
-
-# setup game
-game = Game2D()
-game.setupWindow(1600, 1200)
-
-# main screen plot
-pl = Plot(map, game.width, game.height)
-
-# render helpers
-mode = 0
-max_modes = 10
-def mode_up():
-    global mode
-    mode = (mode + 1) % max_modes
-game.onKeyUp(pygame.K_UP, mode_up)
-def mode_down():
-    global mode
-    mode = (mode - 1) % max_modes
-game.onKeyUp(pygame.K_DOWN, mode_down)
-def on_left():
-    global player
-    player.angle.iaddF(2) # rotate left
-game.onKeyHold(pygame.K_LEFT, on_left)
-def on_right():
-    global player
-    player.angle.isubF(2) # rotate right
-game.onKeyHold(pygame.K_RIGHT, on_right)
-def on_w():
-    global player
-    player.y += 5 # move "up"/"forward" (positive y in game world)
-game.onKeyHold(pygame.K_w, on_w)
-def on_s():
-    global player
-    player.y -= 5 # move "down"/"backward" (negative y in game world)
-game.onKeyHold(pygame.K_s, on_s)
-def on_a():
-    global player
-    player.x -= 5 # move "left"
-game.onKeyHold(pygame.K_a, on_a)
-def on_d():
-    global player
-    player.x += 5 # move "left"
-game.onKeyHold(pygame.K_d, on_d)
-
-
+# python DIY linked lists are a nightmare
+# because of the pass-object-by-reference
+# nature of variables
+# when I change next and prev values on a
+# node it changes it for that copy of the
+# variable, and not for the underlying reference
 # TODO take a seg and implement StoreWallRange
 # so that we can update the segs display range
 def clipWall(segId, segList, wallStart, wallEnd, clippings, renderRange):
@@ -229,57 +170,89 @@ def getWallColor(textureId):
     wallColors[textureId] = rgba
     return rgba
 
-# python DIY linked lists are a nightmare
-# because of the pass-object-by-reference
-# nature of variables
-# when I change next and prev values on a
-# node it changes it for that copy of the
-# variable, and not for the underlying reference
 
-# test with straight lists
-#clippings = {}
-#segList = [SolidSegmentRange(-100000, -1)]
-#segList.append(SolidSegmentRange(320, 100000))
-#printSegList(segList)
-#
-## new wall
-#clipWall(0, segList, 68, 80, clippings) # -i 68,80 +i
-#printSegList(segList)
-#
-## free start, overlap end
-#clipWall(1, segList, 46, 69, clippings) # -i 46,80 +i
-#printSegList(segList)
-#
-## completely overlapped
-#clipWall(2, segList, 70, 75, clippings) # -i 46,80 +i
-#printSegList(segList)
-#
-## add some segments that will partially overlap
-#clipWall(3, segList, 107, 195, clippings)
-#clipWall(4, segList, 198, 210, clippings)
-#clipWall(5, segList, 223, 291, clippings)
-## -100000,-1 > 46,80 > 107,195 > 198,210 > 223,291 > 320,100000
-#printSegList(segList)
-#
-## chopped and merged
-#clipWall(6, segList, 76, 107, clippings)
-## -100000,-1 > 46,195 > 198,210 > 223,291 > 320,100000
-#printSegList(segList)
-#clipWall(7, segList, 2, 316, clippings)
-## -100000,-1 > 2,316 > 320,100000
-#printSegList(segList)
-#print(clippings)
-#quit()
 
-# not in list at all yet
-#segList = [SolidSegmentRange(-100000, -1)]
-#segList.append(SolidSegmentRange(46,210))
-#segList.append(SolidSegmentRange(223,291))
-#segList.append(SolidSegmentRange(320,100000))
-#printSegList(segList)
-#clipWall(segList, 0, 42)
-#printSegList(segList)
+#############
+##  START  ##
+#############
+#############
 
+# path to wad
+if len(sys.argv) > 1:
+    path = sys.argv[1]
+else:
+    path = "wads/DOOM.WAD"
+# map name
+if len(sys.argv) > 2:
+    mapname = sys.argv[2]
+else:
+    mapname = "E1M1"
+
+# load WAD
+wad = WAD(path)
+
+# choose a map
+map = wad.loadMap(mapname)
+if map == None:
+    print("ERROR: invalid map {}".format(mapname))
+    quit()
+
+# build player
+player = Player()
+player.id = 1
+player.setPosition(map.playerThing.x, map.playerThing.y)
+player.setAngle(map.playerThing.angle)
+
+
+# setup game
+game = Game2D()
+game.setupWindow(1600, 1200)
+
+# main screen plot
+pl = Plot(map, game.width, game.height)
+
+# render helpers
+mode = 0
+max_modes = 10
+def mode_up():
+    global mode
+    mode = (mode + 1) % max_modes
+game.onKeyUp(pygame.K_UP, mode_up)
+def mode_down():
+    global mode
+    mode = (mode - 1) % max_modes
+game.onKeyUp(pygame.K_DOWN, mode_down)
+def on_left():
+    global player
+    player.angle.iaddF(2) # rotate left
+game.onKeyHold(pygame.K_LEFT, on_left)
+def on_right():
+    global player
+    player.angle.isubF(2) # rotate right
+game.onKeyHold(pygame.K_RIGHT, on_right)
+def on_w():
+    global player
+    player.y += 5 # move "up"/"forward" (positive y in game world)
+game.onKeyHold(pygame.K_w, on_w)
+def on_s():
+    global player
+    player.y -= 5 # move "down"/"backward" (negative y in game world)
+game.onKeyHold(pygame.K_s, on_s)
+def on_a():
+    global player
+    player.x -= 5 # move "left"
+game.onKeyHold(pygame.K_a, on_a)
+def on_d():
+    global player
+    player.x += 5 # move "left"
+game.onKeyHold(pygame.K_d, on_d)
+
+
+
+###############
+## GAME LOOP ##
+###############
+###############
 
 modeSSrenderIndex = 0
 modeAngleIndex = 0
