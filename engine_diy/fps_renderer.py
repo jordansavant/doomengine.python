@@ -38,7 +38,6 @@ class FpsRenderer(object):
         for i in range(0, width + 1):
             f_angle = math.atan((self.f_halfWidth - i) / float(self.f_distancePlayerToScreen)) * 180 / math.pi
             self.doomclassic_screenXToAngleLookup.append(Angle(f_angle))
-            print(i, self.doomclassic_screenXToAngleLookup[i])
 
         self.debug = False
 
@@ -710,14 +709,6 @@ class FpsRenderer(object):
     def doomclassic_addWallInFov(self, seg, segId, v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer):
         v1 = self.map.vertices[seg.startVertexID]
         v2 = self.map.vertices[seg.endVertexID]
-        #print(v1, v2)
-        # simple angled walls behind us
-        # 1152,-3648 1088,-3648
-        # 1280,-3552 1152,-3648
-        self.debug = (v1.x == 1152 and v1.y == -3648) or (v1.x == 1280 and v1.y == -3552)
-        self.debug = (v1.x == 1280 and v1.y == -3552)
-        self.debug = (v1.x == 1216 and v1.y == -2880)
-
 
         # get screen projection Xs
         v1xScreen = self.doomclassic_angleToScreen(v1AngleFromPlayer)
@@ -764,13 +755,16 @@ class FpsRenderer(object):
 
         v1ScaleFactor = self.doomclassic_getScaleFactor(v1xScreen, segToNormalAngle, f_distanceToNormal)
         v2ScaleFactor = self.doomclassic_getScaleFactor(v2xScreen, segToNormalAngle, f_distanceToNormal)
-        if self.debug:
-            print(v1ScaleFactor, v2ScaleFactor, flush=True)
 
+        # screen xs can be the same so avoid div/0
+        # if they are the same that means they occupy
+        # one pixel
+        # DIY tutorial (c++) does divide by zero
+        # and when
         if v1xScreen == v2xScreen:
-            return
-
-        steps = (v2ScaleFactor - v1ScaleFactor) / (v2xScreen - v1xScreen)
+            steps = 1
+        else:
+            steps = (v2ScaleFactor - v1ScaleFactor) / (v2xScreen - v1xScreen)
 
         # get heights relative to eye position of player (camera)
         ceiling = frontSector.ceilingHeight - self.player.getEyeZ()

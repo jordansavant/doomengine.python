@@ -135,19 +135,23 @@ def on_right():
 game.onKeyHold(pygame.K_RIGHT, on_right)
 def on_w():
     global player
-    player.y += 5 # move "up"/"forward" (positive y in game world)
+    player.x += player.angle.getCos() * 5
+    player.y += player.angle.getSin() * 5
 game.onKeyHold(pygame.K_w, on_w)
 def on_s():
     global player
-    player.y -= 5 # move "down"/"backward" (negative y in game world)
+    player.x -= player.angle.getCos() * 5
+    player.y -= player.angle.getSin() * 5
 game.onKeyHold(pygame.K_s, on_s)
 def on_a():
     global player
-    player.x -= 5 # move "left"
+    player.x += player.angle.addF(90).getCos() * 5
+    player.y += player.angle.addF(90).getSin() * 5
 game.onKeyHold(pygame.K_a, on_a)
 def on_d():
     global player
-    player.x += 5 # move "left"
+    player.x -= player.angle.addF(90).getCos() * 5
+    player.y -= player.angle.addF(90).getSin() * 5
 game.onKeyHold(pygame.K_d, on_d)
 def on_space():
     global player
