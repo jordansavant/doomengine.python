@@ -9,7 +9,7 @@ class FpsRenderer(object):
         self.map = map
         self.player = player
         self.game = game
-        self.fov = fov
+        self.f_fov = fov
         self.width = width
         self.height = height
         self.xOffset = xOffset
@@ -92,11 +92,11 @@ class FpsRenderer(object):
                 self.game.drawLine(fpsStart, fpsEnd, (1,0,1,1), 1)
 
     def edges_clipVerticesToFov(self, v1, v2):
-        fov = Angle(self.fov)
+        fov = Angle(self.f_fov)
         v1Angle = self.player.angleToVertex(v1)
         v2Angle = self.player.angleToVertex(v2)
         spanAngle = v1Angle.subA(v2Angle)
-        if spanAngle.gteF(self.fov * 2):
+        if spanAngle.gteF(self.f_fov * 2):
             return None
         # Cases
         #  ~: Seg left and right are in fov and fully visible
@@ -146,13 +146,13 @@ class FpsRenderer(object):
     def edges_angleToScreen(self, angle):
         ix = 0
         halfWidth = (int)(self.width / 2)
-        if angle.gtF(self.fov):
+        if angle.gtF(self.f_fov):
             # left side
-            angle.isubF(self.fov)
+            angle.isubF(self.f_fov)
             ix = halfWidth - (int)(math.tan(angle.toRadians()) * halfWidth)
         else:
             # right side
-            angle = Angle(self.fov - angle.deg)
+            angle = Angle(self.f_fov - angle.deg)
             ix = (int)(math.tan(angle.toRadians()) * halfWidth)
             ix += halfWidth
         return ix
@@ -219,23 +219,23 @@ class FpsRenderer(object):
     def wallcull_angleToScreen(self, angle):
         ix = 0
         halfWidth = (int)(self.width / 2)
-        if angle.gtF(self.fov):
+        if angle.gtF(self.f_fov):
             # left side
-            angle.isubF(self.fov)
+            angle.isubF(self.f_fov)
             ix = halfWidth - (int)(math.tan(angle.toRadians()) * halfWidth)
         else:
             # right side
-            angle = Angle(self.fov - angle.deg)
+            angle = Angle(self.f_fov - angle.deg)
             ix = (int)(math.tan(angle.toRadians()) * halfWidth)
             ix += halfWidth
         return ix
 
     def wallcull_clipVerticesToFov(self, v1, v2):
-        fov = Angle(self.fov)
+        fov = Angle(self.f_fov)
         v1Angle = self.player.angleToVertex(v1)
         v2Angle = self.player.angleToVertex(v2)
         spanAngle = v1Angle.subA(v2Angle)
-        if spanAngle.gteF(self.fov * 2):
+        if spanAngle.gteF(self.f_fov * 2):
             return None
         # Cases
         #  ~: Seg left and right are in fov and fully visible
@@ -415,23 +415,23 @@ class FpsRenderer(object):
     def wolfenstein_angleToScreen(self, angle):
         ix = 0
         halfWidth = (int)(self.width / 2)
-        if angle.gtF(self.fov):
+        if angle.gtF(self.f_fov):
             # left side
-            angle.isubF(self.fov)
+            angle.isubF(self.f_fov)
             ix = halfWidth - (int)(math.tan(angle.toRadians()) * halfWidth)
         else:
             # right side
-            angle = Angle(self.fov - angle.deg)
+            angle = Angle(self.f_fov - angle.deg)
             ix = (int)(math.tan(angle.toRadians()) * halfWidth)
             ix += halfWidth
         return ix
 
     def wolfenstein_clipVerticesToFov(self, v1, v2):
-        fov = Angle(self.fov)
+        fov = Angle(self.f_fov)
         v1Angle = self.player.angleToVertex(v1)
         v2Angle = self.player.angleToVertex(v2)
         spanAngle = v1Angle.subA(v2Angle)
-        if spanAngle.gteF(self.fov * 2):
+        if spanAngle.gteF(self.f_fov * 2):
             return None
         # Cases
         #  ~: Seg left and right are in fov and fully visible
@@ -565,9 +565,9 @@ class FpsRenderer(object):
 
         angleVtoFov = None
         if isLeftSide:
-            angleVtoFov = Angle(v1Angle.deg - (self.player.angle.deg + self.fov/2))
+            angleVtoFov = Angle(v1Angle.deg - (self.player.angle.deg + self.f_fov/2))
         else:
-            angleVtoFov = Angle((self.player.angle.deg - self.fov/2) - v2Angle.deg)
+            angleVtoFov = Angle((self.player.angle.deg - self.f_fov/2) - v2Angle.deg)
 
         newAngleB = Angle(180 - angleVtoFov.deg - angleA.deg)
         distanceToV = distanceToV * angleA.getSin() / newAngleB.getSin() # divde by 0 error
@@ -681,9 +681,11 @@ class FpsRenderer(object):
     def doomclassic_renderSubsector(self, subsectorId):
         # iterate segs in subsector
         subsector = self.map.subsectors[subsectorId]
+
         for i in range(subsector.segCount):
             segId = subsector.firstSegID + i
             seg = self.map.segs[segId]
+
             linedef = self.map.linedefs[seg.linedefID]
             if linedef.isSolid() is False: # skip non-solid walls for now
                 continue
@@ -793,23 +795,23 @@ class FpsRenderer(object):
     def doomclassic_angleToScreen(self, angle):
         ix = 0
         halfWidth = (int)(self.width / 2)
-        if angle.gtF(self.fov):
+        if angle.gtF(self.f_fov):
             # left side
-            angle.isubF(self.fov)
+            angle.isubF(self.f_fov)
             ix = halfWidth - (int)(math.tan(angle.toRadians()) * halfWidth)
         else:
             # right side
-            angle = Angle(self.fov - angle.deg)
+            angle = Angle(self.f_fov - angle.deg)
             ix = (int)(math.tan(angle.toRadians()) * halfWidth)
             ix += halfWidth
         return ix
 
     def doomclassic_clipVerticesToFov(self, v1, v2):
-        fov = Angle(self.fov)
+        fov = Angle(self.f_fov)
         v1Angle = self.player.angleToVertex(v1)
         v2Angle = self.player.angleToVertex(v2)
         spanAngle = v1Angle.subA(v2Angle)
-        if spanAngle.gteF(self.fov * 2):
+        if spanAngle.gteF(self.f_fov * 2):
             return None
         # Cases
         #  ~: Seg left and right are in fov and fully visible
