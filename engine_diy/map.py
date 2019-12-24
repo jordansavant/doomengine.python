@@ -359,6 +359,11 @@ class Seg(object):
         self.offset = 0 # uint16 (distance along linedef to start of seg)
     def sizeof():
         return 12
+    # Angle is stored in Binary Angles BAMS
+    # need to downconvert to degrees
+    def getAngle(self):
+        d = float(self.angle << 16)
+        return d * 8.38190317e-8
 
 class Sector(object):
     def __init__(self):

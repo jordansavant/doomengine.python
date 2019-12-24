@@ -101,7 +101,7 @@ player.setAngle(map.playerThing.angle)
 
 # setup game
 game = Game2D()
-game.setupWindow(1600, 1200)
+game.setupWindow(800, 600)
 
 # main screen plot
 pl = Plot(map, game.width, game.height)
@@ -149,7 +149,11 @@ def on_d():
     global player
     player.x += 5 # move "left"
 game.onKeyHold(pygame.K_d, on_d)
-
+def on_space():
+    global player
+    player.x = 1291
+    player.y = -3011
+game.onKeyUp(pygame.K_SPACE, on_space)
 
 
 ###############
