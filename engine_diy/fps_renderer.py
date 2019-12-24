@@ -9,19 +9,20 @@ class FpsRenderer(object):
         self.map = map
         self.player = player
         self.game = game
+
         self.f_fov = fov
-        self.width = width
-        self.height = height
-        self.xOffset = xOffset
-        self.yOffset = yOffset
+        self.f_width = width
+        self.f_height = height
+        self.f_xOffset = xOffset
+        self.f_yOffset = yOffset
 
         self.wallColors = {} # helper to map a texture to a single color (until textures are added)
         self.onSegInspect = None # function pointer for helping to visualize segs in fps viewport
 
-        self.halfScreenWidth = width / 2
-        self.halfScreenHeight = height / 2
-        self.halfFov = Angle(fov / 2)
-        self.distancePlayerToScreen = self.halfScreenWidth / self.halfFov.getTan() # 160 at 320 width and 90 fov
+        self.f_halfWidth = width / 2
+        self.f_halfHeight = height / 2
+        self.a_halfFov = Angle(fov / 2)
+        self.f_distancePlayerToScreen = self.f_halfWidth / self.a_halfFov.getTan() # 160 at 320 width and 90 fov
 
         # build lookup table of all x screen coords and
         # their projection angles
@@ -82,13 +83,13 @@ class FpsRenderer(object):
                 v2xScreen = self.edges_angleToScreen(angles[1])
 
                 # wall edge1
-                fpsStart = [v1xScreen + self.xOffset, self.yOffset]
-                fpsEnd = [v1xScreen + self.xOffset, self.height + self.yOffset]
+                fpsStart = [v1xScreen + self.f_xOffset, self.f_yOffset]
+                fpsEnd = [v1xScreen + self.f_xOffset, self.f_height + self.f_yOffset]
                 self.game.drawLine(fpsStart, fpsEnd, (1,1,0,1), 1)
 
                 # wall edge 2
-                fpsStart = [v2xScreen + self.xOffset, self.yOffset]
-                fpsEnd = [v2xScreen + self.xOffset, self.height + self.yOffset]
+                fpsStart = [v2xScreen + self.f_xOffset, self.f_yOffset]
+                fpsEnd = [v2xScreen + self.f_xOffset, self.f_height + self.f_yOffset]
                 self.game.drawLine(fpsStart, fpsEnd, (1,0,1,1), 1)
 
     def edges_clipVerticesToFov(self, v1, v2):
@@ -145,7 +146,7 @@ class FpsRenderer(object):
 
     def edges_angleToScreen(self, angle):
         ix = 0
-        halfWidth = (int)(self.width / 2)
+        halfWidth = (int)(self.f_width / 2)
         if angle.gtF(self.f_fov):
             # left side
             angle.isubF(self.f_fov)
@@ -173,7 +174,7 @@ class FpsRenderer(object):
 
         # clear our clipping list of walls
         self.segList = [SolidSegmentRange(-100000, -1)]
-        self.segList.append(SolidSegmentRange(self.width, 100000))
+        self.segList.append(SolidSegmentRange(self.f_width, 100000))
         self.clippings = {} # dict of segIds to screenXs
 
         # render 3d viewport
@@ -185,11 +186,11 @@ class FpsRenderer(object):
         sidedef = self.map.sidedefs[linedef.frontSideDef]
         rgba = self.getWallColor(sidedef.middleTexture)
         # hardcoded helper to render the range
-        fpsStart = [segPair[0] + self.xOffset, self.yOffset]
+        fpsStart = [segPair[0] + self.f_xOffset, self.f_yOffset]
         # ranges are exclusive of eachothers start and end
         # so add +1 to width (not for now because I like the line)
         width = segPair[1] - segPair[0] # + 1
-        self.game.drawRectangle(fpsStart, width, self.height, rgba)
+        self.game.drawRectangle(fpsStart, width, self.f_height, rgba)
 
     def wallcull_renderSubsector(self, subsectorId):
         # iterate segs in subsector
@@ -218,7 +219,7 @@ class FpsRenderer(object):
 
     def wallcull_angleToScreen(self, angle):
         ix = 0
-        halfWidth = (int)(self.width / 2)
+        halfWidth = (int)(self.f_width / 2)
         if angle.gtF(self.f_fov):
             # left side
             angle.isubF(self.f_fov)
@@ -381,7 +382,7 @@ class FpsRenderer(object):
 
         # clear our clipping list of walls
         self.segList = [SolidSegmentRange(-100000, -1)]
-        self.segList.append(SolidSegmentRange(self.width, 100000))
+        self.segList.append(SolidSegmentRange(self.f_width, 100000))
         self.clippings = {} # dict of segIds to screenXs
 
         # render 3d viewport
@@ -414,7 +415,7 @@ class FpsRenderer(object):
 
     def wolfenstein_angleToScreen(self, angle):
         ix = 0
-        halfWidth = (int)(self.width / 2)
+        halfWidth = (int)(self.f_width / 2)
         if angle.gtF(self.f_fov):
             # left side
             angle.isubF(self.f_fov)
@@ -496,7 +497,7 @@ class FpsRenderer(object):
         # it was temporary wolfenstein walls anyways
         # if v1xScreen <= 0:
         #     distanceToV1 = self.wolfenstein_partialSeg(seg, v1, v2, v1Angle, v2Angle, distanceToV1, True)
-        # if v2xScreen >= self.width - 1:
+        # if v2xScreen >= self.f_width - 1:
         #     distanceToV2 = self.wolfenstein_partialSeg(seg, v1, v2, v1Angle, v2Angle, distanceToV2, False)
 
         # get projected positions on screen
@@ -510,12 +511,12 @@ class FpsRenderer(object):
 
         # draw polygon of wall
         # left side
-        lx = v1xScreen + self.xOffset
-        rx = v2xScreen + self.xOffset
-        lcy = ceilingV1onScreen + self.yOffset
-        rcy = ceilingV2onScreen + self.yOffset
-        lfy = floorV1onScreen + self.yOffset
-        rfy = floorV2onScreen + self.yOffset
+        lx = v1xScreen + self.f_xOffset
+        rx = v2xScreen + self.f_xOffset
+        lcy = ceilingV1onScreen + self.f_yOffset
+        rcy = ceilingV2onScreen + self.f_yOffset
+        lfy = floorV1onScreen + self.f_yOffset
+        rfy = floorV2onScreen + self.f_yOffset
         self.game.drawLine([lx, lcy], [lx, lfy], rgba, 1)
         # right side
         self.game.drawLine([rx, rcy], [rx, rfy], rgba, 1)
@@ -539,18 +540,18 @@ class FpsRenderer(object):
         vScreenAngle = self.wolfenstein_screenXToAngleLookup[vxScreen]
 
         # use angle to get projected screen position
-        distanceToVScreen = self.distancePlayerToScreen / vScreenAngle.getCos()
+        distanceToVScreen = self.f_distancePlayerToScreen / vScreenAngle.getCos()
         ceilingVOnScreen = (abs(ceiling) * distanceToVScreen) / distanceToV
         floorVOnScreen = (abs(floor) * distanceToVScreen) / distanceToV
 
         if ceiling > 0:
-            ceilingVOnScreen = self.halfScreenHeight - ceilingVOnScreen
+            ceilingVOnScreen = self.f_halfHeight - ceilingVOnScreen
         else:
-            ceilingVOnScreen += self.halfScreenHeight
+            ceilingVOnScreen += self.f_halfHeight
         if floor > 0:
-            floorVOnScreen = self.halfScreenHeight - floorVOnScreen
+            floorVOnScreen = self.f_halfHeight - floorVOnScreen
         else:
-            floorVOnScreen += self.halfScreenHeight
+            floorVOnScreen += self.f_halfHeight
 
         return ceilingVOnScreen, floorVOnScreen
 
@@ -672,7 +673,7 @@ class FpsRenderer(object):
 
         # clear our clipping list of walls
         self.segList = [SolidSegmentRange(-100000, -1)]
-        self.segList.append(SolidSegmentRange(self.width, 100000))
+        self.segList.append(SolidSegmentRange(self.f_width, 100000))
         self.clippings = {} # dict of segIds to screenXs
 
         # render 3d viewport
@@ -752,15 +753,15 @@ class FpsRenderer(object):
         floor = frontSector.floorHeight - self.player.getEyeZ()
 
         ceilingStep = -(ceiling * steps)
-        ceilingEnd = self.halfScreenHeight - (ceiling * v1ScaleFactor)
+        ceilingEnd = self.f_halfHeight - (ceiling * v1ScaleFactor)
 
         floorStep = -(floor * steps)
-        floorStart = self.halfScreenHeight - (floor * v1ScaleFactor)
+        floorStart = self.f_halfHeight - (floor * v1ScaleFactor)
 
         iXCurrent = v1xScreen
         while iXCurrent <= v2xScreen:
-            drawStart = [iXCurrent + self.xOffset, ceilingEnd + self.yOffset]
-            drawEnd = [iXCurrent + self.xOffset, floorStart + self.yOffset]
+            drawStart = [iXCurrent + self.f_xOffset, ceilingEnd + self.f_yOffset]
+            drawEnd = [iXCurrent + self.f_xOffset, floorStart + self.f_yOffset]
             if iXCurrent % 2 == 0:
                 self.game.drawLine(drawStart, drawEnd, rgba, 1)
             iXCurrent += 1
@@ -786,7 +787,7 @@ class FpsRenderer(object):
         # get scale factor
         screenXAngleCos = screenXAngle.getCos()
         skewAngleCos = skewAngle.getCos()
-        scaleFactor = (self.distancePlayerToScreen * skewAngleCos) / (distanceToNormal * screenXAngleCos)
+        scaleFactor = (self.f_distancePlayerToScreen * skewAngleCos) / (distanceToNormal * screenXAngleCos)
 
         # clamp
         scaleFactor = min(MAX_SCALEFACTOR, max(MIN_SCALEFACTOR, scaleFactor))
@@ -794,7 +795,7 @@ class FpsRenderer(object):
 
     def doomclassic_angleToScreen(self, angle):
         ix = 0
-        halfWidth = (int)(self.width / 2)
+        halfWidth = (int)(self.f_width / 2)
         if angle.gtF(self.f_fov):
             # left side
             angle.isubF(self.f_fov)
