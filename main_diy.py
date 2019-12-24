@@ -248,7 +248,7 @@ while True:
             v2x, v2y = pl.ot(v2.x, v2.y)
             game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
 
-        fpsRenderer.renderEdgesOnly(mode == 8, onSegInspect)
+        fpsRenderer.edges_render(mode == 8, onSegInspect)
 
     # RENDER FPS WITH WALL CULLING ONLY
     if mode == 9:
@@ -263,7 +263,7 @@ while True:
             v2x, v2y = pl.ot(v2.x, v2.y)
             game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
 
-        fpsRenderer.renderWallCullingOnly(onSegInspect)
+        fpsRenderer.wallcull_render(onSegInspect)
 
     # RENDER FPS WITH WOLFENSTEIN WALLS
     if mode == 10:
@@ -278,7 +278,7 @@ while True:
             v2x, v2y = pl.ot(v2.x, v2.y)
             game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
 
-        fpsRenderer.renderWolfWalls(onSegInspect)
+        fpsRenderer.wolfenstein_render(onSegInspect)
 
     # RENDER FPS WITH COLORED DOOM WALLS
     if mode == 11:
@@ -293,7 +293,7 @@ while True:
             v2x, v2y = pl.ot(v2.x, v2.y)
             game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
 
-        fpsRenderer.renderDoomWalls(onSegInspect)
+        fpsRenderer.doomclassic_render(onSegInspect)
 
     game.drawEnd()
 
