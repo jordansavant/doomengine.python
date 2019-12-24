@@ -687,33 +687,49 @@ class FpsRenderer(object):
             segId = subsector.firstSegID + i
             seg = self.map.segs[segId]
 
-            linedef = self.map.linedefs[seg.linedefID]
-            if linedef.isSolid() is False: # skip non-solid walls for now
-                continue
-
             v1 = self.map.vertices[seg.startVertexID]
             v2 = self.map.vertices[seg.endVertexID]
+            # four angles
             angles = self.doomclassic_clipVerticesToFov(v1, v2)
 
             if angles is not None:
                 if self.onSegInspect is not None:
                     self.onSegInspect(seg, v1, v2)
 
-                # get screen projection Xs
-                v1xScreen = self.doomclassic_angleToScreen(angles[0])
-                v2xScreen = self.doomclassic_angleToScreen(angles[1])
+                v1Angle = angles[0]
+                v2Angle = angles[1]
+                v1AngleFromPlayer = angles[2]
+                v2AngleFromPlayer = angles[3]
 
-                # build wall clippings
-                self.doomclassic_clipWall(segId, self.segList, v1xScreen, v2xScreen, self.clippings, angles, self.wallRenderer)
+                self.doomclassic_addWallInFov(seg, segId, v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer)
 
-    def doomclassic_renderWall(self, segId, segPair, angles):
+    def doomclassic_addWallInFov(self, seg, segId, v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer):
+        # get screen projection Xs
+        v1xScreen = self.doomclassic_angleToScreen(v1AngleFromPlayer)
+        v2xScreen = self.doomclassic_angleToScreen(v2AngleFromPlayer)
+
+        # skip same pixel wall
+        if v1xScreen == v2xScreen:
+            return
+
+        # skip nonsolid walls
+        linedef = self.map.linedefs[seg.linedefID]
+        if linedef.isSolid() is False:
+            return
+
+        # build wall clippings
+        self.doomclassic_clipWall(seg, segId, self.segList, v1xScreen, v2xScreen, v1Angle, v2Angle, self.clippings, self.wallRenderer)
+
+    def doomclassic_renderWall(self, segId, segPair, v1Angle, v2Angle):
         seg = self.map.segs[segId]
-        self.doomclassic_calculateWallHeight(seg, segPair[0], segPair[1], angles[0], angles[1])
+        self.doomclassic_calculateWallHeight(seg, segPair[0], segPair[1], v1Angle, v2Angle)
 
     def doomclassic_calculateWallHeight(self, seg, v1xScreen, v2xScreen, v1Angle, v2Angle):
         # get seg data
         v1 = self.map.vertices[seg.startVertexID]
         v2 = self.map.vertices[seg.endVertexID]
+
+        # get texture color
         linedef = self.map.linedefs[seg.linedefID]
         frontSidedef = self.map.sidedefs[linedef.frontSideDef]
         frontSector = self.map.sectors[frontSidedef.sectorID]
@@ -727,26 +743,16 @@ class FpsRenderer(object):
         # normal angle is 90deg to wall
         segToPlayerAngle = angle90.subA(normalToV1Angle)
 
-        distanceToV1 = self.player.distanceToVertex(v1)
-        distanceToNormal = segToPlayerAngle.getSin() * distanceToV1
+        f_distanceToV1 = self.player.distanceToVertex(v1)
+        f_distanceToNormal = segToPlayerAngle.getSin() * f_distanceToV1
 
-        debug = v1.x == 832
-        v1ScaleFactor = self.doomclassic_getScaleFactor(v1xScreen, segToNormalAngle, distanceToNormal, debug)
-        v2ScaleFactor = self.doomclassic_getScaleFactor(v2xScreen, segToNormalAngle, distanceToNormal, debug)
+        v1ScaleFactor = self.doomclassic_getScaleFactor(v1xScreen, segToNormalAngle, f_distanceToNormal)
+        v2ScaleFactor = self.doomclassic_getScaleFactor(v2xScreen, segToNormalAngle, f_distanceToNormal)
 
-        # TODO I added this because of divide by zero
-        # I think my wall clipping is adding walls with
-        # the same xscreen for both ends
-        # this would be walls that are exactly ahead of us
-        # and I think they should be culled
-        if v2xScreen == v1xScreen:
-            steps = 1
-        else:
-            steps = (v2ScaleFactor - v1ScaleFactor) / (v2xScreen - v1xScreen)
+        if v1xScreen == v2xScreen:
+            return
 
-        if debug:
-            print(v1xScreen, v2xScreen, v1, v2)
-            print(v1xScreen, v2xScreen, v1ScaleFactor, v2ScaleFactor, steps, flush=True)
+        steps = (v2ScaleFactor - v1ScaleFactor) / (v2xScreen - v1xScreen)
 
         # get heights relative to eye position of player (camera)
         ceiling = frontSector.ceilingHeight - self.player.getEyeZ()
@@ -771,7 +777,7 @@ class FpsRenderer(object):
     # Method in DOOM engine that calculated a wall height
     # scale factor given a distance of the wall from the screen
     # and the distance of that same angle from the player to screen
-    def doomclassic_getScaleFactor(self, vxScreen, segToNormalAngle, distanceToNormal, debug=False):
+    def doomclassic_getScaleFactor(self, vxScreen, segToNormalAngle, distanceToNormal):
         # constants used with some issues for DOOM textures
         MAX_SCALEFACTOR = 64.0
         MIN_SCALEFACTOR = 0.00390625
@@ -780,9 +786,6 @@ class FpsRenderer(object):
         screenXAngle = self.doomclassic_screenXToAngleLookup[vxScreen] # Angle object
         skewAngle = screenXAngle.addA(self.player.angle).subA(segToNormalAngle)
         #skewAngle = Angle(screenXAngle.deg + self.player.angle.deg - segToNormalAngle.deg)
-
-        if debug:
-            print(vxScreen, screenXAngle, skewAngle)
 
         # get scale factor
         screenXAngleCos = screenXAngle.getCos()
@@ -795,24 +798,26 @@ class FpsRenderer(object):
 
     def doomclassic_angleToScreen(self, angle):
         ix = 0
-        halfWidth = (int)(self.f_width / 2)
-        if angle.gtF(self.f_fov):
+        # TODO should these be 90 or fov?
+        if angle.gtF(90):
             # left side
-            angle.isubF(self.f_fov)
-            ix = halfWidth - (int)(math.tan(angle.toRadians()) * halfWidth)
+            a_newAngle = Angle(angle.deg - 90)
+            ix = self.f_distancePlayerToScreen - round(a_newAngle.getTan() * self.f_halfWidth)
         else:
             # right side
-            angle = Angle(self.f_fov - angle.deg)
-            ix = (int)(math.tan(angle.toRadians()) * halfWidth)
-            ix += halfWidth
-        return ix
+            a_newAngle = Angle(90 - angle.deg)
+            ix = round(a_newAngle.getTan() * self.f_halfWidth) + self.f_distancePlayerToScreen
+        return int(ix)
 
+    # needs to return 4 angles
     def doomclassic_clipVerticesToFov(self, v1, v2):
-        fov = Angle(self.f_fov)
+        a_fov = Angle(self.f_fov)
+
         v1Angle = self.player.angleToVertex(v1)
         v2Angle = self.player.angleToVertex(v2)
-        spanAngle = v1Angle.subA(v2Angle)
-        if spanAngle.gteF(self.f_fov * 2):
+
+        a_spanAngle = v1Angle.subA(v2Angle)
+        if a_spanAngle.gteF(self.f_fov * 2):
             return None
         # Cases
         #  ~: Seg left and right are in fov and fully visible
@@ -824,8 +829,8 @@ class FpsRenderer(object):
         # segs must be facing us
         # segs are made of two vertices
         # rotate the seg minus the player angle
-        v1Angle = v1Angle.subA(self.player.angle)
-        v2Angle = v2Angle.subA(self.player.angle)
+        v1AngleFromPlayer = v1Angle.subA(self.player.angle)
+        v2AngleFromPlayer = v2Angle.subA(self.player.angle)
         # this puts their vertices around the 0 degree
         # left side of FOV is 45
         # right side of FOV = -45 (315)
@@ -834,30 +839,32 @@ class FpsRenderer(object):
         # right side is at 0 (no negative comparisons)
         # if V1 is > 90 its outside
         # if V2 is < 0 its outside
+
         # v1 test:
-        halfFov = fov.divF(2)
-        v1Moved = v1Angle.addA(halfFov)
-        if v1Moved.gtA(fov):
+        a_halfFov = a_fov.divF(2)
+        a_v1Moved = v1AngleFromPlayer.addA(a_halfFov)
+        if a_v1Moved.gtA(a_fov):
             # v1 is outside the fov
             # check if angle of v1 to v2 is also outside fov
             # by comparing how far v1 is away from fov
             # if more than dist v1 to v2 then the angle outside fov
-            v1MovedAngle = v1Moved.subA(fov)
-            if v1MovedAngle.gteA(spanAngle):
+            a_v1MovedAngle = a_v1Moved.subA(a_fov)
+            if a_v1MovedAngle.gteA(a_spanAngle):
                 return None
 
             # v2 is valid, clip v1
-            v1Angle = halfFov
+            v1AngleFromPlayer = a_halfFov.new()
+
         # v2 test: (we cant have angle < 0 so subtract angle from halffov)
-        v2Moved = halfFov.subA(v2Angle)
-        if v2Moved.gtA(fov):
-            v2Angle = halfFov.neg()
+        a_v2Moved = a_halfFov.subA(v2AngleFromPlayer)
+        if a_v2Moved.gtA(a_fov):
+            v2AngleFromPlayer = a_halfFov.neg()
 
         # rerotate angles
-        v1Angle.iaddA(fov)
-        v2Angle.iaddA(fov)
+        v1AngleFromPlayer.iaddA(a_fov)
+        v2AngleFromPlayer.iaddA(a_fov)
 
-        return v1Angle, v2Angle
+        return v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer
 
     # python DIY linked lists are a nightmare
     # because of the pass-object-by-reference
@@ -867,42 +874,45 @@ class FpsRenderer(object):
     # variable, and not for the underlying reference
     # TODO take a seg and implement StoreWallRange
     # so that we can update the segs display range
-    def doomclassic_clipWall(self, segId, segList, wallStart, wallEnd, clippings, angles, rangeRenderer):
+    def doomclassic_clipWall(self, seg, segId, segList, v1xScreen, v2xScreen, v1Angle, v2Angle, clippings, rangeRenderer):
         if len(segList) < 2:
             return
+
         segRange = None
         segIndex = None
         # skip all segments that end before this wall starts
         i=0
-        while (i < len(segList) and segList[i].xEnd < wallStart - 1):
+        while (i < len(segList) and segList[i].xEnd < v1xScreen - 1):
             i += 1
         segIndex = i
         segRange = segList[segIndex]
+
         # should always have a node since we cap our ends with
         # "infinity"
         # START to OVERLAP
-        if wallStart < segRange.xStart:
+        if v1xScreen < segRange.xStart:
             # found a position in the node list
             # are they overlapping?
-            if wallEnd < segRange.xStart - 1:
+            if v2xScreen < segRange.xStart - 1:
                 # all of the wall is visible to insert it
                 # STOREWALL
                 # StoreWallRange(seg, CurrentWall.XStart, CurrentWall.XEnd);
-                clippings[segId] = (wallStart, wallEnd)
-                rangeRenderer(segId, clippings[segId], angles)
-                segList.insert(segIndex, SolidSegmentRange(wallStart, wallEnd))
+                clippings[segId] = (v1xScreen, v2xScreen)
+                rangeRenderer(segId, clippings[segId], v1Angle, v2Angle)
+                segList.insert(segIndex, SolidSegmentRange(v1xScreen, v2xScreen))
                 # go to next wall
                 return
             # if not overlapping, end is already included
             # so just update the start
             # STOREWALL
             # StoreWallRange(seg, CurrentWall.XStart, FoundClipWall->XStart - 1);
-            clippings[segId] = (wallStart,  segRange.xStart - 1)
-            rangeRenderer(segId, clippings[segId], angles)
-            segRange.xStart = wallStart
+            clippings[segId] = (v1xScreen,  segRange.xStart - 1)
+            rangeRenderer(segId, clippings[segId], v1Angle, v2Angle)
+            segRange.xStart = v1xScreen
+
         # FULL OVERLAPPED
         # this part is already occupied
-        if wallEnd <= segRange.xEnd:
+        if v2xScreen <= segRange.xEnd:
             return # go to next wall
 
         # CHOP AND MERGE
@@ -910,16 +920,16 @@ class FpsRenderer(object):
         # is the next entry within the current wall range?
         nextSegIndex = segIndex
         nextSegRange = segRange
-        while wallEnd >= segList[nextSegIndex + 1].xStart - 1:
+        while v2xScreen >= segList[nextSegIndex + 1].xStart - 1:
             # STOREWALL
             # StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
             clippings[segId] = (nextSegRange.xEnd + 1,  segList[nextSegIndex + 1].xStart - 1)
-            rangeRenderer(segId, clippings[segId], angles)
+            rangeRenderer(segId, clippings[segId], v1Angle, v2Angle)
 
             nextSegIndex += 1
             nextSegRange = segList[nextSegIndex]
             # partially clipped by other walls, store each fragment
-            if wallEnd <= nextSegRange.xEnd:
+            if v2xScreen <= nextSegRange.xEnd:
                 segRange.xEnd = nextSegRange.xEnd
                 if nextSegIndex != segIndex:
                     segIndex += 1
@@ -930,9 +940,9 @@ class FpsRenderer(object):
         # wall precedes all known segments
         # STOREWALL
         # StoreWallRange(seg, NextWall->XEnd + 1, CurrentWall.XEnd);
-        clippings[segId] = (nextSegRange.xEnd + 1,  wallEnd)
-        rangeRenderer(segId, clippings[segId], angles)
-        segRange.xEnd = wallEnd
+        clippings[segId] = (nextSegRange.xEnd + 1,  v2xScreen)
+        rangeRenderer(segId, clippings[segId], v1Angle, v2Angle)
+        segRange.xEnd = v2xScreen
 
         if (nextSegIndex != segIndex):
             segIndex += 1
