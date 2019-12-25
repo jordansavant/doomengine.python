@@ -38,6 +38,11 @@ class Map(object):
         self.maxy = None
         self.width = None
         self.height = None
+
+    def createData(self):
+        self.assignPointerData()
+        self.createMetaData()
+
     # helper method to get min and
     # max values of the maps coords
     def createMetaData(self):
@@ -76,6 +81,43 @@ class Map(object):
             if linedef.isSolid():
                 self.solidLinedefs.append(linedef)
 
+    # method to link various WAD data
+    # structures together
+    def assignPointerData(self):
+        for i,v in enumerate(self.vertices):
+            v.ID = i
+        for i,l in enumerate(self.linedefs):
+            l.ID = i
+            l.startVertex = self.vertices[l.startVertexID]
+            l.endVertex = self.vertices[l.endVertexID]
+            if l.frontSideDefID != Linedef.nullSideDefID:
+                l.frontSideDef = self.sidedefs[l.frontSideDefID]
+            if l.backSideDefID != Linedef.nullSideDefID:
+                l.backSideDef = self.sidedefs[l.backSideDefID]
+        for i,t in enumerate(self.things):
+            t.ID = i
+        for i,n in enumerate(self.nodes):
+            n.ID = i
+            if self.isNodeIDSubsector(n.ID):
+                n.sector = self.sectors[self.getNodeSubsector(n.ID)]
+            if self.isNodeIDSubsector(n.frontChildID) is False:
+                n.frontChildNode = self.nodes[n.frontChildID]
+            if self.isNodeIDSubsector(n.backChildID) is False:
+                n.backChildNode = self.nodes[n.backChildID]
+        for i,s in enumerate(self.subsectors):
+            s.ID = i
+            s.firstSeg = self.segs[s.firstSegID]
+        for i,s in enumerate(self.segs):
+            s.ID = i
+            s.startVertex = self.vertices[s.startVertexID]
+            s.endVertex = self.vertices[s.endVertexID]
+            s.linedef = self.linedefs[s.linedefID]
+        for i,s in enumerate(self.sectors):
+            s.ID = i
+        for i,s in enumerate(self.sidedefs):
+            s.ID = i
+            s.sector = self.sectors[s.sectorID]
+
     def getRootNode(self):
         return self.nodes[len(self.nodes) - 1]
     # traverse the BSP tree
@@ -88,6 +130,10 @@ class Map(object):
     def getSubsector(self, x, y):
         nodeId = len(self.nodes) - 1
         return self.recurseFindSubsector(x, y, nodeId)
+    def isNodeIDSubsector(self, nodeId):
+        return (nodeId & Map.SUBSECTORIDENTIFIER) > 0
+    def getNodeSubsector(self, nodeId):
+        return nodeId & (~Map.SUBSECTORIDENTIFIER)
     def recurseFindSubsector(self, x, y, nodeId):
         # see if this is a subsector
         # they used the last bit of the nodeId to set if it was
@@ -95,14 +141,12 @@ class Map(object):
         # x & y:
         # Does a "bitwise and". Each bit of the output is 1
         # if the corresponding bit of x AND of y is 1, otherwise it's 0
-        inSubsector = nodeId & Map.SUBSECTORIDENTIFIER
-        if inSubsector > 0:
+        if self.isNodeIDSubsector(nodeId):
             # ~ x:
             # Returns the complement of x - the number you get by
             # switching each 1 for a 0 and each 0 for a 1.
             # This is the same as -x - 1.
-            subsectorId = nodeId & (~Map.SUBSECTORIDENTIFIER)
-            return subsectorId
+            return self.getNodeSubsector(nodeId)
 
         node = self.nodes[nodeId]
         isOnBack = self.isOnBackSide(x, y, node)
@@ -134,6 +178,8 @@ class Vertex(object):
         # WAD Data
         self.x = 0 # 2byte signed short
         self.y = 0 # 2byte signed short
+        # POINTER Data
+        self.ID = 0 # id of self in list
     def sizeof():
         return 4
     def __str__(self):
@@ -163,6 +209,11 @@ class Linedef(object):
         self.backSideDefID = 0 # uint16
 
         # POINTER DATA
+        self.ID = 0 # id of self in list
+        self.startVertex = None
+        self.endVertex = None
+        self.frontSideDef = None
+        self.backSideDef = None
     def sizeof():
         return 14
     def isSolid(self):
@@ -296,9 +347,12 @@ class Thing(object):
         # WAD DATA
         self.x = 0 # int16
         self.y = 0 # int16
-        self.angle = 0 # uint16
+        self.angle = 0 # uint16 # TODO BINARY ANGLES?
         self.type = 0 # uint16
         self.flags = 0 # uint16
+
+        # POINTER DATA
+        self.ID = 0
     def sizeof():
         return 10
     def __str__(self):
@@ -328,6 +382,12 @@ class Node(object):
         # indexes of children + subsector indicator
         self.frontChildID = 0 # uint16
         self.backChildID = 0 # uint16
+
+        # POINTER DATA
+        self.ID = 0
+        self.frontChildNode = None
+        self.backChildNode = None
+        self.sector = None
     def sizeof():
         return 28
     def __str__(self):
@@ -349,6 +409,10 @@ class Subsector(object):
         # WAD DATA
         self.segCount = 0 # unit16
         self.firstSegID = 0 # unit16
+
+        # POINTER DATA
+        self.ID = 0
+        self.firstSeg = None
     def sizeof():
         return 4
     def __str__(self):
@@ -361,10 +425,16 @@ class Seg(object):
         # WAD DATA
         self.startVertexID = 0 # uint16
         self.endVertexID = 0 # uint16
-        self.angle = 0 # uint16 (degrees)
+        self.angle = 0 # uint16 (degrees) # Binary Angle
         self.linedefID = 0 # uint16
         self.direction = 0 # uint16 (0=same as linedef, 1=opposite of linedef)
         self.offset = 0 # uint16 (distance along linedef to start of seg)
+
+        # POINTER DATA
+        self.ID = 0
+        self.startVertex = None
+        self.endVertex = None
+        self.linedef = None
     def sizeof():
         return 12
     # Angle is stored in Binary Angles BAMS
@@ -383,6 +453,9 @@ class Sector(object):
         self.lightLevel = 0 # uint16
         self.type = 0 # uint16
         self.tag = 0 # uint16
+
+        # POINTER DATA
+        self.ID = 0
     def sizeof():
         # 5 shorts, 2 char[8]
         return 10 + 8 + 8
@@ -396,6 +469,10 @@ class Sidedef(object):
         self.lowerTexture = "" # char[8]
         self.middleTexture = "" # char[8]
         self.sectorID = 0 # uint16
+
+        # POINTER DATA
+        self.ID = 0
+        self.sector = None
     def sizeof():
         # 3 shorts and 3 char[8]
         return 6 + 8 + 8 + 8

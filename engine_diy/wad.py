@@ -205,7 +205,7 @@ class WAD(object):
             return False
 
         # run some helpers to define the map
-        map.createMetaData()
+        map.createData()
 
         return True
 
