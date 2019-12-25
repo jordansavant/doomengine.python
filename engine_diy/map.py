@@ -131,6 +131,7 @@ class Map(object):
 
 class Vertex(object):
     def __init__(self):
+        # WAD Data
         self.x = 0 # 2byte signed short
         self.y = 0 # 2byte signed short
     def sizeof():
@@ -149,28 +150,31 @@ class Linedef(object):
         SOUNDBLOCK    = 32,
         DONTDRAW      = 64,
         DRAW          = 128
-    nullSideDef = 0xFFFF
+    nullSideDefID = 0xFFFF
     def __init__(self):
+        # WAD DATA
         # all 2 bytes (14 bytes)
         self.startVertexID = 0 # uint16
         self.endVertexID = 0 # uint16
         self.flags = 0 # uint16
         self.lineType = 0 # uint16
         self.sectorTag = 0 # uint16
-        self.frontSideDef = 0 # uint16
-        self.backSideDef = 0 # uint16
+        self.frontSideDefID = 0 # uint16
+        self.backSideDefID = 0 # uint16
+
+        # POINTER DATA
     def sizeof():
         return 14
     def isSolid(self):
         # a linedef wall is solid if it only has front side
         # and no back side
-        return self.backSideDef == Linedef.nullSideDef
+        return self.backSideDefID == Linedef.nullSideDefID
 
     def __str__(self):
         return "s.{},e.{} f.{} t.{} s.{} f.{} b.{}"\
                 .format(self.startVertexID, self.endVertexID,\
                 self.flags, self.lineType, self.sectorTag,\
-                self.frontSideDef, self.backSideDef)
+                self.frontSideDefID, self.backSideDefID)
 
 class Thing(object):
     # Types https://doomwiki.org/wiki/Thing_types
@@ -289,6 +293,7 @@ class Thing(object):
         D_HANGING_VICTIM_TWITCHING = 63
 
     def __init__(self):
+        # WAD DATA
         self.x = 0 # int16
         self.y = 0 # int16
         self.angle = 0 # uint16
@@ -303,6 +308,7 @@ class Thing(object):
 # BSP Node
 class Node(object):
     def __init__(self):
+        # WAD DATA
         # coords of slitter
         self.xPartition = 0 # int16
         self.yPartition = 0 # int16
@@ -340,6 +346,7 @@ class Node(object):
 # are used to isolate a player within the map
 class Subsector(object):
     def __init__(self):
+        # WAD DATA
         self.segCount = 0 # unit16
         self.firstSegID = 0 # unit16
     def sizeof():
@@ -351,6 +358,7 @@ class Subsector(object):
 # other segs form a sub sector
 class Seg(object):
     def __init__(self):
+        # WAD DATA
         self.startVertexID = 0 # uint16
         self.endVertexID = 0 # uint16
         self.angle = 0 # uint16 (degrees)
@@ -367,12 +375,7 @@ class Seg(object):
 
 class Sector(object):
     def __init__(self):
-        # TODO LEFT OFF HERE
-        # NEED TO PORT SECTOR AND SIDEDEF LOADERS
-        # THEN NEED TO UPDATE CLIPPING LOGIC TO RENDER
-        # COLORS BASED ON TEXTURES (not lines) THEN
-        # I NEED TO REFACTOR ALL THAT SHIT SO ITS
-        # GOT PROPER SCOPE AND METHODS
+        # WAD DATA
         self.floorHeight = 0 # int16
         self.ceilingHeight = 0 # int16
         self.floorTexture = "" # char[8] 8x1bit = 8
@@ -386,6 +389,7 @@ class Sector(object):
 
 class Sidedef(object):
     def __init__(self):
+        # WAD DATA
         self.xOffset = 0 # int16
         self.yOffset = 0 # int16
         self.upperTexture = "" # char[8]

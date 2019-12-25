@@ -183,7 +183,7 @@ class FpsRenderer(object):
     def wallcull_renderRange(self, segId, segPair, angles):
         # get unique color for this line
         linedef = self.map.linedefs[self.map.segs[segId].linedefID]
-        sidedef = self.map.sidedefs[linedef.frontSideDef]
+        sidedef = self.map.sidedefs[linedef.frontSideDefID]
         rgba = self.getWallColor(sidedef.middleTexture)
         # hardcoded helper to render the range
         fpsStart = [segPair[0] + self.f_xOffset, self.f_yOffset]
@@ -506,7 +506,7 @@ class FpsRenderer(object):
 
         # get wall color
         linedef = self.map.linedefs[seg.linedefID]
-        frontSidedef = self.map.sidedefs[linedef.frontSideDef]
+        frontSidedef = self.map.sidedefs[linedef.frontSideDefID]
         rgba = self.getWallColor(frontSidedef.middleTexture)
 
         # draw polygon of wall
@@ -527,10 +527,10 @@ class FpsRenderer(object):
 
     def wolfenstein_calculateCeilingFloorHeight(self, seg, vxScreen, distanceToV):
         # return ceilingVOnScreen, floorVOnScreen
-        # seg front sector is the linedef's frontSideDef sector
+        # seg front sector is the linedef's frontSideDefID sector
         linedef = self.map.linedefs[seg.linedefID]
-        frontSideDef = self.map.sidedefs[linedef.frontSideDef]
-        frontSector = self.map.sectors[frontSideDef.sectorID]
+        frontSideDefID = self.map.sidedefs[linedef.frontSideDefID]
+        frontSector = self.map.sectors[frontSideDefID.sectorID]
 
         # get heights relative to eye position of player (camera)
         ceiling = frontSector.ceilingHeight - self.player.getEyeZ()
@@ -738,7 +738,7 @@ class FpsRenderer(object):
 
         # get texture color
         linedef = self.map.linedefs[seg.linedefID]
-        frontSidedef = self.map.sidedefs[linedef.frontSideDef]
+        frontSidedef = self.map.sidedefs[linedef.frontSideDefID]
         frontSector = self.map.sectors[frontSidedef.sectorID]
         rgba = self.getWallColor(frontSidedef.middleTexture)
 

@@ -81,8 +81,8 @@ class WAD(object):
         l.flags = self.load_ushort(offset + 4)
         l.lineType = self.load_ushort(offset + 6)
         l.sectorTag = self.load_ushort(offset + 8)
-        l.frontSideDef = self.load_ushort(offset + 10)
-        l.backSideDef = self.load_ushort(offset + 12)
+        l.frontSideDefID = self.load_ushort(offset + 10)
+        l.backSideDefID = self.load_ushort(offset + 12)
         return l
 
     def readThingData(self, offset):
