@@ -681,12 +681,12 @@ class FpsRenderer(object):
         for i in range(subsector.segCount):
             segId = subsector.firstSegID + i
             seg = self.map.segs[segId]
-            linedef = self.map.linedefs[seg.linedefID]
+            linedef = seg.linedef
             if linedef.isSolid() is False: # skip non-solid walls for now
                 continue
 
-            v1 = self.map.vertices[seg.startVertexID]
-            v2 = self.map.vertices[seg.endVertexID]
+            v1 = seg.startVertex
+            v2 = seg.endVertex
             # four angles
             angles = self.doomsolids_clipVerticesToFov(v1, v2)
 
@@ -699,11 +699,11 @@ class FpsRenderer(object):
                 v1AngleFromPlayer = angles[2]
                 v2AngleFromPlayer = angles[3]
 
-                self.doomsolids_addWallInFov(seg, segId, v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer)
+                self.doomsolids_addWallInFov(seg, v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer)
 
-    def doomsolids_addWallInFov(self, seg, segId, v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer):
-        v1 = self.map.vertices[seg.startVertexID]
-        v2 = self.map.vertices[seg.endVertexID]
+    def doomsolids_addWallInFov(self, seg, v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer):
+        v1 = seg.startVertex
+        v2 = seg.endVertex
 
         # get screen projection Xs
         v1xScreen = self.doomsolids_angleToScreen(v1AngleFromPlayer)
@@ -714,27 +714,23 @@ class FpsRenderer(object):
             return
 
         # skip nonsolid walls
-        linedef = self.map.linedefs[seg.linedefID]
-        if linedef.isSolid() is False:
+        if seg.linedef.isSolid() is False:
             return
 
         # build wall clippings
-        self.doomsolids_clipWall(seg, segId, self.segList, v1xScreen, v2xScreen, v1Angle, v2Angle, self.clippings, self.wallRenderer)
+        self.doomsolids_clipWall(seg, self.segList, v1xScreen, v2xScreen, v1Angle, v2Angle, self.clippings, self.wallRenderer)
 
-    def doomsolids_renderWall(self, segId, segPair, v1Angle, v2Angle):
-        seg = self.map.segs[segId]
-
+    def doomsolids_renderWall(self, seg, segPair, v1Angle, v2Angle):
         self.doomsolids_calculateWallHeight(seg, segPair[0], segPair[1], v1Angle, v2Angle)
 
     def doomsolids_calculateWallHeight(self, seg, v1xScreen, v2xScreen, v1Angle, v2Angle):
         # get seg data
-        v1 = self.map.vertices[seg.startVertexID]
-        v2 = self.map.vertices[seg.endVertexID]
+        v1 = seg.startVertex
+        v2 = seg.endVertex
 
         # get texture color
-        linedef = self.map.linedefs[seg.linedefID]
-        frontSidedef = self.map.sidedefs[linedef.frontSidedefID]
-        frontSector = self.map.sectors[frontSidedef.sectorID]
+        frontSidedef = seg.linedef.frontSidedef
+        frontSector = frontSidedef.sector
         rgba = self.getWallColor(frontSidedef.middleTexture)
 
         # calculate distance to first edge of the wall
@@ -791,7 +787,6 @@ class FpsRenderer(object):
         angle90 = Angle(90)
         screenXAngle = self.doomsolids_screenXToAngleLookup[vxScreen] # Angle object
         skewAngle = screenXAngle.addA(self.player.angle).subA(segToNormalAngle)
-        #skewAngle = Angle(screenXAngle.deg + self.player.angle.deg - segToNormalAngle.deg)
 
         # get scale factor
         screenXAngleCos = screenXAngle.getCos()
@@ -880,10 +875,11 @@ class FpsRenderer(object):
     # variable, and not for the underlying reference
     # TODO take a seg and implement StoreWallRange
     # so that we can update the segs display range
-    def doomsolids_clipWall(self, seg, segId, segList, v1xScreen, v2xScreen, v1Angle, v2Angle, clippings, rangeRenderer):
+    def doomsolids_clipWall(self, seg, segList, v1xScreen, v2xScreen, v1Angle, v2Angle, clippings, rangeRenderer):
         if len(segList) < 2:
             return
 
+        segId = seg.ID
         segRange = None
         segIndex = None
         # skip all segments that end before this wall starts
@@ -904,7 +900,7 @@ class FpsRenderer(object):
                 # STOREWALL
                 # StoreWallRange(seg, CurrentWall.XStart, CurrentWall.XEnd);
                 clippings[segId] = (v1xScreen, v2xScreen)
-                rangeRenderer(segId, clippings[segId], v1Angle, v2Angle)
+                rangeRenderer(seg, clippings[segId], v1Angle, v2Angle)
                 segList.insert(segIndex, SolidSegmentRange(v1xScreen, v2xScreen))
                 # go to next wall
                 return
@@ -913,7 +909,7 @@ class FpsRenderer(object):
             # STOREWALL
             # StoreWallRange(seg, CurrentWall.XStart, FoundClipWall->XStart - 1);
             clippings[segId] = (v1xScreen,  segRange.xStart - 1)
-            rangeRenderer(segId, clippings[segId], v1Angle, v2Angle)
+            rangeRenderer(seg, clippings[segId], v1Angle, v2Angle)
             segRange.xStart = v1xScreen
 
         # FULL OVERLAPPED
@@ -930,7 +926,7 @@ class FpsRenderer(object):
             # STOREWALL
             # StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
             clippings[segId] = (nextSegRange.xEnd + 1,  segList[nextSegIndex + 1].xStart - 1)
-            rangeRenderer(segId, clippings[segId], v1Angle, v2Angle)
+            rangeRenderer(seg, clippings[segId], v1Angle, v2Angle)
 
             nextSegIndex += 1
             nextSegRange = segList[nextSegIndex]
@@ -947,7 +943,7 @@ class FpsRenderer(object):
         # STOREWALL
         # StoreWallRange(seg, NextWall->XEnd + 1, CurrentWall.XEnd);
         clippings[segId] = (nextSegRange.xEnd + 1,  v2xScreen)
-        rangeRenderer(segId, clippings[segId], v1Angle, v2Angle)
+        rangeRenderer(seg, clippings[segId], v1Angle, v2Angle)
         segRange.xEnd = v2xScreen
 
         if (nextSegIndex != segIndex):
