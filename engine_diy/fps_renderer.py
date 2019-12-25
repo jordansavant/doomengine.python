@@ -34,10 +34,10 @@ class FpsRenderer(object):
             self.wolfenstein_screenXToAngleLookup.append(screenAngle.new())
             screenAngle = screenAngle.subF(step)
 
-        self.doomclassic_screenXToAngleLookup = []
+        self.doomsolids_screenXToAngleLookup = []
         for i in range(0, width + 1):
             f_angle = math.atan((self.f_halfWidth - i) / float(self.f_distancePlayerToScreen)) * 180 / math.pi
-            self.doomclassic_screenXToAngleLookup.append(Angle(f_angle))
+            self.doomsolids_screenXToAngleLookup.append(Angle(f_angle))
 
         self.debug = False
 
@@ -666,10 +666,10 @@ class FpsRenderer(object):
     ## DOOM CLASSIC RENDER METHODS ##
     #################################
 
-    def doomclassic_render(self, onSegInspect = None):
+    def doomsolids_render(self, onSegInspect = None):
         # optional function pointer when we inspect a visible seg
         self.onSegInspect = onSegInspect
-        self.wallRenderer = self.doomclassic_renderWall
+        self.wallRenderer = self.doomsolids_renderWall
 
         # clear our clipping list of walls
         self.segList = [SolidSegmentRange(-100000, -1)]
@@ -677,9 +677,9 @@ class FpsRenderer(object):
         self.clippings = {} # dict of segIds to screenXs
 
         # render 3d viewport
-        self.map.renderBspNodes(self.player.x, self.player.y, self.doomclassic_renderSubsector)
+        self.map.renderBspNodes(self.player.x, self.player.y, self.doomsolids_renderSubsector)
 
-    def doomclassic_renderSubsector(self, subsectorId):
+    def doomsolids_renderSubsector(self, subsectorId):
         # iterate segs in subsector
         subsector = self.map.subsectors[subsectorId]
 
@@ -693,7 +693,7 @@ class FpsRenderer(object):
             v1 = self.map.vertices[seg.startVertexID]
             v2 = self.map.vertices[seg.endVertexID]
             # four angles
-            angles = self.doomclassic_clipVerticesToFov(v1, v2)
+            angles = self.doomsolids_clipVerticesToFov(v1, v2)
 
             if angles is not None:
                 if self.onSegInspect is not None:
@@ -704,15 +704,15 @@ class FpsRenderer(object):
                 v1AngleFromPlayer = angles[2]
                 v2AngleFromPlayer = angles[3]
 
-                self.doomclassic_addWallInFov(seg, segId, v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer)
+                self.doomsolids_addWallInFov(seg, segId, v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer)
 
-    def doomclassic_addWallInFov(self, seg, segId, v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer):
+    def doomsolids_addWallInFov(self, seg, segId, v1Angle, v2Angle, v1AngleFromPlayer, v2AngleFromPlayer):
         v1 = self.map.vertices[seg.startVertexID]
         v2 = self.map.vertices[seg.endVertexID]
 
         # get screen projection Xs
-        v1xScreen = self.doomclassic_angleToScreen(v1AngleFromPlayer)
-        v2xScreen = self.doomclassic_angleToScreen(v2AngleFromPlayer)
+        v1xScreen = self.doomsolids_angleToScreen(v1AngleFromPlayer)
+        v2xScreen = self.doomsolids_angleToScreen(v2AngleFromPlayer)
 
         # skip same pixel wall
         if v1xScreen == v2xScreen:
@@ -724,14 +724,14 @@ class FpsRenderer(object):
             return
 
         # build wall clippings
-        self.doomclassic_clipWall(seg, segId, self.segList, v1xScreen, v2xScreen, v1Angle, v2Angle, self.clippings, self.wallRenderer)
+        self.doomsolids_clipWall(seg, segId, self.segList, v1xScreen, v2xScreen, v1Angle, v2Angle, self.clippings, self.wallRenderer)
 
-    def doomclassic_renderWall(self, segId, segPair, v1Angle, v2Angle):
+    def doomsolids_renderWall(self, segId, segPair, v1Angle, v2Angle):
         seg = self.map.segs[segId]
 
-        self.doomclassic_calculateWallHeight(seg, segPair[0], segPair[1], v1Angle, v2Angle)
+        self.doomsolids_calculateWallHeight(seg, segPair[0], segPair[1], v1Angle, v2Angle)
 
-    def doomclassic_calculateWallHeight(self, seg, v1xScreen, v2xScreen, v1Angle, v2Angle):
+    def doomsolids_calculateWallHeight(self, seg, v1xScreen, v2xScreen, v1Angle, v2Angle):
         # get seg data
         v1 = self.map.vertices[seg.startVertexID]
         v2 = self.map.vertices[seg.endVertexID]
@@ -753,8 +753,8 @@ class FpsRenderer(object):
         f_distanceToV1 = self.player.distanceToVertex(v1)
         f_distanceToNormal = segToPlayerAngle.getSin() * f_distanceToV1
 
-        v1ScaleFactor = self.doomclassic_getScaleFactor(v1xScreen, segToNormalAngle, f_distanceToNormal)
-        v2ScaleFactor = self.doomclassic_getScaleFactor(v2xScreen, segToNormalAngle, f_distanceToNormal)
+        v1ScaleFactor = self.doomsolids_getScaleFactor(v1xScreen, segToNormalAngle, f_distanceToNormal)
+        v2ScaleFactor = self.doomsolids_getScaleFactor(v2xScreen, segToNormalAngle, f_distanceToNormal)
 
         # screen xs can be the same so avoid div/0
         # if they are the same that means they occupy
@@ -780,8 +780,7 @@ class FpsRenderer(object):
         while iXCurrent <= v2xScreen:
             drawStart = [iXCurrent + self.f_xOffset, ceilingEnd + self.f_yOffset]
             drawEnd = [iXCurrent + self.f_xOffset, floorStart + self.f_yOffset]
-            if iXCurrent % 2 == 0:
-                self.game.drawLine(drawStart, drawEnd, rgba, 1)
+            self.game.drawLine(drawStart, drawEnd, rgba, 1)
             iXCurrent += 1
             ceilingEnd += ceilingStep
             floorStart += floorStep
@@ -789,13 +788,13 @@ class FpsRenderer(object):
     # Method in DOOM engine that calculated a wall height
     # scale factor given a distance of the wall from the screen
     # and the distance of that same angle from the player to screen
-    def doomclassic_getScaleFactor(self, vxScreen, segToNormalAngle, distanceToNormal):
+    def doomsolids_getScaleFactor(self, vxScreen, segToNormalAngle, distanceToNormal):
         # constants used with some issues for DOOM textures
         MAX_SCALEFACTOR = 64.0
         MIN_SCALEFACTOR = 0.00390625
 
         angle90 = Angle(90)
-        screenXAngle = self.doomclassic_screenXToAngleLookup[vxScreen] # Angle object
+        screenXAngle = self.doomsolids_screenXToAngleLookup[vxScreen] # Angle object
         skewAngle = screenXAngle.addA(self.player.angle).subA(segToNormalAngle)
         #skewAngle = Angle(screenXAngle.deg + self.player.angle.deg - segToNormalAngle.deg)
 
@@ -808,7 +807,7 @@ class FpsRenderer(object):
         scaleFactor = min(MAX_SCALEFACTOR, max(MIN_SCALEFACTOR, scaleFactor))
         return scaleFactor
 
-    def doomclassic_angleToScreen(self, angle):
+    def doomsolids_angleToScreen(self, angle):
         ix = 0
         # TODO should these be 90 or fov?
         if angle.gtF(90):
@@ -822,7 +821,7 @@ class FpsRenderer(object):
         return int(ix)
 
     # needs to return 4 angles
-    def doomclassic_clipVerticesToFov(self, v1, v2):
+    def doomsolids_clipVerticesToFov(self, v1, v2):
         a_fov = Angle(self.f_fov)
 
         v1Angle = self.player.angleToVertex(v1)
@@ -886,7 +885,7 @@ class FpsRenderer(object):
     # variable, and not for the underlying reference
     # TODO take a seg and implement StoreWallRange
     # so that we can update the segs display range
-    def doomclassic_clipWall(self, seg, segId, segList, v1xScreen, v2xScreen, v1Angle, v2Angle, clippings, rangeRenderer):
+    def doomsolids_clipWall(self, seg, segId, segList, v1xScreen, v2xScreen, v1Angle, v2Angle, clippings, rangeRenderer):
         if len(segList) < 2:
             return
 

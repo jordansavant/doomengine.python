@@ -101,7 +101,7 @@ player.setAngle(map.playerThing.angle)
 
 # setup game
 game = Game2D()
-game.setupWindow(800, 600)
+game.setupWindow(1280, 720)
 
 # main screen plot
 pl = Plot(map, game.width, game.height)
@@ -301,7 +301,7 @@ while True:
             v2x, v2y = pl.ot(v2.x, v2.y)
             game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
 
-        fpsRenderer.doomclassic_render(onSegInspect)
+        fpsRenderer.doomsolids_render(onSegInspect)
 
     game.drawEnd()
 
