@@ -180,13 +180,14 @@ class FpsRenderer(object):
         # render 3d viewport
         self.map.renderBspNodes(self.player.x, self.player.y, self.wallcull_renderSubsector)
 
-    def wallcull_renderRange(self, segId, segPair, angles):
+    def wallcull_renderRange(self, seg, segPair, angles):
         # get unique color for this line
-        linedef = self.map.linedefs[self.map.segs[segId].linedefID]
-        sidedef = self.map.sidedefs[linedef.frontSideDefID]
+        sidedef = seg.linedef.frontSidedef
         rgba = self.getWallColor(sidedef.middleTexture)
+
         # hardcoded helper to render the range
         fpsStart = [segPair[0] + self.f_xOffset, self.f_yOffset]
+
         # ranges are exclusive of eachothers start and end
         # so add +1 to width (not for now because I like the line)
         width = segPair[1] - segPair[0] # + 1
@@ -214,7 +215,7 @@ class FpsRenderer(object):
                 v2xScreen = self.wallcull_angleToScreen(angles[1])
 
                 # build wall clippings
-                self.wallcull_clipWall(segId, self.segList, v1xScreen, v2xScreen, self.clippings, angles, self.wallRenderer)
+                self.wallcull_clipWall(seg, self.segList, v1xScreen, v2xScreen, self.clippings, angles, self.wallRenderer)
 
     def wallcull_angleToScreen(self, angle):
         ix = 0
@@ -290,9 +291,10 @@ class FpsRenderer(object):
     # variable, and not for the underlying reference
     # TODO take a seg and implement StoreWallRange
     # so that we can update the segs display range
-    def wallcull_clipWall(self, segId, segList, wallStart, wallEnd, clippings, angles, rangeRenderer):
+    def wallcull_clipWall(self, seg, segList, wallStart, wallEnd, clippings, angles, rangeRenderer):
         if len(segList) < 2:
             return
+        segId = seg.ID
         segRange = None
         segIndex = None
         # skip all segments that end before this wall starts
@@ -312,7 +314,7 @@ class FpsRenderer(object):
                 # STOREWALL
                 # StoreWallRange(seg, CurrentWall.XStart, CurrentWall.XEnd);
                 clippings[segId] = (wallStart, wallEnd)
-                rangeRenderer(segId, clippings[segId], angles)
+                rangeRenderer(seg, clippings[segId], angles)
                 segList.insert(segIndex, SolidSegmentRange(wallStart, wallEnd))
                 # go to next wall
                 return
@@ -321,7 +323,7 @@ class FpsRenderer(object):
             # STOREWALL
             # StoreWallRange(seg, CurrentWall.XStart, FoundClipWall->XStart - 1);
             clippings[segId] = (wallStart,  segRange.xStart - 1)
-            rangeRenderer(segId, clippings[segId], angles)
+            rangeRenderer(seg, clippings[segId], angles)
             segRange.xStart = wallStart
         # FULL OVERLAPPED
         # this part is already occupied
@@ -337,7 +339,7 @@ class FpsRenderer(object):
             # STOREWALL
             # StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
             clippings[segId] = (nextSegRange.xEnd + 1,  segList[nextSegIndex + 1].xStart - 1)
-            rangeRenderer(segId, clippings[segId], angles)
+            rangeRenderer(seg, clippings[segId], angles)
 
             nextSegIndex += 1
             nextSegRange = segList[nextSegIndex]
@@ -354,7 +356,7 @@ class FpsRenderer(object):
         # STOREWALL
         # StoreWallRange(seg, NextWall->XEnd + 1, CurrentWall.XEnd);
         clippings[segId] = (nextSegRange.xEnd + 1,  wallEnd)
-        rangeRenderer(segId, clippings[segId], angles)
+        rangeRenderer(seg, clippings[segId], angles)
         segRange.xEnd = wallEnd
 
         if (nextSegIndex != segIndex):
@@ -504,7 +506,7 @@ class FpsRenderer(object):
 
         # get wall color
         linedef = self.map.linedefs[seg.linedefID]
-        frontSidedef = self.map.sidedefs[linedef.frontSideDefID]
+        frontSidedef = self.map.sidedefs[linedef.frontSidedefID]
         rgba = self.getWallColor(frontSidedef.middleTexture)
 
         # draw polygon of wall
@@ -525,10 +527,10 @@ class FpsRenderer(object):
 
     def wolfenstein_calculateCeilingFloorHeight(self, seg, vxScreen, distanceToV):
         # return ceilingVOnScreen, floorVOnScreen
-        # seg front sector is the linedef's frontSideDefID sector
+        # seg front sector is the linedef's frontSidedefID sector
         linedef = self.map.linedefs[seg.linedefID]
-        frontSideDefID = self.map.sidedefs[linedef.frontSideDefID]
-        frontSector = self.map.sectors[frontSideDefID.sectorID]
+        frontSidedefID = self.map.sidedefs[linedef.frontSidedefID]
+        frontSector = self.map.sectors[frontSidedefID.sectorID]
 
         # get heights relative to eye position of player (camera)
         ceiling = frontSector.ceilingHeight - self.player.getEyeZ()
@@ -734,7 +736,7 @@ class FpsRenderer(object):
 
         # get texture color
         linedef = self.map.linedefs[seg.linedefID]
-        frontSidedef = self.map.sidedefs[linedef.frontSideDefID]
+        frontSidedef = self.map.sidedefs[linedef.frontSidedefID]
         frontSector = self.map.sectors[frontSidedef.sectorID]
         rgba = self.getWallColor(frontSidedef.middleTexture)
 

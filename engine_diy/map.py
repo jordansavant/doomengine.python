@@ -90,10 +90,10 @@ class Map(object):
             l.ID = i
             l.startVertex = self.vertices[l.startVertexID]
             l.endVertex = self.vertices[l.endVertexID]
-            if l.frontSideDefID != Linedef.nullSideDefID:
-                l.frontSideDef = self.sidedefs[l.frontSideDefID]
-            if l.backSideDefID != Linedef.nullSideDefID:
-                l.backSideDef = self.sidedefs[l.backSideDefID]
+            if l.frontSidedefID != Linedef.nullSideDefID:
+                l.frontSidedef = self.sidedefs[l.frontSidedefID]
+            if l.backSidedefID != Linedef.nullSideDefID:
+                l.backSidedef = self.sidedefs[l.backSidedefID]
         for i,t in enumerate(self.things):
             t.ID = i
         for i,n in enumerate(self.nodes):
@@ -234,27 +234,27 @@ class Linedef(object):
         self.flags = 0 # uint16
         self.lineType = 0 # uint16
         self.sectorTag = 0 # uint16
-        self.frontSideDefID = 0 # uint16
-        self.backSideDefID = 0 # uint16
+        self.frontSidedefID = 0 # uint16
+        self.backSidedefID = 0 # uint16
 
         # POINTER DATA
         self.ID = 0 # id of self in list
         self.startVertex = None
         self.endVertex = None
-        self.frontSideDef = None
-        self.backSideDef = None
+        self.frontSidedef = None
+        self.backSidedef = None
     def sizeof():
         return 14
     def isSolid(self):
         # a linedef wall is solid if it only has front side
         # and no back side
-        return self.backSideDefID == Linedef.nullSideDefID
+        return self.backSidedefID == Linedef.nullSideDefID
 
     def __str__(self):
         return "s.{},e.{} f.{} t.{} s.{} f.{} b.{}"\
                 .format(self.startVertexID, self.endVertexID,\
                 self.flags, self.lineType, self.sectorTag,\
-                self.frontSideDefID, self.backSideDefID)
+                self.frontSidedefID, self.backSidedefID)
 
 class Thing(object):
     # Types https://doomwiki.org/wiki/Thing_types
