@@ -197,12 +197,12 @@ class FpsRenderer(object):
         for i in range(subsector.segCount):
             segId = subsector.firstSegID + i
             seg = self.map.segs[segId]
-            linedef = self.map.linedefs[seg.linedefID]
+            linedef = seg.linedef
             if linedef.isSolid() is False: # skip non-solid walls for now
                 continue
 
-            v1 = self.map.vertices[seg.startVertexID]
-            v2 = self.map.vertices[seg.endVertexID]
+            v1 = seg.startVertex
+            v2 = seg.endVertex
             angles = self.wallcull_clipVerticesToFov(v1, v2)
 
             if angles is not None:
