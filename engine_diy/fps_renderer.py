@@ -65,13 +65,13 @@ class FpsRenderer(object):
     def edges_render(self, solidOnly = False, onSegInspect = None):
         # loop over all segs
         for i, seg in enumerate(self.map.segs):
-            linedef = self.map.linedefs[seg.linedefID]
+            linedef = seg.linedef
             # if in mode 8 only render solid walls
             if solidOnly and linedef.isSolid() is False:
                 continue
 
-            v1 = self.map.vertices[seg.startVertexID]
-            v2 = self.map.vertices[seg.endVertexID]
+            v1 = seg.startVertex
+            v2 = seg.endVertex
             angles = self.edges_clipVerticesToFov(v1, v2)
 
             if angles is not None:
