@@ -49,11 +49,16 @@ class FpsRenderer(object):
                 print(r, end='')
         print('')
 
-    def getWallColor(self, textureId):
+    def getWallColor(self, textureId, lightLevel = None):
         if textureId in self.wallColors:
-            return self.wallColors[textureId]
-        rgba = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), 1)
-        self.wallColors[textureId] = rgba
+            rgba = self.wallColors[textureId]
+        else:
+            rgba = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), 1)
+            self.wallColors[textureId] = rgba
+        # adjust for light level
+        if lightLevel is not None: # 0 - 255
+            fl = float(lightLevel) / 255.0
+            rgba = (rgba[0] * fl, rgba[1] * fl, rgba[2] * fl, rgba[3])
         return rgba
 
 
@@ -731,7 +736,7 @@ class FpsRenderer(object):
         # get texture color
         frontSidedef = seg.linedef.frontSidedef
         frontSector = frontSidedef.sector
-        rgba = self.getWallColor(frontSidedef.middleTexture)
+        rgba = self.getWallColor(frontSidedef.middleTexture, frontSector.lightLevel)
 
         # calculate distance to first edge of the wall
         angle90 = Angle(90)
