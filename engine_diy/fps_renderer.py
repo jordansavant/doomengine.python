@@ -192,9 +192,8 @@ class FpsRenderer(object):
         width = segPair[1] - segPair[0] # + 1
         self.game.drawRectangle(fpsStart, width, self.f_height, rgba)
 
-    def wallcull_renderSubsector(self, subsectorId):
+    def wallcull_renderSubsector(self, subsector):
         # iterate segs in subsector
-        subsector = self.map.subsectors[subsectorId]
         for i in range(subsector.segCount):
             segId = subsector.firstSegID + i
             seg = self.map.segs[segId]
@@ -388,9 +387,8 @@ class FpsRenderer(object):
         # render 3d viewport
         self.map.renderBspNodes(self.player.x, self.player.y, self.wolfenstein_renderSubsector)
 
-    def wolfenstein_renderSubsector(self, subsectorId):
+    def wolfenstein_renderSubsector(self, subsector):
         # iterate segs in subsector
-        subsector = self.map.subsectors[subsectorId]
         for i in range(subsector.segCount):
             segId = subsector.firstSegID + i
             seg = self.map.segs[segId]
@@ -679,10 +677,8 @@ class FpsRenderer(object):
         # render 3d viewport
         self.map.renderBspNodes(self.player.x, self.player.y, self.doomsolids_renderSubsector)
 
-    def doomsolids_renderSubsector(self, subsectorId):
+    def doomsolids_renderSubsector(self, subsector):
         # iterate segs in subsector
-        subsector = self.map.subsectors[subsectorId]
-
         for i in range(subsector.segCount):
             segId = subsector.firstSegID + i
             seg = self.map.segs[segId]

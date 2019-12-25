@@ -98,12 +98,14 @@ class Map(object):
             t.ID = i
         for i,n in enumerate(self.nodes):
             n.ID = i
-            if self.isNodeIDSubsector(n.ID):
-                n.sector = self.sectors[self.getNodeSubsector(n.ID)]
             if self.isNodeIDSubsector(n.frontChildID) is False:
                 n.frontChildNode = self.nodes[n.frontChildID]
+            else:
+                n.frontSubsector = self.subsectors[self.getNodeSubsector(n.frontChildID)]
             if self.isNodeIDSubsector(n.backChildID) is False:
                 n.backChildNode = self.nodes[n.backChildID]
+            else:
+                n.backSubsector = self.subsectors[self.getNodeSubsector(n.backChildID)]
         for i,s in enumerate(self.subsectors):
             s.ID = i
             s.firstSeg = self.segs[s.firstSegID]
@@ -120,6 +122,7 @@ class Map(object):
 
     def getRootNode(self):
         return self.nodes[len(self.nodes) - 1]
+
     # traverse the BSP tree
     def isOnBackSide(self, x, y, node):
         dx = x - node.xPartition
@@ -127,13 +130,17 @@ class Map(object):
         # use cross product to determine which direction
         cross = dx * node.yChangePartition - dy * node.xChangePartition
         return cross <= 0
+
     def getSubsector(self, x, y):
         nodeId = len(self.nodes) - 1
         return self.recurseFindSubsector(x, y, nodeId)
+
     def isNodeIDSubsector(self, nodeId):
         return (nodeId & Map.SUBSECTORIDENTIFIER) > 0
+
     def getNodeSubsector(self, nodeId):
         return nodeId & (~Map.SUBSECTORIDENTIFIER)
+
     def recurseFindSubsector(self, x, y, nodeId):
         # see if this is a subsector
         # they used the last bit of the nodeId to set if it was
@@ -154,9 +161,31 @@ class Map(object):
             return self.recurseFindSubsector(x, y, node.backChildID)
         else:
             return self.recurseFindSubsector(x, y, node.frontChildID)
+
     def renderBspNodes(self, x, y, renderSubsector):
-        nodeId = len(self.nodes) - 1
-        return self.recurseRenderBspNodes(x, y, nodeId, renderSubsector)
+        rootNode = self.nodes[len(self.nodes) - 1]
+        return self.recurseRenderBspNodes2(x, y, rootNode, renderSubsector)
+
+    def recurseRenderBspNodes2(self, x, y, node, renderSubsector):
+        if self.isOnBackSide(x, y, node):
+            if node.backSubsector is not None:
+                renderSubsector(node.backSubsector)
+            else:
+                self.recurseRenderBspNodes2(x, y, node.backChildNode, renderSubsector)
+            if node.frontSubsector is not None:
+                renderSubsector(node.frontSubsector)
+            else:
+                self.recurseRenderBspNodes2(x, y, node.frontChildNode, renderSubsector)
+        else:
+            if node.frontSubsector is not None:
+                renderSubsector(node.frontSubsector)
+            else:
+                self.recurseRenderBspNodes2(x, y, node.frontChildNode, renderSubsector)
+            if node.backSubsector is not None:
+                renderSubsector(node.backSubsector)
+            else:
+                self.recurseRenderBspNodes2(x, y, node.backChildNode, renderSubsector)
+
     def recurseRenderBspNodes(self, x, y, nodeId, renderSubsector):
         inSubsector = nodeId & Map.SUBSECTORIDENTIFIER
         if inSubsector > 0:
@@ -387,7 +416,8 @@ class Node(object):
         self.ID = 0
         self.frontChildNode = None
         self.backChildNode = None
-        self.sector = None
+        self.frontSubsector = None
+        self.backSubsector = None
     def sizeof():
         return 28
     def __str__(self):
