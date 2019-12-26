@@ -44,6 +44,12 @@ class FpsRenderer(object):
             f_angle = math.atan((self.f_halfWidth - i) / float(self.f_distancePlayerToScreen)) * 180 / math.pi
             self.doomportals_screenXToAngleLookup.append(Angle(f_angle))
 
+        self.doomportals_ceilingClipHeight = []
+        self.doomportals_floorClipHeight = []
+        for i in range(0, self.f_width):
+            self.doomportals_ceilingClipHeight.append(-1)
+            self.doomportals_floorClipHeight.append(int(self.f_height))
+
         self.debug = False
 
     def printSegList(self, segList):
@@ -979,7 +985,11 @@ class FpsRenderer(object):
         # clear our clipping list of walls
         self.segList = [SolidSegmentRange(-100000, -1)]
         self.segList.append(SolidSegmentRange(self.f_width, 100000))
-        self.clippings = {} # dict of segIds to screenXs
+        # clear our ceiling and floor clipping lists for portaled walls
+        for i,v in enumerate(self.doomportals_ceilingClipHeight):
+            self.doomportals_ceilingClipHeight[i] = -1; # reset
+        for i,v in enumerate(self.doomportals_floorClipHeight):
+            self.doomportals_floorClipHeight[i] = int(self.f_height)
 
         # render 3d viewport
         self.map.renderBspNodes(self.player.x, self.player.y, self.doomportals_renderSubsector)
@@ -990,8 +1000,6 @@ class FpsRenderer(object):
             segId = subsector.firstSegID + i
             seg = self.map.segs[segId]
             linedef = seg.linedef
-            if linedef.isSolid() is False: # skip non-solid walls for now
-                continue
 
             v1 = seg.startVertex
             v2 = seg.endVertex
@@ -1021,17 +1029,63 @@ class FpsRenderer(object):
         if v1xScreen == v2xScreen:
             return
 
-        # skip nonsolid walls
-        if seg.linedef.isSolid() is False:
+        # solid walls
+        if seg.backSector == None:
+            self.doomportals_clipSolidWall(seg, self.segList, v1xScreen, v2xScreen, v1Angle, v2Angle, self.wallRenderer)
             return
 
-        # build wall clippings
-        self.doomportals_clipWall(seg, self.segList, v1xScreen, v2xScreen, v1Angle, v2Angle, self.clippings, self.wallRenderer)
+        # closed doors
+        isCeilLess = seg.backSector.ceilingHeight <= seg.frontSector.floorHeight
+        isFloorGreater = seg.backSector.floorHeight >= seg.frontSector.ceilingHeight
+        if isCeilLess or isFloorGreater:
+            self.doomportals_clipSolidWall(seg, self.segList, v1xScreen, v2xScreen, v1Angle, v2Angle, self.wallRenderer)
+            return
 
-    def doomportals_renderWall(self, seg, segPair, v1Angle, v2Angle):
-        self.doomportals_calculateWallHeight(seg, segPair[0], segPair[1], v1Angle, v2Angle)
+        # windowed walls
+        isCeilingDiff = seg.frontSector.ceilingHeight != seg.backSector.ceilingHeight;
+        isFloorDiff = seg.frontSector.floorHeight != seg.backSector.floorHeight;
+        if isCeilingDiff or isFloorDiff:
+            self.doomportals_clipPortalWall(seg, self.segList, v1xScreen, v2xScreen, v1Angle, v2Angle, self.wallRenderer)
+            return
+
+    def doomportals_renderWall(self, seg, v1xScreen, v2xScreen, v1Angle, v2Angle):
+        self.doomportals_calculateWallHeight(seg, v1xScreen, v2xScreen, v1Angle, v2Angle)
+
+    class doomportals_FrameRenderData(object):
+        def __init__(self):
+            self.rgba = None
+
+            self.f_distanceToV1 = 0
+            self.f_distanceToNormal = 0
+            self.f_v1ScaleFactor = 0
+            self.f_v2ScaleFactor = 0
+            self.f_steps = 0
+
+            self.f_frontSectorCeiling = 0
+            self.f_frontSectorFloor = 0
+            self.f_ceilingStep = 0
+            self.f_ceilingEnd = 0
+            self.f_floorStep = 0
+            self.f_floorStart = 0
+
+            self.f_backSectorCeiling = 0
+            self.f_backSectorFloor = 0
+
+            self.b_drawUpperSection = False
+            self.b_drawLowerSection = False
+
+            self.f_upperHeightStep = 0
+            self.i_upperHeight = 0
+            self.f_lowerHeightStep = 0
+            self.i_lowerHeight = 0
+
+            self.b_updateFloor = False
+            self.b_updateCeiling = False
 
     def doomportals_calculateWallHeight(self, seg, v1xScreen, v2xScreen, v1Angle, v2Angle):
+
+        RD = FpsRenderer.doomportals_FrameRenderData()
+
         # get seg data
         v1 = seg.startVertex
         v2 = seg.endVertex
@@ -1039,7 +1093,7 @@ class FpsRenderer(object):
         # get texture color
         frontSidedef = seg.linedef.frontSidedef
         frontSector = frontSidedef.sector
-        rgba = self.getWallColor(frontSidedef.middleTexture, frontSector.lightLevel)
+        RD.rgba = self.getWallColor(frontSidedef.middleTexture, frontSector.lightLevel)
 
         # calculate distance to first edge of the wall
         angle90 = Angle(90)
@@ -1049,11 +1103,11 @@ class FpsRenderer(object):
         # normal angle is 90deg to wall
         segToPlayerAngle = angle90.subA(normalToV1Angle)
 
-        f_distanceToV1 = self.player.distanceToVertex(v1)
-        f_distanceToNormal = segToPlayerAngle.getSin() * f_distanceToV1
+        RD.f_distanceToV1 = self.player.distanceToVertex(v1)
+        RD.f_distanceToNormal = segToPlayerAngle.getSin() * RD.f_distanceToV1
 
-        v1ScaleFactor = self.doomportals_getScaleFactor(v1xScreen, segToNormalAngle, f_distanceToNormal)
-        v2ScaleFactor = self.doomportals_getScaleFactor(v2xScreen, segToNormalAngle, f_distanceToNormal)
+        RD.f_v1ScaleFactor = self.doomportals_getScaleFactor(v1xScreen, segToNormalAngle, RD.f_distanceToNormal)
+        RD.f_v2ScaleFactor = self.doomportals_getScaleFactor(v2xScreen, segToNormalAngle, RD.f_distanceToNormal)
 
         # screen xs can be the same so avoid div/0
         # if they are the same that means they occupy
@@ -1061,28 +1115,39 @@ class FpsRenderer(object):
         # DIY tutorial (c++) does divide by zero
         # and when
         if v1xScreen == v2xScreen:
-            steps = 1
+            RD.f_steps = 1
         else:
-            steps = (v2ScaleFactor - v1ScaleFactor) / (v2xScreen - v1xScreen)
+            RD.f_steps = (RD.f_v2ScaleFactor - RD.f_v1ScaleFactor) / (v2xScreen - v1xScreen)
+
+        # portal walls
+        RD.f_frontSectorCeiling = seg.frontSector.ceilingHeight - self.player.getEyeZ()
+        RD.f_frontSectorFloor = seg.frontSector.floorHeight - self.player.getEyeZ()
 
         # get heights relative to eye position of player (camera)
-        ceiling = frontSector.ceilingHeight - self.player.getEyeZ()
-        floor = frontSector.floorHeight - self.player.getEyeZ()
+        RD.f_ceilingStep = -(RD.f_frontSectorCeiling * RD.f_steps)
+        RD.f_ceilingEnd = int(self.f_halfHeight - (RD.f_frontSectorCeiling * RD.f_v1ScaleFactor))
 
-        ceilingStep = -(ceiling * steps)
-        ceilingEnd = self.f_halfHeight - (ceiling * v1ScaleFactor)
+        RD.f_floorStep = -(RD.f_frontSectorFloor * RD.f_steps)
+        RD.f_floorStart = int(self.f_halfHeight - (RD.f_frontSectorFloor * RD.f_v1ScaleFactor))
 
-        floorStep = -(floor * steps)
-        floorStart = self.f_halfHeight - (floor * v1ScaleFactor)
+        # Handle Solid walls vs Portal Walls
+        if seg.backSector:
+            RD.f_backSectorCeiling = seg.backSector.ceilingHeight - self.player.getEyeZ()
+            RD.f_backSectorFloor = seg.backSector.floorHeight - self.player.getEyeZ()
 
-        iXCurrent = v1xScreen
-        while iXCurrent <= v2xScreen:
-            drawStart = [iXCurrent + self.f_xOffset, ceilingEnd + self.f_yOffset]
-            drawEnd = [iXCurrent + self.f_xOffset, floorStart + self.f_yOffset]
-            self.game.drawLine(drawStart, drawEnd, rgba, 1)
-            iXCurrent += 1
-            ceilingEnd += ceilingStep
-            floorStart += floorStep
+            self.doomportals_ceilingFloorUpdate(seg, RD)
+
+            if RD.f_backSectorCeiling < RD.f_frontSectorCeiling:
+                RD.b_drawUpperSection = True
+                RD.f_upperHeightStep = -(RD.f_backSectorCeiling * RD.f_steps)
+                RD.i_upperHeight = int(self.f_halfHeight - (RD.f_backSectorCeiling * RD.f_v1ScaleFactor))
+
+            if RD.f_backSectorFloor > RD.f_frontSectorFloor:
+                RD.b_drawLowerSection = True
+                RD.f_lowerHeightStep = -(RD.f_backSectorFloor * RD.f_steps)
+                RD.i_lowerHeight = int(self.f_halfHeight - (RD.f_backSectorFloor * RD.f_v1ScaleFactor))
+
+        self.doomportals_renderSegment(seg, v1xScreen, v2xScreen, RD)
 
     # Method in DOOM engine that calculated a wall height
     # scale factor given a distance of the wall from the screen
@@ -1117,6 +1182,111 @@ class FpsRenderer(object):
             a_newAngle = Angle(90 - angle.deg)
             ix = round(a_newAngle.getTan() * self.f_halfWidth) + self.f_distancePlayerToScreen
         return int(ix)
+
+    def doomportals_ceilingFloorUpdate(self, seg, RD):
+        # RD is a reference so that is correct in we need to modify its contents
+        if seg.backSector is None:
+            RD.b_updateCeiling = True
+            RD.b_updateFloor = True
+            return
+
+        RD.b_updateCeiling = RD.f_backSectorCeiling != RD.f_frontSectorCeiling
+        RD.b_updateFloor = RD.f_backSectorFloor != RD.f_frontSectorFloor
+
+        if seg.backSector.ceilingHeight <= seg.frontSector.floorHeight or seg.backSector.floorHeight >= seg.frontSector.ceilingHeight:
+            # closed door
+            RD.b_updateCeiling = True
+            RD.b_updateFloor = True
+
+        if seg.frontSector.ceilingHeight <= self.player.getEyeZ():
+            # below view plane
+            RD.b_updateCeiling = False
+
+        if seg.frontSector.floorHeight >= self.player.getEyeZ():
+            # above view plane
+            RD.b_updateFloor = False
+
+    def doomportals_renderSegment(self, seg, v1xScreen, v2xScreen, RD):
+        iXCurrent = v1xScreen
+        while iXCurrent <= v2xScreen:
+            i_currentCeilingEnd = int(RD.f_ceilingEnd)
+            i_currentFloorStart = int(RD.f_floorStart)
+
+            # DIY code used a validate range method to clip and modify and continue
+            # I cant pass ints by reference in Python so I am performing the function inline
+            # if doomportals_validateRange(RD, iXCurrent, i_currentCeilingEnd, i_currentFloorStart) is False:
+            #     continue
+            # validateRange start
+            if i_currentCeilingEnd < self.doomportals_ceilingClipHeight[iXCurrent] + 1:
+                i_currentCeilingEnd = self.doomportals_ceilingClipHeight[iXCurrent] + 1
+            if i_currentFloorStart >= self.doomportals_floorClipHeight[iXCurrent]:
+                i_currentFloorStart = self.doomportals_floorClipHeight[iXCurrent] - 1
+
+            if i_currentCeilingEnd > i_currentFloorStart:
+                RD.f_ceilingEnd += RD.f_ceilingStep
+                RD.f_floorStart += RD.f_floorStep
+                iXCurrent += 1
+                continue
+            # validateRange end
+
+            # is it a portal?
+            if seg.backSector:
+                self.doomportals_drawUpperSection(RD, iXCurrent, i_currentCeilingEnd)
+                self.doomportals_drawLowerSection(RD, iXCurrent, i_currentFloorStart)
+            else:
+                # it is solid
+                self.doomportals_drawMiddleSection(RD, iXCurrent, i_currentCeilingEnd, i_currentFloorStart)
+
+            RD.f_ceilingEnd += RD.f_ceilingStep
+            RD.f_floorStart += RD.f_floorStep
+
+            iXCurrent += 1
+
+    def doomportals_drawUpperSection(self, RD, iXCurrent, i_currentCeilingEnd):
+        if RD.b_drawUpperSection:
+            i_upperHeight = RD.i_upperHeight
+            RD.i_upperHeight += RD.f_upperHeightStep
+
+            if i_upperHeight >= self.doomportals_floorClipHeight[iXCurrent]:
+                i_upperHeight = self.doomportals_floorClipHeight[iXCurrent] - 1
+
+            if i_upperHeight >= i_currentCeilingEnd:
+                # DRAW LINE
+                drawStart = [iXCurrent + self.f_xOffset, i_currentCeilingEnd + self.f_yOffset]
+                drawEnd = [iXCurrent + self.f_xOffset, i_upperHeight + self.f_yOffset]
+                self.game.drawLine(drawStart, drawEnd, RD.rgba, 1)
+                self.doomportals_ceilingClipHeight[iXCurrent] = i_upperHeight
+            else:
+                self.doomportals_ceilingClipHeight[iXCurrent] = i_currentCeilingEnd - 1
+        else:
+            self.doomportals_ceilingClipHeight[iXCurrent] = i_currentCeilingEnd - 1
+
+    def doomportals_drawLowerSection(self, RD, iXCurrent, i_currentFloorStart):
+        if RD.b_drawLowerSection:
+            i_lowerHeight = RD.i_lowerHeight
+            RD.i_lowerHeight += RD.f_lowerHeightStep
+
+            if i_lowerHeight <= self.doomportals_ceilingClipHeight[iXCurrent]:
+                i_lowerHeight = self.doomportals_ceilingClipHeight[iXCurrent] + 1
+
+            if i_lowerHeight <= i_currentFloorStart:
+                # DRAW LINE
+                drawStart = [iXCurrent + self.f_xOffset, i_lowerHeight + self.f_yOffset]
+                drawEnd = [iXCurrent + self.f_xOffset, i_currentFloorStart + self.f_yOffset]
+                self.game.drawLine(drawStart, drawEnd, RD.rgba, 1)
+                self.doomportals_floorClipHeight[iXCurrent] = i_lowerHeight
+            else:
+                self.doomportals_floorClipHeight[iXCurrent] = i_currentFloorStart + 1
+        else:
+            self.doomportals_floorClipHeight[iXCurrent] = i_currentFloorStart + 1
+
+    def doomportals_drawMiddleSection(self, RD, iXCurrent, i_currentCeilingEnd, i_currentFloorStart):
+        # DRAW LINE
+        drawStart = [iXCurrent + self.f_xOffset, i_currentCeilingEnd + self.f_yOffset]
+        drawEnd = [iXCurrent + self.f_xOffset, i_currentFloorStart + self.f_yOffset]
+        self.game.drawLine(drawStart, drawEnd, RD.rgba, 1)
+        self.doomportals_ceilingClipHeight[iXCurrent] = self.f_height # full clip
+        self.doomportals_floorClipHeight[iXCurrent] = -1 # full clip
 
     # needs to return 4 angles
     def doomportals_clipVerticesToFov(self, v1, v2):
@@ -1183,7 +1353,7 @@ class FpsRenderer(object):
     # variable, and not for the underlying reference
     # TODO take a seg and implement StoreWallRange
     # so that we can update the segs display range
-    def doomportals_clipWall(self, seg, segList, v1xScreen, v2xScreen, v1Angle, v2Angle, clippings, rangeRenderer):
+    def doomportals_clipSolidWall(self, seg, segList, v1xScreen, v2xScreen, v1Angle, v2Angle, rangeRenderer):
         if len(segList) < 2:
             return
 
@@ -1207,8 +1377,7 @@ class FpsRenderer(object):
                 # all of the wall is visible to insert it
                 # STOREWALL
                 # StoreWallRange(seg, CurrentWall.XStart, CurrentWall.XEnd);
-                clippings[segId] = (v1xScreen, v2xScreen)
-                rangeRenderer(seg, clippings[segId], v1Angle, v2Angle)
+                rangeRenderer(seg, v1xScreen, v2xScreen, v1Angle, v2Angle)
                 segList.insert(segIndex, SolidSegmentRange(v1xScreen, v2xScreen))
                 # go to next wall
                 return
@@ -1216,8 +1385,7 @@ class FpsRenderer(object):
             # so just update the start
             # STOREWALL
             # StoreWallRange(seg, CurrentWall.XStart, FoundClipWall->XStart - 1);
-            clippings[segId] = (v1xScreen,  segRange.xStart - 1)
-            rangeRenderer(seg, clippings[segId], v1Angle, v2Angle)
+            rangeRenderer(seg, v1xScreen,  segRange.xStart - 1, v1Angle, v2Angle)
             segRange.xStart = v1xScreen
 
         # FULL OVERLAPPED
@@ -1233,8 +1401,7 @@ class FpsRenderer(object):
         while v2xScreen >= segList[nextSegIndex + 1].xStart - 1:
             # STOREWALL
             # StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
-            clippings[segId] = (nextSegRange.xEnd + 1,  segList[nextSegIndex + 1].xStart - 1)
-            rangeRenderer(seg, clippings[segId], v1Angle, v2Angle)
+            rangeRenderer(seg, nextSegRange.xEnd + 1,  segList[nextSegIndex + 1].xStart - 1, v1Angle, v2Angle)
 
             nextSegIndex += 1
             nextSegRange = segList[nextSegIndex]
@@ -1250,8 +1417,7 @@ class FpsRenderer(object):
         # wall precedes all known segments
         # STOREWALL
         # StoreWallRange(seg, NextWall->XEnd + 1, CurrentWall.XEnd);
-        clippings[segId] = (nextSegRange.xEnd + 1,  v2xScreen)
-        rangeRenderer(seg, clippings[segId], v1Angle, v2Angle)
+        rangeRenderer(seg, nextSegRange.xEnd + 1,  v2xScreen, v1Angle, v2Angle)
         segRange.xEnd = v2xScreen
 
         if (nextSegIndex != segIndex):
@@ -1260,4 +1426,62 @@ class FpsRenderer(object):
             del segList[segIndex:nextSegIndex]
         return
 
+    # Very similar to clipSolidWall but does not
+    # modify the segList
+    def doomportals_clipPortalWall(self, seg, segList, v1xScreen, v2xScreen, v1Angle, v2Angle, rangeRenderer):
+        # find clip window
+        segId = seg.ID
+        segRange = None
+        segIndex = None
+        # skip all segments that end before this wall starts
+        i=0
+        while (i < len(segList) and segList[i].xEnd < v1xScreen - 1):
+            i += 1
+        segIndex = i
+        segRange = segList[segIndex]
+
+        # should always have a node since we cap our ends with
+        # "infinity"
+        # START to OVERLAP
+        if v1xScreen < segRange.xStart:
+            # found a position in the node list
+            # are they overlapping?
+            if v2xScreen < segRange.xStart - 1:
+                # all of the wall is visible to insert it
+                # STOREWALL
+                # StoreWallRange(seg, CurrentWall.XStart, CurrentWall.XEnd);
+                rangeRenderer(seg, v1xScreen, v2xScreen, v1Angle, v2Angle)
+                # go to next wall
+                return
+            # if not overlapping, end is already included
+            # so just update the start
+            # STOREWALL
+            # StoreWallRange(seg, CurrentWall.XStart, FoundClipWall->XStart - 1);
+            rangeRenderer(seg, v1xScreen,  segRange.xStart - 1, v1Angle, v2Angle)
+
+        # FULL OVERLAPPED
+        # this part is already occupied
+        if v2xScreen <= segRange.xEnd:
+            return # go to next wall
+
+        # CHOP AND MERGE
+        # start by looking at the next entry in the list
+        # is the next entry within the current wall range?
+        nextSegIndex = segIndex
+        nextSegRange = segRange
+        while v2xScreen >= segList[nextSegIndex + 1].xStart - 1:
+            # STOREWALL
+            # StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
+            rangeRenderer(seg, nextSegRange.xEnd + 1,  segList[nextSegIndex + 1].xStart - 1, v1Angle, v2Angle)
+
+            nextSegIndex += 1
+            nextSegRange = segList[nextSegIndex]
+            # partially clipped by other walls, store each fragment
+            if v2xScreen <= nextSegRange.xEnd:
+                return
+
+        # wall precedes all known segments
+        # STOREWALL
+        # StoreWallRange(seg, NextWall->XEnd + 1, CurrentWall.XEnd);
+        rangeRenderer(seg, nextSegRange.xEnd + 1,  v2xScreen, v1Angle, v2Angle)
 
