@@ -84,8 +84,10 @@ class Map(object):
     # method to link various WAD data
     # structures together
     def assignPointerData(self):
+        # VERTEXES
         for i,v in enumerate(self.vertices):
             v.ID = i
+        # LINEDEFS
         for i,l in enumerate(self.linedefs):
             l.ID = i
             l.startVertex = self.vertices[l.startVertexID]
@@ -94,8 +96,21 @@ class Map(object):
                 l.frontSidedef = self.sidedefs[l.frontSidedefID]
             if l.backSidedefID != Linedef.nullSideDefID:
                 l.backSidedef = self.sidedefs[l.backSidedefID]
+        # SIDEDEFS
+        for i,s in enumerate(self.sidedefs):
+            s.ID = i
+            s.sector = self.sectors[s.sectorID]
+        # SECTORS
+        for i,s in enumerate(self.sectors):
+            s.ID = i
+        # SUBSECTORS
+        for i,s in enumerate(self.subsectors):
+            s.ID = i
+            s.firstSeg = self.segs[s.firstSegID]
+        # THINGS
         for i,t in enumerate(self.things):
             t.ID = i
+        # NODES
         for i,n in enumerate(self.nodes):
             n.ID = i
             if self.isNodeIDSubsector(n.frontChildID) is False:
@@ -106,19 +121,26 @@ class Map(object):
                 n.backChildNode = self.nodes[n.backChildID]
             else:
                 n.backSubsector = self.subsectors[self.getNodeSubsector(n.backChildID)]
-        for i,s in enumerate(self.subsectors):
-            s.ID = i
-            s.firstSeg = self.segs[s.firstSegID]
+        # SEGS
         for i,s in enumerate(self.segs):
             s.ID = i
             s.startVertex = self.vertices[s.startVertexID]
             s.endVertex = self.vertices[s.endVertexID]
             s.linedef = self.linedefs[s.linedefID]
-        for i,s in enumerate(self.sectors):
-            s.ID = i
-        for i,s in enumerate(self.sidedefs):
-            s.ID = i
-            s.sector = self.sectors[s.sectorID]
+            # pointer to front and back sectors
+            # direction: 0 same as linedef, 1 opposite
+            # set our linked sectors relative to their
+            # direction
+            if s.direction == 0: # (same)
+                if s.linedef.frontSidedef != None:
+                    s.frontSector = s.linedef.frontSidedef.sector
+                if s.linedef.backSidedef != None:
+                    s.backSector = s.linedef.backSidedef.sector
+            else: # if 1 (opposite)
+                if s.linedef.frontSidedef != None:
+                    s.backSector = s.linedef.frontSidedef.sector
+                if s.linedef.backSidedef != None:
+                    s.frontSector = s.linedef.backSidedef.sector
 
     def getRootNode(self):
         return self.nodes[len(self.nodes) - 1]
@@ -465,6 +487,8 @@ class Seg(object):
         self.startVertex = None
         self.endVertex = None
         self.linedef = None
+        self.frontSector = None
+        self.backSector = None
     def sizeof():
         return 12
     # Angle is stored in Binary Angles BAMS
