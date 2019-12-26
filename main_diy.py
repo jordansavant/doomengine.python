@@ -153,6 +153,14 @@ def on_d():
     player.x -= player.angle.addF(90).getCos() * 5
     player.y -= player.angle.addF(90).getSin() * 5
 game.onKeyHold(pygame.K_d, on_d)
+def on_z():
+    global player
+    player.z -= 5
+game.onKeyHold(pygame.K_z, on_z)
+def on_x():
+    global player
+    player.z += 5
+game.onKeyHold(pygame.K_x, on_x)
 def on_space():
     global player
     player.x = 1291
