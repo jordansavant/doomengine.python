@@ -5,6 +5,7 @@
 - pygame, numpy, opengl
 
 ## OS X Install
+- `pygame 2.0.0.dev4 (SDL 2.0.10, python 3.8.1)`
 - Install Python 3
 - brew install sdl sdl_image sdl_mixer sdl_ttf portmidi
 - brew install sdl2
