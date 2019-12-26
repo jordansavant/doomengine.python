@@ -350,7 +350,7 @@ def draw():
     glViewport(0, 0, displayWidth, displayHeight)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(45, (displayWidth/displayHeight), 0, 5000)
+    gluPerspective(45, (displayWidth/displayHeight), 0.00001, 5000)
     # models
     glMatrixMode(GL_MODELVIEW) # set us into the 3d matrix
 

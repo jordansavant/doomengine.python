@@ -4,6 +4,16 @@
 - Python 3.7.1
 - pygame, numpy, opengl
 
+## OS X Install
+- Install Python 3
+- brew install sdl sdl_image sdl_mixer sdl_ttf portmidi
+- brew install sdl2
+- Install XQuartz
+- mkdir
+- virtualenv venv
+- source venv/bin/activate
+- pip3 install pygame==2.0.0.dev4
+
 In awe of the 1993 doom engine rendering logic regarding Binary Space Partitioning I explored its concepts using a recreation of this engine in Python using pygame as the display portion. The result was great respect for Id Software's work they accomplished.
 
 ![](https://github.com/jordansavant/doomengine.python/raw/master/resources/demo_pygame_render.gif)
