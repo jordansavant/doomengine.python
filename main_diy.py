@@ -116,7 +116,7 @@ fpsRenderer = FpsRenderer(map, player, game, fov, fpsWinWidth, fpsWinHeight, fps
 
 # render helpers
 mode = 0
-max_modes = 13
+max_modes = 14
 def mode_up():
     global mode
     mode = (mode + 1) % max_modes
@@ -325,6 +325,21 @@ while True:
             game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
 
         fpsRenderer.doomportals_render(onSegInspect)
+
+    # RENDER FPS WITH SOLID,PARTIAL AND STORED WALLS
+    if mode == 13:
+        # render player
+        px, py = pl.ot(player.x, player.y)
+        game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
+
+        # test rendering segs with wall culling
+        def onSegInspect(seg, v1, v2):
+            # render the seg (helper)
+            v1x, v1y = pl.ot(v1.x, v1.y)
+            v2x, v2y = pl.ot(v2.x, v2.y)
+            game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
+
+        fpsRenderer.doomhistory_render(onSegInspect)
 
     game.drawEnd()
 
