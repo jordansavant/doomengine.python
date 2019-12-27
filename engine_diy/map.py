@@ -153,9 +153,14 @@ class Map(object):
         cross = dx * node.yChangePartition - dy * node.xChangePartition
         return cross <= 0
 
-    def getSubsector(self, x, y):
+    def getSubsectorAtPosition(self, x, y):
         nodeId = len(self.nodes) - 1
-        return self.recurseFindSubsector(x, y, nodeId)
+        return self.subsectors[self.recurseFindSubsector(x, y, nodeId)]
+
+    def getSectorAtPosition(self, x, y):
+        subsector = self.getSubsectorAtPosition(x, y)
+        seg = subsector.firstSeg
+        return seg.frontSector
 
     def isNodeIDSubsector(self, nodeId):
         return (nodeId & Map.SUBSECTORIDENTIFIER) > 0

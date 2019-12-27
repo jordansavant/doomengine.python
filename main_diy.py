@@ -230,8 +230,8 @@ while True:
         px, py = pl.ot(player.x, player.y)
         game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
         # render player subsector
-        ssId = map.getSubsector(player.x, player.y)
-        drawSubsector(ssId)
+        ss = map.getSubsectorAtPosition(player.x, player.y)
+        drawSubsector(ss.ID)
 
     # RENDER ANGLE FROM PLAYER TO EACH VERTEX
     if mode == 6:
@@ -328,6 +328,10 @@ while True:
 
     # RENDER FPS WITH SOLID,PARTIAL AND STORED WALLS
     if mode == 13:
+        # Also sets player to sector floor
+        playerSector = map.getSectorAtPosition(player.x, player.y)
+        player.setSector(playerSector)
+
         # render player
         px, py = pl.ot(player.x, player.y)
         game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))

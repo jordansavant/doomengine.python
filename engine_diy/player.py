@@ -11,12 +11,18 @@ class Player(object):
         self.eyeHeight = 41 # from doom engine
         self.angle = Angle(0) # Angle object
 
+        self.currentSector = None
+
     def setPosition(self, x, y):
         self.x = x
         self.y = y
 
     def setAngle(self, deg):
         self.angle = Angle(deg)
+
+    def setSector(self, sector):
+        self.currentSector = sector
+        self.z = sector.floorHeight
 
     def getEyeZ(self):
         return self.z + self.eyeHeight
