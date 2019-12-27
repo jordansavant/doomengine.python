@@ -65,6 +65,14 @@ def drawSubsector(subsectorId, rgba=None):
         ex, ey = pl.ot(endVertex.x, endVertex.y)
         game.drawLine([sx,sy], [ex,ey], rgba, 2)
 
+def drawPlayer(game, pl, player, rgba=(0,1,0,1)):
+    px, py = pl.ot(player.x, player.y)
+    # player pointer
+    dirx, diry = player.angle.toVector()
+    endx, endy = pl.ot(player.x + dirx*40, player.y + diry*40)
+    game.drawLine([px, py], [endx, endy], rgba, 1)
+    # player dot
+    game.drawRectangle([px-2,py-2], 4, 4, rgba)
 
 
 #############
@@ -127,11 +135,11 @@ def mode_down():
 game.onKeyUp(pygame.K_DOWN, mode_down)
 def on_left():
     global player
-    player.angle.iaddF(2) # rotate left
+    player.angle.iaddF(5) # rotate left
 game.onKeyHold(pygame.K_LEFT, on_left)
 def on_right():
     global player
-    player.angle.isubF(2) # rotate right
+    player.angle.isubF(5) # rotate right
 game.onKeyHold(pygame.K_RIGHT, on_right)
 def on_w():
     global player
@@ -254,8 +262,7 @@ while True:
     # RENDER FPS FOR WALL EDGES ONLY
     if mode == 7 or mode == 8:
         # render player
-        px, py = pl.ot(player.x, player.y)
-        game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
+        drawPlayer(game, pl, player)
 
         # render only the wall edges
         def onSegInspect(seg, v1, v2):
@@ -269,8 +276,7 @@ while True:
     # RENDER FPS WITH WALL CULLING ONLY
     if mode == 9:
         # render player
-        px, py = pl.ot(player.x, player.y)
-        game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
+        drawPlayer(game, pl, player)
 
         # test rendering segs with wall culling
         def onSegInspect(seg, v1, v2):
@@ -284,8 +290,7 @@ while True:
     # RENDER FPS WITH WOLFENSTEIN WALLS
     if mode == 10:
         # render player
-        px, py = pl.ot(player.x, player.y)
-        game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
+        drawPlayer(game, pl, player)
 
         # test rendering segs with wall culling
         def onSegInspect(seg, v1, v2):
@@ -299,8 +304,7 @@ while True:
     # RENDER FPS WITH COLORED DOOM SOLID WALLS
     if mode == 11:
         # render player
-        px, py = pl.ot(player.x, player.y)
-        game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
+        drawPlayer(game, pl, player)
 
         # test rendering segs with wall culling
         def onSegInspect(seg, v1, v2):
@@ -314,8 +318,7 @@ while True:
     # RENDER FPS WITH COLORED DOOM SOLID AND PARTIAL WALLS
     if mode == 12:
         # render player
-        px, py = pl.ot(player.x, player.y)
-        game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
+        drawPlayer(game, pl, player)
 
         # test rendering segs with wall culling
         def onSegInspect(seg, v1, v2):
@@ -333,17 +336,9 @@ while True:
         player.setSector(playerSector)
 
         # render player
-        px, py = pl.ot(player.x, player.y)
-        game.drawRectangle([px-2,py-2], 4, 4, (0,1,0,1))
+        drawPlayer(game, pl, player)
 
-        # test rendering segs with wall culling
-        def onSegInspect(seg, v1, v2):
-            # render the seg (helper)
-            v1x, v1y = pl.ot(v1.x, v1.y)
-            v2x, v2y = pl.ot(v2.x, v2.y)
-            game.drawLine([v1x,v1y], [v2x,v2y], (1,0,0,1), 2)
-
-        fpsRenderer.doomhistory_render(onSegInspect)
+        fpsRenderer.doomhistory_render()
 
     game.drawEnd()
 
