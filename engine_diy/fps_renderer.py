@@ -1552,11 +1552,12 @@ class FpsRenderer(object):
             self.x2 = 0
             self.x2 = 0
 
-    def doomhistory_render(self, onSegInspect = None):
+    def doomhistory_render(self, lineMode = False, onSegInspect = None):
         # optional function pointer when we inspect a visible seg
         self.onSegInspect = onSegInspect
         self.wallRenderer = self.doomhistory_renderWall
         self.doomhistory_frameSegsDrawData.clear()
+        self.doomhistory_lineMode = lineMode
 
         # clear our clipping list of walls
         self.segList = [SolidSegmentRange(-100000, -1)]
@@ -1591,7 +1592,11 @@ class FpsRenderer(object):
         for i,line in enumerate(sectionList):
             drawStart = [line.x1 + self.f_xOffset, line.y1 + self.f_yOffset]
             drawEnd = [line.x2 + self.f_xOffset, line.y2 + self.f_yOffset]
-            self.game.drawLine(drawStart, drawEnd, rgba, 1)
+            if self.doomhistory_lineMode:
+                if i % 4 == 0:
+                    self.game.drawLine(drawStart, drawEnd, rgba, 2)
+            else:
+                self.game.drawLine(drawStart, drawEnd, rgba, 1)
 
     def doomhistory_renderSubsector(self, subsector):
         # iterate segs in subsector

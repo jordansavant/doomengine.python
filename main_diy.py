@@ -124,7 +124,7 @@ fpsRenderer = FpsRenderer(map, player, game, fov, fpsWinWidth, fpsWinHeight, fps
 
 # render helpers
 mode = 0
-max_modes = 14
+max_modes = 15
 def mode_up():
     global mode
     mode = (mode + 1) % max_modes
@@ -330,7 +330,7 @@ while True:
         fpsRenderer.doomportals_render(onSegInspect)
 
     # RENDER FPS WITH SOLID,PARTIAL AND STORED WALLS
-    if mode == 13:
+    if mode == 13 or mode == 14:
         # Also sets player to sector floor
         playerSector = map.getSectorAtPosition(player.x, player.y)
         player.setSector(playerSector)
@@ -338,7 +338,8 @@ while True:
         # render player
         drawPlayer(game, pl, player)
 
-        fpsRenderer.doomhistory_render()
+        lineMode = mode == 14
+        fpsRenderer.doomhistory_render(lineMode)
 
     game.drawEnd()
 
