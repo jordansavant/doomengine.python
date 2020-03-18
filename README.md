@@ -2,7 +2,7 @@
 
 ## Built with
 - Python 3.7.1
-- pygame, numpy, opengl
+- pygame, numpy, pyopengl
 
 ## OS X Install
 - `pygame 2.0.0.dev4 (SDL 2.0.10, python 3.8.1)`
