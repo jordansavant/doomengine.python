@@ -2,16 +2,10 @@
 
 source venv/bin/activate
 
-case $1 in
-	'diy')
-		python3 main_$1.py
-		;;
-	'opengl')
-		python3 main_$1.py
-		;;
-	*)
-		python3 main.py
-		;;
-esac
+if [ -f main_$1.py ]; then
+	python3 main_$1.py
+else
+	python3 main.py
+fi
 
 deactivate
