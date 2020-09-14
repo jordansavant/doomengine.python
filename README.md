@@ -105,12 +105,12 @@ The result was a lot more stable and better looking than the pure pygame method.
 
 ### Pass 3 - DIY Doom Port
 
-`amroibrahim` over at `https://github.com/amroibrahim/DIYDoom` has an awesome rebuild of the original DOOM enging in C++. I recreated his project (up to chapter 17) in Python with efforts established in Passes 1 and 2.
+`amroibrahim` over at `https://github.com/amroibrahim/DIYDoom` has an awesome rebuild of the original DOOM engine in C++. I recreated his project (up to chapter 17) in Python with efforts established in Passes 1 and 2.
 
 It is capable of:
 - Loading maps from original DOOM wad file
 - Pulling BSP and level data
-- Rending map overview with algorithms for bsp traversal, rendering and clipping like the original DOOM game
+- Rendering map overview with algorithms for bsp traversal, rendering and clipping like the original DOOM game
 - It results in a small raytracing overlay of the engine
     - Being raytracing, the original engine does not scale well to larger resolutions (more horizontal pixels more processing required).
 - You can navigate the map with: wasd
@@ -119,7 +119,7 @@ It is capable of:
 
 ![](https://github.com/jordansavant/doomengine.python/raw/master/resources/DIYDOOM.gif)
 
---
+---
 
 ## Resources
 - Bisqwit Tut: https://bisqwit.iki.fi/jutut/kuvat/programming_examples/portalrendering.html
