@@ -4,7 +4,17 @@
 - Python 3.7.1
 - pygame, numpy, pyopengl
 
-## OS X Install
+## OS X Homebrew Install
+- `pygame 2.0.0.dev4 (SDL 2.0.10, python 3.8.1)`
+- Install Python 3.8 and dependencies
+- `brew install python@3 sdl sdl_image sdl_mixer sdl_ttf portmidi sdl2`
+- `brew cask install xquartz`
+- find python install of brew with `brew info python` (eg /usr/local/opt/python@3.8/libexec/bin/python)
+    - this is because it usually conflicts with default OS X python installation
+- install packages: /usr/local/opt/python@3.8/libexec/bin/python -m pip install pygame==2.0.0.dev10 pyopengl numpy
+- run: /usr/local/opt/python@3.8/libexec/bin/python main_opengl.py
+
+## OS X Install w/ venv (old have not done this one in a while)
 - `pygame 2.0.0.dev4 (SDL 2.0.10, python 3.8.1)`
 - Install Python 3
 - brew install sdl sdl_image sdl_mixer sdl_ttf portmidi
@@ -14,6 +24,8 @@
 - virtualenv venv
 - source venv/bin/activate
 - pip3 install pygame==2.0.0.dev4
+
+---
 
 In awe of the 1993 doom engine rendering logic regarding Binary Space Partitioning I explored its concepts using a recreation of this engine in Python using pygame as the display portion. The result was great respect for Id Software's work they accomplished.
 
