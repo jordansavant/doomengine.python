@@ -116,14 +116,14 @@ pl = Plot(map, game.width, game.height)
 
 # fps window
 fov = 90
-fpsWinWidth = 320
-fpsWinHeight = 200
+fpsWinWidth = 480 # 320
+fpsWinHeight = 300 # 200
 fpsWinOffX = 20
 fpsWinOffY = 20
 fpsRenderer = FpsRenderer(map, player, game, fov, fpsWinWidth, fpsWinHeight, fpsWinOffX, fpsWinOffY)
 
 # render helpers
-mode = 0
+mode = 13 # polygon version
 max_modes = 15
 def mode_up():
     global mode

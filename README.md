@@ -13,8 +13,18 @@
     - this is because it usually conflicts with default OS X python installation
 - install packages: /usr/local/opt/python@3.8/libexec/bin/python -m pip install pygame==2.0.0.dev10 pyopengl numpy
 - run: /usr/local/opt/python@3.8/libexec/bin/python main_opengl.py
+- NOTE: I added to my bash profile / zshenv: `alias brew-python3="/usr/local/opt/python@3.8/libexec/bin/python"` for sanity
+- run: brew-python3 main.py
+- run: brew-python3 main_opengl.py
 
-## OS X Install w/ venv (old have not done this one in a while)
+## Running DIY DOOM
+- Support efforts of original project (this is a port from C++ to Python: https://github.com/amroibrahim/DIYDoom)
+- Get a DOOM WAD file. Comes with any original install of Doom or Doom 2.
+- Put wad file in `wads/` dir
+- Run with `python3 main_diy.py wads/DOOM.wad [map]` where optionally `[map]` is a doom map name: eg `E1M1`
+
+
+## Old OS X Install w/ venv (old have not done this one in a while)
 - `pygame 2.0.0.dev4 (SDL 2.0.10, python 3.8.1)`
 - Install Python 3
 - brew install sdl sdl_image sdl_mixer sdl_ttf portmidi
@@ -30,6 +40,8 @@
 In awe of the 1993 doom engine rendering logic regarding Binary Space Partitioning I explored its concepts using a recreation of this engine in Python using pygame as the display portion. The result was great respect for Id Software's work they accomplished.
 
 ![](https://github.com/jordansavant/doomengine.python/raw/master/resources/demo_pygame_render.gif)
+
+![](https://github.com/jordansavant/doomengine.python/raw/master/resources/DIYDOOM.gif)
 
 ## How it works:
 
@@ -90,6 +102,25 @@ I learned a lot about matrix transformations: modelview scale, rotation and tran
 
 The result was a lot more stable and better looking than the pure pygame method.
 
+
+### Pass 3 - DIY Doom Port
+
+`amroibrahim` over at `https://github.com/amroibrahim/DIYDoom` has an awesome rebuild of the original DOOM enging in C++. I recreated his project (up to chapter 17) in Python with efforts established in Passes 1 and 2.
+
+It is capable of:
+- Loading maps from original DOOM wad file
+- Pulling BSP and level data
+- Rending map overview with algorithms for bsp traversal, rendering and clipping like the original DOOM game
+- It results in a small raytracing overlay of the engine
+    - Being raytracing, the original engine does not scale well to larger resolutions (more horizontal pixels more processing required).
+- You can navigate the map with: wasd
+- You can look with left and right arrows
+- Up and down arrows render each chapters build result live in the screen
+
+![](https://github.com/jordansavant/doomengine.python/raw/master/resources/DIYDOOM.gif)
+
+--
+
 ## Resources
 - Bisqwit Tut: https://bisqwit.iki.fi/jutut/kuvat/programming_examples/portalrendering.html
 - BSP Tut: https://www.cs.utah.edu/~jsnider/SeniorProj/BSP1/default.html
@@ -101,3 +132,6 @@ The result was a lot more stable and better looking than the pure pygame method.
 - 2D over 3D: https://stackoverflow.com/questions/43130842/python-opengl-issues-displaying-2d-graphics-over-a-3d-scene
 - Coding Train 3D Projection: https://www.youtube.com/watch?v=p4Iz0XJY-Qk
 - World, View and Projection Transformation Matrices: http://www.codinglabs.net/article_world_view_projection_matrix.aspx
+- DIY Doom: https://github.com/amroibrahim/DIYDoom
+- DOOM WAD: https://store.steampowered.com/app/2280/Ultimate_Doom/
+
