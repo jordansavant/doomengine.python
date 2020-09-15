@@ -1,6 +1,6 @@
 import pygame, engine_ocl, math, time
-from engine.display import Display
-from engine.eventlistener import EventListener
+from engine_ocl.display import Display
+from engine_ocl.eventlistener import EventListener
 
 class Vector3(object):
     def __init__(self, x, y, z):
@@ -125,6 +125,50 @@ font = pygame.font.Font(None, 36)
 #                  [   0    f    0   0 ]
 #                  [   0    0    q   1 ]
 #                  [   0    0 -zn*q  0 ]
+
+def deg2rad(v):
+    return v / 180.0 * 3.14159
+
+# We will create a matrix to hold our stuff
+class Matrix4x4(object):
+    def __init__(self):
+        # rows by cols
+        self.m = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]] # identity
+        #self.m = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]]
+
+def MultipleMatrixVector(v3, m):
+    v3output = Vector3(0,0,0);
+    # the Vector3 does not have a 4th component so we substite 1 for it by just adding the final component
+    v3output.x = v3.x * m.m[0][0] + v3.y * m.m[1][0] + v3.z * m.m[2][0] + m.m[3][0] # <<----------/ e.g.
+    v3output.y = v3.x * m.m[0][1] + v3.y * m.m[1][1] + v3.z * m.m[2][1] + m.m[3][1]
+    v3output.z = v3.x * m.m[0][2] + v3.y * m.m[1][2] + v3.z * m.m[2][2] + m.m[3][2]
+    w = v3.x * m.m[0][3] + v3.y * m.m[1][3] + v3.z * m.m[2][3] + m.m[3][3]
+
+    if w != 0.0: # divide by our original "z" to normalize our values
+        v3output.x /= w
+        v3output.y /= w
+        v3output.z /= w
+
+    return v3output
+
+# Project matrix
+zNear = 0.1
+zFar = 1000.0
+fov = 90
+aspectRatio = display.aspectRatio
+fovRad = 1.0 / math.tan(deg2rad(fov / 2)) # convert to radians
+
+projectionMatrix.m[0][0] = aspectRatio * fovRadl
+projectionMatrix.m[1][1] = fovRad
+projectionMatrix.m[2][2] = zFar / (zFar - zNear)
+projectionMatrix.m[3][2] = (-zNear * zFar) / (zFar - zNear)
+projectionMatrix.m[2][3] = 1.0
+projectionMatrix.m[3][3] = 0.0 # replace 1 in identity matrix
+
+
+## TODO LEFT OFF https://youtu.be/ih20l3pJoeU?t=1930
+## getting applying the projection matrix to the triangles
+
 
 # create mesh cube
 mesh = Mesh()
