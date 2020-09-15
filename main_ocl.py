@@ -162,22 +162,21 @@ def MultiplyMatrixVector(v3, m):
 
     return v3output
 
-# Project matrix
+# Perspective Projection matrix for camera
 zNear = 0.1
 zFar = 1000.0
 fov = 90
 aspectRatio = display.aspectRatio
 fovRad = 1.0 / math.tan(deg2rad(fov / 2)) # convert to radians
 
-projectionMatrix = Matrix4x4()
+projectionMatrix = Matrix4x4() # rows, cols
 projectionMatrix.m[0][0] = aspectRatio * fovRad
 projectionMatrix.m[1][1] = fovRad
 projectionMatrix.m[2][2] = zFar / (zFar - zNear)
 projectionMatrix.m[3][2] = (-zNear * zFar) / (zFar - zNear)
 projectionMatrix.m[2][3] = 1.0
 projectionMatrix.m[3][3] = 0.0 # replace 1 in identity matrix
-
-# Go to game loop to see remaining projections
+# Go to game loop to see projection being used
 
 
 # define triangle points in clockwise direction for a cube
@@ -214,23 +213,15 @@ mesh.triangles.append(t10)
 mesh.triangles.append(t11)
 mesh.triangles.append(t12)
 
-def trans(v): # translate to screen
-    return v * 100 + 200
-
 def drawTriangle(display, points, color, lineWidth):
     display.drawLine([[points[0].x, points[0].y], [points[1].x, points[1].y]], color, lineWidth)
     display.drawLine([[points[1].x, points[1].y], [points[2].x, points[2].y]], color, lineWidth)
     display.drawLine([[points[2].x, points[2].y], [points[0].x, points[0].y]], color, lineWidth)
-    #for i, p in enumerate(points):
-    #    if i < 2: # connect to neighbor
-    #        display.drawLine([[p.x, p.y], [points[i+1].x, points[i+1].y]], color, lineWidth)
-    #    else: # connect to beginning
-    #        display.drawLine([[p.x, p.y], [points[0].x, points[0].y]], color, lineWidth)
 
 timeLapsed = 0
 while True:
-    listener.update()
 
+    listener.update()
     display.start()
 
     # hardcoded rotation matrices
@@ -278,7 +269,7 @@ while True:
         # Currently our cube is centered around 0-1 ranges, so our head is
         # essentially aligned with the front of the cobe
         # Translate triangle away from camera by adding to z to push it away
-        triTransPoints = rotZXPoints;
+        triTransPoints = rotZXPoints
         triTransPoints[0].z += 3.0
         triTransPoints[1].z += 3.0
         triTransPoints[2].z += 3.0
@@ -304,13 +295,6 @@ while True:
         projPoints[2].x *= .5 * display.width; projPoints[2].y *= .5 * display.height
 
         drawTriangle(display, projPoints, (255, 255, 0), 1)
-
-    # for t in mesh.triangles:
-    #     for i, p in enumerate(t.points):
-    #         if i < 2: # connect to neighbor
-    #             display.drawLine([[trans(p.x), trans(p.y)], [trans(t.points[i+1].x), trans(t.points[i+1].y)]], (255, 255, 0), 1)
-    #         else: # connect to beginning
-    #             display.drawLine([[trans(p.x), trans(p.y)], [trans(t.points[0].x), trans(t.points[0].y)]], (255, 255, 0), 1)
 
     display.end()
 
