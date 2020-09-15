@@ -5,6 +5,7 @@ class Display(object):
         self.width = resW
         self.height = resH
         self.size = self.width, self.height
+        self.aspectRatio = self.height / self.width
         self.bg = 0, 0, 0
         self.scale = 1.0
         self.offset = [0, 0]

@@ -30,11 +30,67 @@ pygame.mouse.set_visible(False)
 pygame.event.set_grab(True)
 font = pygame.font.Font(None, 36)
 
+
+# Normalize Screen space: -1 to +1 for width and height, 0,0 at center
+#
+# Human eye projects things in a field of view being -1, +1 at any position
+# Objects closer to eye take up more of the field of view
+# -1 and +1 act as clipping values, anything outside this range is out of our FoV
+#    _________
+# -1 \       / +1
+#     \     /
+#   -1 \___/ +1
+#        * eye
+#
+# If we zoom in (narrow) the FoV we see less, but its larger
+# If we zoom out (exand) the FoV we see more, but things are smaller
+# We create a Scaling Factor related to the FoV we will call Theta: θ
+# -1 \       / +1
+#     \_---_/
+#   -1 \_θ_/ +1
+#
+# We can think of theta in 2 right angles, as theta/2
+#    _________
+# -1 \  ∟|   / +1
+#     \  |  /
+#   -1 \_|_/ +1
+#        θ/2
+# When theta/2 increases (our FoV increases) and the opposite side increases
+#           ______ < (increases)
+# -1 \    ∟|     / +1
+#      \   |   /
+#   -1   \_|_/ +1
+#        θ/2
+# If we scale things by tan(theta/2) then it will displace things larger as the FoV increases
+# So instead we need to scale by its inverse 1/tan(theta/2)
+# Projection
+# [x,y,z] = [ (h/w) fx, fy, z ]
+# where f = 1/tan(theta/2)
+#
+# Calculating Zed within a projection zone (frustrum?)
+# e.g
+#    _________ zfar = 10
+#    \       /
+#     \     /
+#      \___/ znear = 1
+#        * eye
+# zfar - znear = 9
+# if we want to find our z wihin the frustrum we must scale
+# zfar / (zfar - znear)
+# then we must offset by our offset of the frustrum from the eye
+# final:
+# (zfar / (zfar - znear)) - (zfar * znear / (zfar - znear))
+#
+# This leaves us with a final transformation projection of
+# [x,y,z] = [ (h/w) * (1/tan(theta/2)) * x,
+#             (1/tan(theta/2)) * y,
+#             zfar / (zfar - znear)) - (zfar * znear / (zfar - znear)) *z ]
+#
+#
+
 # create mesh cube
 mesh = Mesh()
-
 # define triangle points in clockwise direction
-
 # south
 t1  = Triangle.withPointList([0,0,0, 0,1,0, 1,1,0])
 t2  = Triangle.withPointList([0,0,0, 1,1,0, 1,0,0])
