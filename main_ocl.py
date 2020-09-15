@@ -81,12 +81,50 @@ font = pygame.font.Font(None, 36)
 # final:
 # (zfar / (zfar - znear)) - (zfar * znear / (zfar - znear))
 #
-# This leaves us with a final transformation projection of
+# This leaves us with a perspective projection of
 # [x,y,z] = [ (h/w) * (1/tan(theta/2)) * x,
 #             (1/tan(theta/2)) * y,
-#             zfar / (zfar - znear)) - (zfar * znear / (zfar - znear)) *z ]
+#             zfar / (zfar - znear) - (zfar * znear / (zfar - znear)) *z ]
+#
+# When things move away they appear smaller
+# As Z gets larger (further from screen) both X and Y get smaller (they shrink away)
+# x' = x/z   y' = y/z
+#
+# This leave us with a perspective projection of
+# [x,y,z] = [ (h/w) * (1/tan(theta/2)) * x / z,
+#             (1/tan(theta/2)) * y / z,
+#             zfar / (zfar - znear) - (zfar * znear / (zfar - znear)) *z ]
+#                                                   ^
+# Lets simplify, let                                  \
+# a = (h/w)                   aspect ratio               \
+# f = (1/tan(theta/2))        field of view                 \
+# q = zfar / (zfar - znear)   zed normalization  (which is within this formula too)
+# becomes
+# [x,y,z] = [ a*f*x / z, f*y / z, z*q - znear*q ]
 #
 #
+# Instead of coding these directly lets use Matrix mathematics to do our multiplications
+# [x, y, z] dot [   af    0    0   ] = [afx, fy, qz] !BUT we are missing our - znear*q!
+#               [   0     f    0   ]
+#               [   0     0    q   ]
+#
+# Since dot product is a sum of the row * col we can add a 4th item on row 3 to get added
+# to the overall value of the z position
+# [x, y, z] dot [   af    0    0   ]
+#               [   0     f    0   ]
+#               [   0     0    q   ]
+#               [           -zn*q  ]
+# But this requires it to be a 4x4 vector, so we must extend our input vector with a "1"
+# [x, y, z, 1] dot [   af   0    0   ? ] = [afx, fy, qz - znear*q]
+#                  [   0    f    0   ? ]
+#                  [   0    0    q   ? ]
+#                  [   0    0 -zn*q  ? ]
+# But we also need to divide by z across x and y so we don't want to lose it in our values
+# so we use the fourth column as a trick to save Z for later division as thr 4th component
+# [x, y, z, 1] dot [   af   0    0   0 ] = [afx, fy, qz - znear*q, z]
+#                  [   0    f    0   0 ]
+#                  [   0    0    q   1 ]
+#                  [   0    0 -zn*q  0 ]
 
 # create mesh cube
 mesh = Mesh()
