@@ -7,10 +7,21 @@ class Vector3(object):
         self.x = x
         self.y = y
         self.z = z
+    def clone(self):
+        return Vector3(self.x, self.y, self.z)
+    def __str__(self):
+        return "Vector3(" +str(self.x) + "," + str(self.y) + "," + str(self.z) + ")"
+    def __repr__(self):
+        return self.__str__()
 
 class Triangle(object):
     def __init__(self):
         self.points = [None, None, None] # 3 Vector3s
+    def clone(self):
+        c = Triangle()
+        for i, p in enumerate(self.points):
+            c.points[i] = p.clone()
+        return c
     @classmethod
     def withPointList(cls, pl):
         t = cls()
@@ -24,10 +35,10 @@ class Mesh(object):
 
 # START GAME
 
-display = Display(1920, 1080)
+display = Display(640, 480)
 listener = EventListener()
-pygame.mouse.set_visible(False)
-pygame.event.set_grab(True)
+#pygame.mouse.set_visible(False)
+#pygame.event.set_grab(True)
 font = pygame.font.Font(None, 36)
 
 
@@ -136,8 +147,8 @@ class Matrix4x4(object):
         self.m = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]] # identity
         #self.m = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]]
 
-def MultipleMatrixVector(v3, m):
-    v3output = Vector3(0,0,0);
+def MultiplyMatrixVector(v3, m):
+    v3output = Vector3(0,0,0)
     # the Vector3 does not have a 4th component so we substite 1 for it by just adding the final component
     v3output.x = v3.x * m.m[0][0] + v3.y * m.m[1][0] + v3.z * m.m[2][0] + m.m[3][0] # <<----------/ e.g.
     v3output.y = v3.x * m.m[0][1] + v3.y * m.m[1][1] + v3.z * m.m[2][1] + m.m[3][1]
@@ -158,21 +169,18 @@ fov = 90
 aspectRatio = display.aspectRatio
 fovRad = 1.0 / math.tan(deg2rad(fov / 2)) # convert to radians
 
-projectionMatrix.m[0][0] = aspectRatio * fovRadl
+projectionMatrix = Matrix4x4()
+projectionMatrix.m[0][0] = aspectRatio * fovRad
 projectionMatrix.m[1][1] = fovRad
 projectionMatrix.m[2][2] = zFar / (zFar - zNear)
 projectionMatrix.m[3][2] = (-zNear * zFar) / (zFar - zNear)
 projectionMatrix.m[2][3] = 1.0
 projectionMatrix.m[3][3] = 0.0 # replace 1 in identity matrix
 
-
-## TODO LEFT OFF https://youtu.be/ih20l3pJoeU?t=1930
-## getting applying the projection matrix to the triangles
+# Go to game loop to see remaining projections
 
 
-# create mesh cube
-mesh = Mesh()
-# define triangle points in clockwise direction
+# define triangle points in clockwise direction for a cube
 # south
 t1  = Triangle.withPointList([0,0,0, 0,1,0, 1,1,0])
 t2  = Triangle.withPointList([0,0,0, 1,1,0, 1,0,0])
@@ -192,6 +200,7 @@ t10 = Triangle.withPointList([1,0,1, 0,0,0, 1,0,0])
 t11 = Triangle.withPointList([1,0,1, 0,0,1, 0,0,0])
 t12 = Triangle.withPointList([1,0,1, 0,0,0, 1,0,0])
 
+mesh = Mesh()
 mesh.triangles.append(t1)
 mesh.triangles.append(t2)
 mesh.triangles.append(t3)
@@ -208,18 +217,102 @@ mesh.triangles.append(t12)
 def trans(v): # translate to screen
     return v * 100 + 200
 
+def drawTriangle(display, points, color, lineWidth):
+    display.drawLine([[points[0].x, points[0].y], [points[1].x, points[1].y]], color, lineWidth)
+    display.drawLine([[points[1].x, points[1].y], [points[2].x, points[2].y]], color, lineWidth)
+    display.drawLine([[points[2].x, points[2].y], [points[0].x, points[0].y]], color, lineWidth)
+    #for i, p in enumerate(points):
+    #    if i < 2: # connect to neighbor
+    #        display.drawLine([[p.x, p.y], [points[i+1].x, points[i+1].y]], color, lineWidth)
+    #    else: # connect to beginning
+    #        display.drawLine([[p.x, p.y], [points[0].x, points[0].y]], color, lineWidth)
+
+timeLapsed = 0
 while True:
     listener.update()
 
     display.start()
 
+    # hardcoded rotation matrices
+    matRotZ = Matrix4x4()
+    matRotZ.m[0][0] = math.cos(timeLapsed)
+    matRotZ.m[0][1] = math.sin(timeLapsed)
+    matRotZ.m[1][0] = -math.sin(timeLapsed)
+    matRotZ.m[1][1] = math.cos(timeLapsed)
+    matRotZ.m[2][2] = 1
+    matRotZ.m[3][3] = 1
+
+    matRotX = Matrix4x4()
+    matRotX.m[0][0] = 1
+    matRotX.m[1][1] = math.cos(timeLapsed / 2)
+    matRotX.m[1][2] = math.sin(timeLapsed / 2)
+    matRotX.m[2][1] = -math.sin(timeLapsed / 2)
+    matRotX.m[2][2] = math.cos(timeLapsed / 2)
+    matRotX.m[3][3] = 1
+
+    # Draw triangles projected into our perspective
     for t in mesh.triangles:
-        for i, p in enumerate(t.points):
-            if i < 2: # connect to neighbor
-                display.drawLine([[trans(p.x), trans(p.y)], [trans(t.points[i+1].x), trans(t.points[i+1].y)]], (255, 255, 0), 1)
-            else: # connect to beginning
-                display.drawLine([[trans(p.x), trans(p.y)], [trans(t.points[0].x), trans(t.points[0].y)]], (255, 255, 0), 1)
+
+        # Rotation Visualization Helper
+        # So we can see if its actually a cube lets rotate it about its
+        # x and z axis to see it
+        # Rotation comes before translation since we rotate around origin
+        # lets use our total elapsed time to rotate with
+        # lets hardcode two rotation matrices
+        # (since these are static we moved them out of the loop above)
+
+        # rotate in z
+        rotZPoint0 = MultiplyMatrixVector(t.points[0], matRotZ)
+        rotZPoint1 = MultiplyMatrixVector(t.points[1], matRotZ)
+        rotZPoint2 = MultiplyMatrixVector(t.points[2], matRotZ)
+        rotZPoints = [rotZPoint0, rotZPoint1, rotZPoint2]
+
+        # rotate in x
+        rotZXPoint0 = MultiplyMatrixVector(rotZPoints[0], matRotX)
+        rotZXPoint1 = MultiplyMatrixVector(rotZPoints[1], matRotX)
+        rotZXPoint2 = MultiplyMatrixVector(rotZPoints[2], matRotX)
+        rotZXPoints = [rotZXPoint0, rotZXPoint1, rotZXPoint2]
+
+
+        # Translation Visualization Helper
+        # Currently our cube is centered around 0-1 ranges, so our head is
+        # essentially aligned with the front of the cobe
+        # Translate triangle away from camera by adding to z to push it away
+        triTransPoints = rotZXPoints;
+        triTransPoints[0].z += 3.0
+        triTransPoints[1].z += 3.0
+        triTransPoints[2].z += 3.0
+
+        # Project our points to our perspective
+        projPoint0 = MultiplyMatrixVector(triTransPoints[0], projectionMatrix)
+        projPoint1 = MultiplyMatrixVector(triTransPoints[1], projectionMatrix)
+        projPoint2 = MultiplyMatrixVector(triTransPoints[2], projectionMatrix)
+        projPoints = [projPoint0, projPoint1, projPoint2]
+
+        # Scale into view
+        # points between -1 and -1 are within our screens FoV
+        # so we want something at 0,0 to be at the center of the view, -1,0 at left, 0,1 at bottom etc
+        # start by shifting the normalized x,y points to the range 0-2
+        projPoints[0].x += 1.0; projPoints[0].y += 1.0
+        projPoints[1].x += 1.0; projPoints[1].y += 1.0
+        projPoints[2].x += 1.0; projPoints[2].y += 1.0
+        # divide the points by 2 and then multiply by size of screen
+        # so something at -1 becomes 0/2=0 (left side) and +1 becomes 2/2=1 (right side)
+        # something at 1 then becomes the size of the screen
+        projPoints[0].x *= .5 * display.width; projPoints[0].y *= .5 * display.height
+        projPoints[1].x *= .5 * display.width; projPoints[1].y *= .5 * display.height
+        projPoints[2].x *= .5 * display.width; projPoints[2].y *= .5 * display.height
+
+        drawTriangle(display, projPoints, (255, 255, 0), 1)
+
+    # for t in mesh.triangles:
+    #     for i, p in enumerate(t.points):
+    #         if i < 2: # connect to neighbor
+    #             display.drawLine([[trans(p.x), trans(p.y)], [trans(t.points[i+1].x), trans(t.points[i+1].y)]], (255, 255, 0), 1)
+    #         else: # connect to beginning
+    #             display.drawLine([[trans(p.x), trans(p.y)], [trans(t.points[0].x), trans(t.points[0].y)]], (255, 255, 0), 1)
 
     display.end()
 
     time.sleep(1 / 60)
+    timeLapsed += (1 / 60)
