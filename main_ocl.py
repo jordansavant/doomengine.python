@@ -160,6 +160,11 @@ font = pygame.font.Font(None, 36)
 #
 # Reading around I believe its because we are in fact normalizing all three
 # coordinates the same way, giving us consistent normalized values in Z space
+#
+#
+# At this point we have a scaling matrix for perspective projection,
+# what we do not have is clipping outside of the FoV or hiding faces
+# that face away from us
 
 def deg2rad(v):
     return v / 180.0 * 3.14159
@@ -193,6 +198,10 @@ fov = 90
 aspectRatio = display.aspectRatio
 fovRad = 1.0 / math.tan(deg2rad(fov / 2)) # convert to radians
 
+# [   af   0    0   0 ]
+# [   0    f    0   0 ]
+# [   0    0    q   1 ]
+# [   0    0 -zn*q  0 ]
 projectionMatrix = Matrix4x4() # rows, cols
 projectionMatrix.m[0][0] = aspectRatio * fovRad
 projectionMatrix.m[1][1] = fovRad
@@ -242,13 +251,22 @@ def drawTriangle(display, points, color, lineWidth):
     display.drawLine([[points[1].x, points[1].y], [points[2].x, points[2].y]], color, lineWidth)
     display.drawLine([[points[2].x, points[2].y], [points[0].x, points[0].y]], color, lineWidth)
 
+# give us a small title
+titletext = font.render("Perspective Projection of a rotating cube", 1, (50, 50, 50));
+textpos = titletext.get_rect(left = 10, centery = display.height - 20)
+
+
+
 timeLapsed = 0
 while True:
 
     listener.update()
     display.start()
 
+    display.drawText(titletext, textpos)
+
     # hardcoded rotation matrices
+    # rotate around Z with time
     matRotZ = Matrix4x4()
     matRotZ.m[0][0] = math.cos(timeLapsed)
     matRotZ.m[0][1] = math.sin(timeLapsed)
@@ -257,6 +275,7 @@ while True:
     matRotZ.m[2][2] = 1
     matRotZ.m[3][3] = 1
 
+    # rotate around X with half/time
     matRotX = Matrix4x4()
     matRotX.m[0][0] = 1
     matRotX.m[1][1] = math.cos(timeLapsed / 2)
@@ -268,7 +287,7 @@ while True:
     # Draw triangles projected into our perspective
     for t in mesh.triangles:
 
-        # Rotation Visualization Helper
+        # 1. Rotation Visualization Helper
         # So we can see if its actually a cube lets rotate it about its
         # x and z axis to see it
         # Rotation comes before translation since we rotate around origin
@@ -288,8 +307,7 @@ while True:
         rotZXPoint2 = MultiplyMatrixVector(rotZPoints[2], matRotX)
         rotZXPoints = [rotZXPoint0, rotZXPoint1, rotZXPoint2]
 
-
-        # Translation Visualization Helper
+        # 2. Translation Visualization Helper
         # Currently our cube is centered around 0-1 ranges, so our head is
         # essentially aligned with the front of the cobe
         # Translate triangle away from camera by adding to z to push it away
@@ -298,13 +316,13 @@ while True:
         triTransPoints[1].z += 3.0
         triTransPoints[2].z += 3.0
 
-        # Project our points to our perspective
+        # 3. Project our points to our perspective
         projPoint0 = MultiplyMatrixVector(triTransPoints[0], projectionMatrix)
         projPoint1 = MultiplyMatrixVector(triTransPoints[1], projectionMatrix)
         projPoint2 = MultiplyMatrixVector(triTransPoints[2], projectionMatrix)
         projPoints = [projPoint0, projPoint1, projPoint2]
 
-        # Scale into view
+        # 4. Scale into viewport
         # points between -1 and -1 are within our screens FoV
         # so we want something at 0,0 to be at the center of the view, -1,0 at left, 0,1 at bottom etc
         # start by shifting the normalized x,y points to the range 0-2
@@ -318,6 +336,7 @@ while True:
         projPoints[1].x *= .5 * display.width; projPoints[1].y *= .5 * display.height
         projPoints[2].x *= .5 * display.width; projPoints[2].y *= .5 * display.height
 
+        # 5. Draw
         drawTriangle(display, projPoints, (255, 255, 0), 1)
 
     display.end()
