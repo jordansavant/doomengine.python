@@ -39,7 +39,6 @@ display = Display(640, 480)
 listener = EventListener()
 #pygame.mouse.set_visible(False)
 #pygame.event.set_grab(True)
-font = pygame.font.Font(None, 36)
 
 
 # PERSPECTIVE PROJECTION
@@ -252,8 +251,9 @@ def drawTriangle(display, points, color, lineWidth):
     display.drawLine([[points[2].x, points[2].y], [points[0].x, points[0].y]], color, lineWidth)
 
 # give us a small title
+font = pygame.font.Font(None, 28)
 titletext = font.render("Perspective Projection of a rotating cube", 1, (50, 50, 50));
-textpos = titletext.get_rect(left = 10, centery = display.height - 20)
+textpos = titletext.get_rect(bottom = display.height - 10, centerx = display.width/2)
 
 
 
