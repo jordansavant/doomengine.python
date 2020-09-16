@@ -78,24 +78,25 @@ font = pygame.font.Font(None, 36)
 # [x,y,z] = [ (h/w) fx, fy, z ]
 # where f = 1/tan(theta/2)
 #
-# Calculating Zed within a projection zone (frustrum?)
+# Calculating Zed scaling coefficient within a projection zone (frustrum?)
 # e.g
 #    _________ zfar = 10
 #    \       /
 #     \     /
 #      \___/ znear = 1
 #        * eye
-# zfar - znear = 9
-# if we want to find our z wihin the frustrum we must scale
-# zfar / (zfar - znear)
-# then we must offset by our offset of the frustrum from the eye
-# final:
-# (zfar / (zfar - znear)) - (zfar * znear / (zfar - znear))
+# We need to normalize our z coord within our projection space
+# This is equal to dividing z by the size of the space: z / (zfar - znear) to get it to 0 to 1
+# But we must also scale it up to our overall range so: z * zfar / (zfar - znear)
+# This makes zfar / (zfar - znear) our scaling factor
+# But scaling z by this alone is not enough, we need to offset by the distance from the eye
+# So we need to offset by znear also normalized and scaled: - znear * zfar / (zfar - znear)
+# So the final coefficient is z * (zfar / (zfar - znear)) - (znear * zfar / (zfar - znear))
 #
 # This leaves us with a perspective projection of
 # [x,y,z] = [ (h/w) * (1/tan(theta/2)) * x,
 #             (1/tan(theta/2)) * y,
-#             zfar / (zfar - znear) - (zfar * znear / (zfar - znear)) *z ]
+#             z * (zfar / (zfar - znear)) - (znear * zfar / (zfar - znear)) ]
 #
 # When things move away they appear smaller
 # As Z gets larger (further from screen) both X and Y get smaller (they shrink away)
@@ -104,7 +105,7 @@ font = pygame.font.Font(None, 36)
 # This leave us with a perspective projection of
 # [x,y,z] = [ (h/w) * (1/tan(theta/2)) * x / z,
 #             (1/tan(theta/2)) * y / z,
-#             zfar / (zfar - znear) - (zfar * znear / (zfar - znear)) *z ]
+#             z * (zfar / (zfar - znear)) - (znear * zfar / (zfar - znear)) ]
 #                                                   ^
 # Lets simplify, let                                  \
 # a = (h/w)                   aspect ratio               \
@@ -116,7 +117,7 @@ font = pygame.font.Font(None, 36)
 #
 # Instead of coding these directly lets use Matrix mathematics to do our multiplications
 # [x, y, z] dot [   af    0    0   ] = [afx, fy, qz] !BUT we are missing our - znear*q!
-#               [   0     f    0   ]
+#               [   0     f    0   ]                 !We are also missing our divide by z
 #               [   0     0    q   ]
 #
 # Since dot product is a sum of the row * col we can add a 4th item on row 3 to get added
@@ -131,11 +132,18 @@ font = pygame.font.Font(None, 36)
 #                  [   0    0    q   ? ]
 #                  [   0    0 -zn*q  ? ]
 # But we also need to divide by z across x and y so we don't want to lose it in our values
-# so we use the fourth column as a trick to save Z for later division as thr 4th component
+# so we use the fourth column as a trick to save Z for later division as the 4th component
 # [x, y, z, 1] dot [   af   0    0   0 ] = [afx, fy, qz - znear*q, z]
 #                  [   0    f    0   0 ]
 #                  [   0    0    q   1 ]
 #                  [   0    0 -zn*q  0 ]
+#
+# After the final vecor is calulated we divide all three coordinates by z
+# ** BUT WHY would we divide  (qz - znear*q) / z ?
+# I believe we established that x and y grow inversly to z and technically
+# (z*q - znear*q) / z is different than z * (q - znear*q) /z (wrong!)
+# Reading around I believe its because we are in fact normalizing all three
+# coordinates the same way, giving us consistent normalized values in Z space
 
 def deg2rad(v):
     return v / 180.0 * 3.14159
