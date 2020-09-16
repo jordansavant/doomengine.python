@@ -42,6 +42,11 @@ listener = EventListener()
 font = pygame.font.Font(None, 36)
 
 
+# PERSPECTIVE PROJECTION
+#
+#
+# 1. Establish X and Y Scaling Coefficients
+#
 # Normalize Screen space: -1 to +1 for width and height, 0,0 at center
 #
 # Human eye projects things in a field of view being -1, +1 at any position
@@ -77,6 +82,9 @@ font = pygame.font.Font(None, 36)
 # Projection
 # [x,y,z] = [ (h/w) fx, fy, z ]
 # where f = 1/tan(theta/2)
+#
+#
+# 2. Establish Z Scaling Coefficient
 #
 # Calculating Zed scaling coefficient within a projection zone (frustrum?)
 # e.g
@@ -115,6 +123,8 @@ font = pygame.font.Font(None, 36)
 # [x,y,z] = [ a*f*x / z, f*y / z, z*q - znear*q ]
 #
 #
+# 3. Mathematically Apply Coeffecients with a 4x4 Matrix
+#
 # Instead of coding these directly lets use Matrix mathematics to do our multiplications
 # [x, y, z] dot [   af    0    0   ] = [afx, fy, qz] !BUT we are missing our - znear*q!
 #               [   0     f    0   ]                 !We are also missing our divide by z
@@ -138,10 +148,16 @@ font = pygame.font.Font(None, 36)
 #                  [   0    0    q   1 ]
 #                  [   0    0 -zn*q  0 ]
 #
-# After the final vecor is calulated we divide all three coordinates by z
+# 4. Normalize by Z
+#
+# After the final vecor is calulated we divide all three coordinates by za
+#
+# [afx, fy, qz - znear*q, z] => [afx / z, fy / z, (qz - znear*q) / z, z]
+#
 # ** BUT WHY would we divide  (qz - znear*q) / z ?
 # I believe we established that x and y grow inversly to z and technically
 # (z*q - znear*q) / z is different than z * (q - znear*q) /z (wrong!)
+#
 # Reading around I believe its because we are in fact normalizing all three
 # coordinates the same way, giving us consistent normalized values in Z space
 
