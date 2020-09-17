@@ -1,4 +1,4 @@
-import pygame, engine_ocl, math, time
+import pygame, engine_ocl, math, time, re
 from engine_ocl.display import Display
 from engine_ocl.eventlistener import EventListener
 
@@ -27,11 +27,44 @@ class Triangle(object):
         t = cls()
         t.points = [Vector3(pl[0], pl[1], pl[2]), Vector3(pl[3], pl[4], pl[5]), Vector3(pl[6], pl[7], pl[8])]
         return t
+    @classmethod
+    def withVectors(cls, v1, v2, v3):
+        t = cls()
+        t.points = [v1, v2, v3]
+        return t
 
 class Mesh(object):
     def __init__(self):
         self.triangles = []
-
+    def loadFromObjFile(self, filename):
+        # OBJ files are 3D model files
+        # capable of loading from an obj file
+        vertCache = []
+        reType = re.compile('^([a-z0-9#]) ')
+        reVert = re.compile('^v ([0-9.-]+) ([0-9.-]+) ([0-9.-]+)$')
+        reFace = re.compile('^f ([0-9]+) ([0-9]+) ([0-9]+)$')
+        with open(filename) as objFile:
+            for line in objFile:
+                typeMatches = reType.match(line)
+                # Load Vertex data
+                if (typeMatches[1] == 'v'):
+                    vertMatches = reVert.match(line)
+                    x = float(vertMatches[1])
+                    y = float(vertMatches[2])
+                    z = float(vertMatches[3])
+                    vertCache.append(Vector3(x, y, z))
+                # Load face data
+                if (typeMatches[1] == 'f'):
+                    # A face is a collection of indices of related vertices
+                    faceMatches = reFace.match(line)
+                    i1 = int(faceMatches[1])
+                    i2 = int(faceMatches[2])
+                    i3 = int(faceMatches[3])
+                    # Annoyingly the index starts with 1, not 0
+                    v1 = vertCache[i1 - 1]
+                    v2 = vertCache[i2 - 1]
+                    v3 = vertCache[i3 - 1]
+                    self.triangles.append(Triangle.withVectors(v1, v2, v3))
 
 # START GAME
 
@@ -203,6 +236,7 @@ listener = EventListener()
 # normalLen = math.sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z) # pythagoreum
 # normal.x /= normalLen; y... z... etc
 # Then if normal.z is less than 0 we hide it.
+# NOTE watch out for normalLen == 0 when the cross product result is a zero vector!!!
 #
 # However!! If we do this it will hide faces that are orthogonally facing away from the origin of the worl
 # which misses two main parts:
@@ -229,10 +263,33 @@ listener = EventListener()
 #
 # if (normal.x * (planePoint.x - camera.x) + normal.y * (planePoint.y - camera.y) + normal.z * (planePoint.z - camera.z) < 0
 #   then hide the face
+# Also be sure and hide the face of any Normal with length == 0 (i think this is the right call here)
 
 
-
-
+# OCL PART 2.B - Loading OBJ Files
+#
+# .obj files can be exported from 3D rendering software as a format
+# before exporting, ensure the normals of all faces are facing out from the object
+# also (for this code at least) be sure and have the faces exported as triangles
+# The format of the OBJ file are lines of data with a prefix chracter representing what the data means, eg:
+#
+# "# Blender v2.79 OBJ File"            (comments are prefixed with "#" characters and can be ignored)
+# "v -0.720000 0.120000 -1.400000"      (vertex, the representation of a single vertex in 3d space)
+# "s off"                               (not sure about "s", someone said "s is if smoothing shading should be used")
+# "f 21 52 12"                          (face, ie the triangles with indexes represnting vertices listed (index starting at 1 not 0))
+#
+# When we load up the object thats not a perfect cube and render it
+# If we load it up close we run into two problems:
+# 1, we are not drawing our triangles in the correct order, we are drawing triangles further away on top of those closer
+# 2. as triangles get closer to the camera, their relatice Z value gets smaller, and dividing by smaller Z values creates larger X,Y values
+#    so we end up attempting to draw these almost infinitely sized triangles (offscreen) because we are not clipping them!
+#
+# as a temporary hack we push the camera away from the camera so we can render and test it, faces are in incorrect order, but not infinite
+# we can solve the face ordering problem in two ways
+# 1. Use a Z Depth Buffer: for each pixel drawn, record the Z, if another pixel wants to draw over it it must have Z < Depth Buffer Z
+# 2. Use Painters Algorithm: sort triangles by their Z position, render them from farther away to closer
+#
+# TODO LEFT OFF HERE, RIGHT BEFORE THE PAINTERS ALGORITHM: https://youtu.be/XgMWc6LumG4?t=2050
 
 
 def deg2rad(v):
@@ -281,6 +338,7 @@ projectionMatrix.m[3][3] = 0.0 # replace 1 in identity matrix
 # Go to game loop to see projection being used
 
 
+# CUBE DEFINITION
 # define triangle points in clockwise direction for a cube
 # south
 t1  = Triangle.withPointList([0,0,0, 0,1,0, 1,1,0])
@@ -301,19 +359,27 @@ t10 = Triangle.withPointList([0,1,0, 1,1,1, 1,1,0])
 t11 = Triangle.withPointList([1,0,1, 0,0,1, 0,0,0])
 t12 = Triangle.withPointList([1,0,1, 0,0,0, 1,0,0])
 
-mesh = Mesh()
-mesh.triangles.append(t1)
-mesh.triangles.append(t2)
-mesh.triangles.append(t3)
-mesh.triangles.append(t4)
-mesh.triangles.append(t5)
-mesh.triangles.append(t6)
-mesh.triangles.append(t7)
-mesh.triangles.append(t8)
-mesh.triangles.append(t9)
-mesh.triangles.append(t10)
-mesh.triangles.append(t11)
-mesh.triangles.append(t12)
+meshCube = Mesh()
+meshCube.triangles.append(t1)
+meshCube.triangles.append(t2)
+meshCube.triangles.append(t3)
+meshCube.triangles.append(t4)
+meshCube.triangles.append(t5)
+meshCube.triangles.append(t6)
+meshCube.triangles.append(t7)
+meshCube.triangles.append(t8)
+meshCube.triangles.append(t9)
+meshCube.triangles.append(t10)
+meshCube.triangles.append(t11)
+meshCube.triangles.append(t12)
+
+
+# OBJECT FILE DEFINITION
+meshObj = Mesh();
+meshObj.loadFromObjFile("resources/ocl_VideoShip.obj");
+for t in meshObj.triangles:
+    print(t.points)
+
 
 # Define a camera with a position in the world of 0,0,0
 tempCamera = Vector3(0,0,0)
@@ -330,6 +396,12 @@ font = pygame.font.Font(None, 28)
 titletext = font.render("Perspective Projection of a rotating cube", 1, (50, 50, 50));
 textpos = titletext.get_rect(bottom = display.height - 10, centerx = display.width/2)
 
+
+# Which shape are we rendering in this demo?
+#renderMesh = meshCube
+#renderOffsetZ = 3.0
+renderMesh = meshObj
+renderOffsetZ = 8.0
 
 timeLapsed = 0
 while True:
@@ -359,7 +431,7 @@ while True:
     matRotX.m[3][3] = 1
 
     # Draw triangles projected into our perspective
-    for t in mesh.triangles:
+    for t in renderMesh.triangles:
 
         # 1. Rotation Visualization Helper
         # So we can see if its actually a cube lets rotate it about its
@@ -386,9 +458,9 @@ while True:
         # essentially aligned with the front of the cobe
         # Translate triangle away from camera by adding to z to push it away
         triTransPoints = rotZXPoints
-        triTransPoints[0].z += 3.0
-        triTransPoints[1].z += 3.0
-        triTransPoints[2].z += 3.0
+        triTransPoints[0].z += renderOffsetZ
+        triTransPoints[1].z += renderOffsetZ
+        triTransPoints[2].z += renderOffsetZ
 
         # 3. Calculate Normal hide those facing away
         line1 = Vector3(
@@ -409,27 +481,35 @@ while True:
         )
         # calculate normal of normal vector so we can normalize things....
         normalLen = math.sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z) # pythagoreum
-        normal.x /= normalLen
-        normal.y /= normalLen
-        normal.z /= normalLen
+        if normalLen != 0:
+            # note, the c++ tutorial did not account for 0vector normals exploding with divide by 0
+            # i believe its because in C++ a float can also represeent -inf to +inf in these scenarios
+            # and product weird behavior
+            normal.x /= normalLen
+            normal.y /= normalLen
+            normal.z /= normalLen
 
         # if normal is facing away from camera then hide it
         # if (normal.z < 0): This method does not work it only hides faces in regards to origin of world and without camera offset
         # instead we calculate Dot product of normal vector and the plane position in relation to the camera (which is a vector)
         # note, we can pick any point on the triangle since its a plane
-        if (normal.x * (triTransPoints[0].x - tempCamera.x) +
-            normal.y * (triTransPoints[0].y - tempCamera.y) +
-            normal.z * (triTransPoints[0].z - tempCamera.z) < 0):
+        if (normalLen != 0 and
+            (normal.x * (triTransPoints[0].x - tempCamera.x) +
+             normal.y * (triTransPoints[0].y - tempCamera.y) +
+             normal.z * (triTransPoints[0].z - tempCamera.z)) < 0):
 
             # Lets add some lighting for the triangle since its not culled
             lightDir = Vector3(0, 0, -1) # create a light coming out of the camera
             lightLen = math.sqrt(lightDir.x * lightDir.x + lightDir.y * lightDir.y + lightDir.z * lightDir.z)
-            lightDir.x /= lightLen; lightDir.y /= lightLen; lightDir.z /= lightLen # normalize it
+            if lightLen != 0:
+                lightDir.x /= lightLen
+                lightDir.y /= lightLen
+                lightDir.z /= lightLen
             # get Dot Product of light with Normal
             # the floating point value of this is how aligned they are, so 1 == perfectly aligned
             dot = normal.x * lightDir.x + normal.y * lightDir.y + normal.z * lightDir.z
             # lets shade a color by this amount
-            color = (int(255.0 * dot), int(255.0 * dot), 0)
+            color = (max(0, min(255, int(255.0 * dot))), max(0, min(255, int(255.0 * dot))), 0)
 
 
             # 4. Project our points to our perspective from World Space to Screen Space
