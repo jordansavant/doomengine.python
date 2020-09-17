@@ -322,6 +322,8 @@ def drawTriangle(display, points, color, lineWidth):
     display.drawLine([[points[0].x, points[0].y], [points[1].x, points[1].y]], color, lineWidth)
     display.drawLine([[points[1].x, points[1].y], [points[2].x, points[2].y]], color, lineWidth)
     display.drawLine([[points[2].x, points[2].y], [points[0].x, points[0].y]], color, lineWidth)
+def fillTriangle(display, points, color):
+    display.drawPolygon([[points[0].x, points[0].y], [points[1].x, points[1].y], [points[2].x, points[2].y]], color, 0)
 
 # give us a small title
 font = pygame.font.Font(None, 28)
@@ -419,6 +421,18 @@ while True:
             normal.y * (triTransPoints[0].y - tempCamera.y) +
             normal.z * (triTransPoints[0].z - tempCamera.z) < 0):
 
+            # TODO LEFT OFF HERE
+            # NEXT IS LIGHTING
+            lightDir = Vector3(0, 0, -1) # create a light coming out of the camera
+            lightLen = math.sqrt(lightDir.x * lightDir.x + lightDir.y * lightDir.y + lightDir.z * lightDir.z)
+            lightDir.x /= lightLen; lightDir.y /= lightLen; lightDir.z /= lightLen # normalize it
+            # get Dot Product of light with Normal
+            # the floating point value of this is how aligned they are, so 1 == perfectly aligned
+            dot = normal.x * lightDir.x + normal.y * lightDir.y + normal.z * lightDir.z
+            # lets shade a color by this amount
+            color = (int(255.0 * dot), int(255.0 * dot), 0)
+
+
             # 4. Project our points to our perspective from World Space to Screen Space
             projPoint0 = MultiplyMatrixVector(triTransPoints[0], projectionMatrix)
             projPoint1 = MultiplyMatrixVector(triTransPoints[1], projectionMatrix)
@@ -440,7 +454,8 @@ while True:
             projPoints[2].x *= .5 * display.width; projPoints[2].y *= .5 * display.height
 
             # 6. Draw
-            drawTriangle(display, projPoints, (255, 255, 0), 1)
+            #drawTriangle(display, projPoints, color, 1)
+            fillTriangle(display, projPoints, color);
 
     display.end()
 
