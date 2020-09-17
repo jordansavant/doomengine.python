@@ -421,8 +421,7 @@ while True:
             normal.y * (triTransPoints[0].y - tempCamera.y) +
             normal.z * (triTransPoints[0].z - tempCamera.z) < 0):
 
-            # TODO LEFT OFF HERE
-            # NEXT IS LIGHTING
+            # Lets add some lighting for the triangle since its not culled
             lightDir = Vector3(0, 0, -1) # create a light coming out of the camera
             lightLen = math.sqrt(lightDir.x * lightDir.x + lightDir.y * lightDir.y + lightDir.z * lightDir.z)
             lightDir.x /= lightLen; lightDir.y /= lightLen; lightDir.z /= lightLen # normalize it
@@ -454,8 +453,8 @@ while True:
             projPoints[2].x *= .5 * display.width; projPoints[2].y *= .5 * display.height
 
             # 6. Draw
-            #drawTriangle(display, projPoints, color, 1)
             fillTriangle(display, projPoints, color);
+            drawTriangle(display, projPoints, (0,0,0), 1)
 
     display.end()
 
