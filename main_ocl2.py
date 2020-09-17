@@ -377,8 +377,6 @@ meshCube.triangles.append(t12)
 # OBJECT FILE DEFINITION
 meshObj = Mesh();
 meshObj.loadFromObjFile("resources/ocl_VideoShip.obj");
-for t in meshObj.triangles:
-    print(t.points)
 
 
 # Define a camera with a position in the world of 0,0,0
@@ -393,8 +391,11 @@ def fillTriangle(display, points, color):
 
 # give us a small title
 font = pygame.font.Font(None, 28)
-titletext = font.render("Perspective Projection of a rotating cube", 1, (50, 50, 50));
+titletext = font.render("Hiding Faces, Basic Lighting, OBJ Import (press up for mode)", 1, (50, 50, 50));
 textpos = titletext.get_rect(bottom = display.height - 10, centerx = display.width/2)
+
+collisionDetection = True
+fullscreen = False
 
 
 # Which shape are we rendering in this demo?
@@ -402,6 +403,20 @@ textpos = titletext.get_rect(bottom = display.height - 10, centerx = display.wid
 #renderOffsetZ = 3.0
 renderMesh = meshObj
 renderOffsetZ = 8.0
+
+# visualizer mode for cube and obj
+mode = 0
+max_modes = 2
+def mode_up():
+    global renderMesh, renderOffsetZ, mode, max_modes
+    mode = (mode + 1) % max_modes
+    if mode == 1:
+        renderMesh = meshCube
+        renderOffsetZ = 3.0
+    else:
+        renderMesh = meshObj
+        renderOffsetZ = 8.0
+listener.onKeyUp(pygame.K_UP, mode_up)
 
 timeLapsed = 0
 while True:
