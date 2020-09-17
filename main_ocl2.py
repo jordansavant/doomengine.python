@@ -40,7 +40,10 @@ listener = EventListener()
 #pygame.mouse.set_visible(False)
 #pygame.event.set_grab(True)
 
+# OCL 1 was about creating the Perspective Matrix
+# OCL 2 is  other stuff, see OCL1 for more notes
 
+# OCL PART 1
 # PERSPECTIVE PROJECTION
 #
 #
@@ -165,6 +168,73 @@ listener = EventListener()
 # what we do not have is clipping outside of the FoV or hiding faces
 # that face away from us
 
+
+
+# OCL PART 2
+#
+# 1. Determining a Plane's normal
+# Hiding polygon faces that face away from the camera
+# Because all triangles are "wound" the same direction we can
+# calculate their normals to determine what way they "face"
+# the winding direction determining which side is "out"
+#
+# The Cross Product will produce the Normal of a plane
+# the line that is perpendiculat to the two lines provided
+#
+# Cross Product:
+# Nx = Ay * Bz - Az * By
+# Ny = Az * Bx - Ax * Bz
+# Nz = Ax * By - Ay * Bx
+#
+# If we have a triangle wound clockwise we can take:
+# Point 1 - Point 0 to be Line A
+# Point 2 - Point 0 to be Line B
+# Crossing that produces the normal of Point 0
+# If we wound counter-clockwise the normal would be in the opposite direction
+#
+# Most importantly is that all triangles are order in the same way!!
+#
+#
+# 2. Determining if a Face is Away from Camera
+# If Z positive is away from the camera, any faces with a Normal Positive are facing away
+#
+# We calculate the normals of the lines of the triangle
+# We then calculate the length of the normal and normalize itself with pythagoreum eg:
+# normalLen = math.sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z) # pythagoreum
+# normal.x /= normalLen; y... z... etc
+# Then if normal.z is less than 0 we hide it.
+#
+# However!! If we do this it will hide faces that are orthogonally facing away from the origin of the worl
+# which misses two main parts:
+# 1. It does not capture perspective and this faces that are somewhat "away" from us still appear
+#    because orthogonally they are visible or at normal.z = 0, but in perspective they are away from us
+# 2. It does not account for a camera that may "move" or have a non-origin position
+#
+# Instead of looking at Z alone we need to look at it in relation to the camera line from the camera position
+# to the points location in 3D
+# IE the alignment of the Z normal in regards to the line from the camera to the point
+# So if we form the two lines and determine the angle between them, anything greater than 90deg is hidden
+#
+# Welcome Dot Product
+# D = Ax*Bx + Ay*By + Az*BZ
+# This gets us how much the line projects onto the other line (if they are normalized with the same value)
+# If the Dot product is 0, they dont project at all (ie 90deg)
+# If nonzero, then it project in one way or another
+# Example:
+# A = (1,0,0), B = (0,1,0) => 1*0 + 0*1 + 0*0 = 0+0+0 = 0 // all zero and vectors do not cross anywhere, orthogonal
+# A = (1,0,0), B = (1,0,0) => 1*1 + 0*0 + 0*0 = +1        // exactly the same
+# A = (1,0,0), B = (-1,0,0) => 1*-1 + 0*0 + 0*0 = -1      // B is exact opposite direction
+#
+# We also want to offset by our camera position too, but ultimately it looks like this:
+#
+# if (normal.x * (planePoint.x - camera.x) + normal.y * (planePoint.y - camera.y) + normal.z * (planePoint.z - camera.z) < 0
+#   then hide the face
+
+
+
+
+
+
 def deg2rad(v):
     return v / 180.0 * 3.14159
 
@@ -245,6 +315,9 @@ mesh.triangles.append(t10)
 mesh.triangles.append(t11)
 mesh.triangles.append(t12)
 
+# Define a camera with a position in the world of 0,0,0
+tempCamera = Vector3(0,0,0)
+
 def drawTriangle(display, points, color, lineWidth):
     display.drawLine([[points[0].x, points[0].y], [points[1].x, points[1].y]], color, lineWidth)
     display.drawLine([[points[1].x, points[1].y], [points[2].x, points[2].y]], color, lineWidth)
@@ -254,7 +327,6 @@ def drawTriangle(display, points, color, lineWidth):
 font = pygame.font.Font(None, 28)
 titletext = font.render("Perspective Projection of a rotating cube", 1, (50, 50, 50));
 textpos = titletext.get_rect(bottom = display.height - 10, centerx = display.width/2)
-
 
 
 timeLapsed = 0
@@ -316,28 +388,59 @@ while True:
         triTransPoints[1].z += 3.0
         triTransPoints[2].z += 3.0
 
-        # 3. Project our points to our perspective
-        projPoint0 = MultiplyMatrixVector(triTransPoints[0], projectionMatrix)
-        projPoint1 = MultiplyMatrixVector(triTransPoints[1], projectionMatrix)
-        projPoint2 = MultiplyMatrixVector(triTransPoints[2], projectionMatrix)
-        projPoints = [projPoint0, projPoint1, projPoint2]
+        # 3. Calculate Normal hide those facing away
+        line1 = Vector3(
+            triTransPoints[1].x - triTransPoints[0].x,
+            triTransPoints[1].y - triTransPoints[0].y,
+            triTransPoints[1].z - triTransPoints[0].z
+        )
+        line2 = Vector3(
+            triTransPoints[2].x - triTransPoints[0].x,
+            triTransPoints[2].y - triTransPoints[0].y,
+            triTransPoints[2].z - triTransPoints[0].z
+        )
+        # directly implement cross product of the lines
+        normal = Vector3(
+            line1.y * line2.z - line1.z * line2.y,
+            line1.z * line2.x - line1.x * line2.z,
+            line1.x * line2.y - line1.y * line2.x,
+        )
+        # calculate normal of normal vector so we can normalize things....
+        normalLen = math.sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z) # pythagoreum
+        normal.x /= normalLen
+        normal.y /= normalLen
+        normal.z /= normalLen
 
-        # 4. Scale into viewport
-        # points between -1 and -1 are within our screens FoV
-        # so we want something at 0,0 to be at the center of the view, -1,0 at left, 0,1 at bottom etc
-        # start by shifting the normalized x,y points to the range 0-2
-        projPoints[0].x += 1.0; projPoints[0].y += 1.0
-        projPoints[1].x += 1.0; projPoints[1].y += 1.0
-        projPoints[2].x += 1.0; projPoints[2].y += 1.0
-        # divide the points by 2 and then multiply by size of screen
-        # so something at -1 becomes 0/2=0 (left side) and +1 becomes 2/2=1 (right side)
-        # something at 1 then becomes the size of the screen
-        projPoints[0].x *= .5 * display.width; projPoints[0].y *= .5 * display.height
-        projPoints[1].x *= .5 * display.width; projPoints[1].y *= .5 * display.height
-        projPoints[2].x *= .5 * display.width; projPoints[2].y *= .5 * display.height
+        # if normal is facing away from camera then hide it
+        # if (normal.z < 0): This method does not work it only hides faces in regards to origin of world and without camera offset
+        # instead we calculate Dot product of normal vector and the plane position in relation to the camera (which is a vector)
+        # note, we can pick any point on the triangle since its a plane
+        if (normal.x * (triTransPoints[0].x - tempCamera.x) +
+            normal.y * (triTransPoints[0].y - tempCamera.y) +
+            normal.z * (triTransPoints[0].z - tempCamera.z) < 0):
 
-        # 5. Draw
-        drawTriangle(display, projPoints, (255, 255, 0), 1)
+            # 4. Project our points to our perspective from World Space to Screen Space
+            projPoint0 = MultiplyMatrixVector(triTransPoints[0], projectionMatrix)
+            projPoint1 = MultiplyMatrixVector(triTransPoints[1], projectionMatrix)
+            projPoint2 = MultiplyMatrixVector(triTransPoints[2], projectionMatrix)
+            projPoints = [projPoint0, projPoint1, projPoint2]
+
+            # 5. Scale into viewport
+            # points between -1 and -1 are within our screens FoV
+            # so we want something at 0,0 to be at the center of the view, -1,0 at left, 0,1 at bottom etc
+            # start by shifting the normalized x,y points to the range 0-2
+            projPoints[0].x += 1.0; projPoints[0].y += 1.0
+            projPoints[1].x += 1.0; projPoints[1].y += 1.0
+            projPoints[2].x += 1.0; projPoints[2].y += 1.0
+            # divide the points by 2 and then multiply by size of screen
+            # so something at -1 becomes 0/2=0 (left side) and +1 becomes 2/2=1 (right side)
+            # something at 1 then becomes the size of the screen
+            projPoints[0].x *= .5 * display.width; projPoints[0].y *= .5 * display.height
+            projPoints[1].x *= .5 * display.width; projPoints[1].y *= .5 * display.height
+            projPoints[2].x *= .5 * display.width; projPoints[2].y *= .5 * display.height
+
+            # 6. Draw
+            drawTriangle(display, projPoints, (255, 255, 0), 1)
 
     display.end()
 
