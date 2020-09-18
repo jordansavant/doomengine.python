@@ -288,8 +288,7 @@ listener = EventListener()
 # we can solve the face ordering problem in two ways
 # 1. Use a Z Depth Buffer: for each pixel drawn, record the Z, if another pixel wants to draw over it it must have Z < Depth Buffer Z
 # 2. Use Painters Algorithm: sort triangles by their Z position, render them from farther away to closer
-#
-# TODO LEFT OFF HERE, RIGHT BEFORE THE PAINTERS ALGORITHM: https://youtu.be/XgMWc6LumG4?t=2050
+#    problem with painters is that averages dont really deal with overlapping triangles
 
 
 def deg2rad(v):
@@ -406,20 +405,28 @@ renderOffsetZ = 8.0
 
 # visualizer mode for cube and obj
 mode = 0
-max_modes = 2
+max_modes = 3
 def mode_up():
     global renderMesh, renderOffsetZ, mode, max_modes
     mode = (mode + 1) % max_modes
-    if mode == 1:
-        renderMesh = meshCube
-        renderOffsetZ = 3.0
-    else:
-        renderMesh = meshObj
-        renderOffsetZ = 8.0
 listener.onKeyUp(pygame.K_UP, mode_up)
+paintersAlgorithm = False
 
 timeLapsed = 0
 while True:
+
+    if mode == 0:
+        renderMesh = meshObj
+        renderOffsetZ = 8.0
+        paintersAlgorithm = True
+    elif mode == 1:
+        renderMesh = meshObj
+        renderOffsetZ = 8.0
+        paintersAlgorithm = False
+    elif mode == 2:
+        renderMesh = meshCube
+        renderOffsetZ = 3.0
+        paintersAlgorithm = False
 
     listener.update()
     display.start()
@@ -444,6 +451,8 @@ while True:
     matRotX.m[2][1] = -math.sin(timeLapsed / 2)
     matRotX.m[2][2] = math.cos(timeLapsed / 2)
     matRotX.m[3][3] = 1
+
+    painterTriangles = []
 
     # Draw triangles projected into our perspective
     for t in renderMesh.triangles:
@@ -523,8 +532,14 @@ while True:
             # get Dot Product of light with Normal
             # the floating point value of this is how aligned they are, so 1 == perfectly aligned
             dot = normal.x * lightDir.x + normal.y * lightDir.y + normal.z * lightDir.z
+            l = max(0, min(255, int(255.0 * dot)))
             # lets shade a color by this amount
-            color = (max(0, min(255, int(255.0 * dot))), max(0, min(255, int(255.0 * dot))), 0)
+            if mode == 0:
+                color = (0, l, 0);
+            elif mode == 1:
+                color = (l, l, 0);
+            else:
+                color = (l, 0, l);
 
 
             # 4. Project our points to our perspective from World Space to Screen Space
@@ -548,8 +563,24 @@ while True:
             projPoints[2].x *= .5 * display.width; projPoints[2].y *= .5 * display.height
 
             # 6. Draw
-            fillTriangle(display, projPoints, color);
-            drawTriangle(display, projPoints, (0,0,0), 1)
+            if paintersAlgorithm == False:
+                # draw immediatel
+                fillTriangle(display, projPoints, color);
+                drawTriangle(display, projPoints, (0,0,0), 1)
+            else:
+                painterTriangles.append([projPoints, color]); # pair of triangle and its lighting color
+
+    if paintersAlgorithm == True:
+        # sort our painter triangles by their average z position
+        def sortMethod(points):
+            # get average z values from trianglea
+            zAvg = (points[0][0].z + points[0][1].z + points[0][2].z) / 3 # points[0] is the actual triangle, points[1] is color
+            return zAvg
+        painterTriangles.sort(key=sortMethod, reverse=True)
+
+        for projPoints in painterTriangles:
+            fillTriangle(display, projPoints[0], projPoints[1]);
+            drawTriangle(display, projPoints[0], (0,0,0), 1)
 
     display.end()
 
