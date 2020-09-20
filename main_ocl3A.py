@@ -7,6 +7,7 @@ class Vector3(object):
         self.x = x
         self.y = y
         self.z = z
+        self.w = 1 # w component for sensible matrix math
     def clone(self):
         return Vector3(self.x, self.y, self.z)
     def __str__(self):
@@ -427,15 +428,7 @@ def MultiplyMatrixVector(v3, m):
 zNear = 0.1
 zFar = 1000.0
 fov = 90
-aspectRatio = display.aspectRatio
-fovRad = 1.0 / math.tan(deg2rad(fov / 2)) # convert to radians
-
-# [   af   0    0   0 ]
-# [   0    f    0   0 ]
-# [   0    0    q   1 ]
-# [   0    0 -zn*q  0 ]
 projectionMatrix = Matrix4x4.MakeProjection(fov, display.aspectRatio, zNear, zFar)
-# Go to game loop to see projection being used
 
 
 # CUBE DEFINITION
@@ -535,23 +528,15 @@ while True:
     display.drawText(titletext, textpos)
 
     # hardcoded rotation matrices
-    # rotate around Z with time
-    matRotZ = Matrix4x4()
-    matRotZ.m[0][0] = math.cos(timeLapsed)
-    matRotZ.m[0][1] = math.sin(timeLapsed)
-    matRotZ.m[1][0] = -math.sin(timeLapsed)
-    matRotZ.m[1][1] = math.cos(timeLapsed)
-    matRotZ.m[2][2] = 1
-    matRotZ.m[3][3] = 1
+    matRotZ = Matrix4x4.MakeRotationZ(timeLapsed / 2)
+    matRotX = Matrix4x4.MakeRotationX(timeLapsed)
 
-    # rotate around X with half/time
-    matRotX = Matrix4x4()
-    matRotX.m[0][0] = 1
-    matRotX.m[1][1] = math.cos(timeLapsed / 2)
-    matRotX.m[1][2] = math.sin(timeLapsed / 2)
-    matRotX.m[2][1] = -math.sin(timeLapsed / 2)
-    matRotX.m[2][2] = math.cos(timeLapsed / 2)
-    matRotX.m[3][3] = 1
+    # translation matrix
+    matTrans = Matrix4x4.MakeTranslation(0, 0, renderOffsetZ)
+
+    matWorld = Matrix4x4.MakeIdentity() # form world matrix
+    matWorld = Matrix4x4.MultiplyMatrix4x4(matRotZ, matRotX) # Transform by Rotation by z and x
+    matWorld = Matrix4x4.MultiplyMatrix4x4(matWorld, matTrans) # Transform by Translation
 
     painterTriangles = []
 
@@ -566,27 +551,13 @@ while True:
         # lets hardcode two rotation matrices
         # (since these are static we moved them out of the loop above)
 
-        # rotate in z
-        rotZPoint0 = MultiplyMatrixVector(t.points[0], matRotZ)
-        rotZPoint1 = MultiplyMatrixVector(t.points[1], matRotZ)
-        rotZPoint2 = MultiplyMatrixVector(t.points[2], matRotZ)
-        rotZPoints = [rotZPoint0, rotZPoint1, rotZPoint2]
+        # Transform the triangle by world rotation and translation
+        triTransformed = Triangle();
+        triTransformed.points[0] = Matrix4x4.MultiplyVector(matWorld, t.points[0])
+        triTransformed.points[1] = Matrix4x4.MultiplyVector(matWorld, t.points[1])
+        triTransformed.points[2] = Matrix4x4.MultiplyVector(matWorld, t.points[2])
 
-        # rotate in x
-        rotZXPoint0 = MultiplyMatrixVector(rotZPoints[0], matRotX)
-        rotZXPoint1 = MultiplyMatrixVector(rotZPoints[1], matRotX)
-        rotZXPoint2 = MultiplyMatrixVector(rotZPoints[2], matRotX)
-        rotZXPoints = [rotZXPoint0, rotZXPoint1, rotZXPoint2]
-
-        # 2. Translation Visualization Helper
-        # Currently our cube is centered around 0-1 ranges, so our head is
-        # essentially aligned with the front of the cobe
-        # Translate triangle away from camera by adding to z to push it away
-        triTransPoints = rotZXPoints
-        triTransPoints[0].z += renderOffsetZ
-        triTransPoints[1].z += renderOffsetZ
-        triTransPoints[2].z += renderOffsetZ
-
+        triTransPoints = triTransformed.points
         # 3. Calculate Normal hide those facing away
         line1 = Vector3(
             triTransPoints[1].x - triTransPoints[0].x,
