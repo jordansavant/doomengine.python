@@ -36,9 +36,7 @@ class Vector3(object):
     @staticmethod
     def Normalize(v):
         l = Vector3.Length(v)
-        if l == 0:
-            return Vector3(0, 0, 0)
-        return Vector3(v.x / l, v.y / l, v.z / l)
+        return Vector3(v.x / l, v.y / l, v.z / l) if l != 0 else Vector3(0, 0, 0)
     @staticmethod
     def CrossProduct(v1, v2):
         x = v1.y * v2.z - v1.z * v2.y
@@ -49,7 +47,7 @@ class Vector3(object):
 class Triangle(object):
     def __init__(self):
         self.points = [None, None, None] # 3 Vector3's
-        self.color = None
+        self.color = None # (r, g, b) tuple
     def clone(self):
         c = Triangle()
         for i, p in enumerate(self.points):
@@ -70,7 +68,6 @@ class Triangle(object):
 class Matrix4x4(object):
     def __init__(self):
         # rows by cols
-        #self.m = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]] # identity
         self.m = [[0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0]]
 
     @staticmethod
@@ -190,7 +187,7 @@ listener = EventListener()
 
 # OCL 1 was about creating the Perspective Matrix
 # OCL 2 was complex 3d objects, depth sorting and hiding faces
-# OCL 3 is camera work
+# OCL 3 is camera work and clipping
 
 # Perspective Projection matrix for camera
 zNear = 0.1
