@@ -3,11 +3,11 @@ from engine_ocl.display import Display
 from engine_ocl.eventlistener import EventListener
 
 class Vector3(object):
-    def __init__(self, x, y, z):
+    def __init__(self, x, y, z, w=1):
         self.x = x
         self.y = y
         self.z = z
-        self.w = 1 # w component for sensible matrix math
+        self.w = w # w component for sensible matrix math
     def clone(self):
         return Vector3(self.x, self.y, self.z)
     def __str__(self):
@@ -34,8 +34,10 @@ class Vector3(object):
     def Length(v):
         return math.sqrt(Vector3.DotProduct(v, v))
     @staticmethod
-    def Normalise(v):
+    def Normalize(v):
         l = Vector3.Length(v)
+        if l == 0:
+            return Vector3(0, 0, 0)
         return Vector3(v.x / l, v.y / l, v.z / l)
     @staticmethod
     def CrossProduct(v1, v2):
@@ -76,7 +78,8 @@ class Matrix4x4(object):
         x = v3.x * m4.m[0][0] + v3.y * m4.m[1][0] + v3.z * m4.m[2][0] + v3.w * m4.m[3][0]
         y = v3.x * m4.m[0][1] + v3.y * m4.m[1][1] + v3.z * m4.m[2][1] + v3.w * m4.m[3][1]
         z = v3.x * m4.m[0][2] + v3.y * m4.m[1][2] + v3.z * m4.m[2][2] + v3.w * m4.m[3][2]
-        return Vector3(x, y, z)
+        w = v3.x * m4.m[0][3] + v3.y * m4.m[1][3] + v3.z * m4.m[2][3] + v3.w * m4.m[3][3]
+        return Vector3(x, y, z, w)
     @staticmethod
     def MakeIdentity():
         matrix = Matrix4x4()
@@ -557,55 +560,29 @@ while True:
         triTransformed.points[1] = Matrix4x4.MultiplyVector(matWorld, t.points[1])
         triTransformed.points[2] = Matrix4x4.MultiplyVector(matWorld, t.points[2])
 
-        triTransPoints = triTransformed.points
-        # 3. Calculate Normal hide those facing away
-        line1 = Vector3(
-            triTransPoints[1].x - triTransPoints[0].x,
-            triTransPoints[1].y - triTransPoints[0].y,
-            triTransPoints[1].z - triTransPoints[0].z
-        )
-        line2 = Vector3(
-            triTransPoints[2].x - triTransPoints[0].x,
-            triTransPoints[2].y - triTransPoints[0].y,
-            triTransPoints[2].z - triTransPoints[0].z
-        )
-        # directly implement cross product of the lines
-        normal = Vector3(
-            line1.y * line2.z - line1.z * line2.y,
-            line1.z * line2.x - line1.x * line2.z,
-            line1.x * line2.y - line1.y * line2.x,
-        )
-        # calculate normal of normal vector so we can normalize things....
-        normalLen = math.sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z) # pythagoreum
-        if normalLen != 0:
-            # note, the c++ tutorial did not account for 0vector normals exploding with divide by 0
-            # i believe its because in C++ a float can also represeent -inf to +inf in these scenarios
-            # and product weird behavior
-            normal.x /= normalLen
-            normal.y /= normalLen
-            normal.z /= normalLen
+        # Calculate Normal hide those facing away
+        line1 = Vector3.Subtract(triTransformed.points[1], triTransformed.points[0])
+        line2 = Vector3.Subtract(triTransformed.points[2], triTransformed.points[0])
+        normal = Vector3.CrossProduct(line1, line2)
+        normal = Vector3.Normalize(normal)
 
         # if normal is facing away from camera then hide it
         # if (normal.z < 0): This method does not work it only hides faces in regards to origin of world and without camera offset
         # instead we calculate Dot product of normal vector and the plane position in relation to the camera (which is a vector)
-        # note, we can pick any point on the triangle since its a plane
-        if (normalLen != 0 and
-            (normal.x * (triTransPoints[0].x - tempCamera.x) +
-             normal.y * (triTransPoints[0].y - tempCamera.y) +
-             normal.z * (triTransPoints[0].z - tempCamera.z)) < 0):
+        # note, we can pick any point on the triangle since its a planea
+        # Get ray from camera to triangle
+        cameraRay = Vector3.Subtract(triTransformed.points[0], tempCamera)
+
+        # if ray is aligned with normal then its facing us and visible
+        if (Vector3.DotProduct(normal, cameraRay) < 0):
 
             # Lets add some lighting for the triangle since its not culled
             lightDir = Vector3(0, 0, -1) # create a light coming out of the camera
-            lightLen = math.sqrt(lightDir.x * lightDir.x + lightDir.y * lightDir.y + lightDir.z * lightDir.z)
-            if lightLen != 0:
-                lightDir.x /= lightLen
-                lightDir.y /= lightLen
-                lightDir.z /= lightLen
-            # get Dot Product of light with Normal
-            # the floating point value of this is how aligned they are, so 1 == perfectly aligned
-            dot = normal.x * lightDir.x + normal.y * lightDir.y + normal.z * lightDir.z
-            l = max(0, min(255, int(255.0 * dot)))
+            lightDir = Vector3.Normalize(lightDir)
+            dot = Vector3.DotProduct(normal, lightDir)
             # lets shade a color by this amount
+            l = max(0, min(255, int(255.0 * dot)))
+
             if mode == 0:
                 color = (0, l, 0);
             elif mode == 1:
@@ -613,34 +590,45 @@ while True:
             else:
                 color = (l, 0, l);
 
+            triTransformed.color = color
 
             # 4. Project our points to our perspective from World Space to Screen Space
-            projPoint0 = MultiplyMatrixVector(triTransPoints[0], projectionMatrix)
-            projPoint1 = MultiplyMatrixVector(triTransPoints[1], projectionMatrix)
-            projPoint2 = MultiplyMatrixVector(triTransPoints[2], projectionMatrix)
-            projPoints = [projPoint0, projPoint1, projPoint2]
+            triProjected = Triangle()
+            triProjected.color = triTransformed.color
+            triProjected.points[0] = Matrix4x4.MultiplyVector(projectionMatrix, triTransformed.points[0])
+            triProjected.points[1] = Matrix4x4.MultiplyVector(projectionMatrix, triTransformed.points[1])
+            triProjected.points[2] = Matrix4x4.MultiplyVector(projectionMatrix, triTransformed.points[2])
+
+            # need to scale into view by dividing by the original Z depth that is now stored in the w component
+            triProjected.points[0] = Vector3.Divide(triProjected.points[0], triProjected.points[0].w)
+            triProjected.points[1] = Vector3.Divide(triProjected.points[1], triProjected.points[1].w)
+            triProjected.points[2] = Vector3.Divide(triProjected.points[2], triProjected.points[2].w)
 
             # 5. Scale into viewport
             # points between -1 and -1 are within our screens FoV
             # so we want something at 0,0 to be at the center of the view, -1,0 at left, 0,1 at bottom etc
             # start by shifting the normalized x,y points to the range 0-2
-            projPoints[0].x += 1.0; projPoints[0].y += 1.0
-            projPoints[1].x += 1.0; projPoints[1].y += 1.0
-            projPoints[2].x += 1.0; projPoints[2].y += 1.0
+            offsetView = Vector3(1, 1, 0)
+            triProjected.points[0] = Vector3.Add(triProjected.points[0], offsetView)
+            triProjected.points[1] = Vector3.Add(triProjected.points[1], offsetView)
+            triProjected.points[2] = Vector3.Add(triProjected.points[2], offsetView)
             # divide the points by 2 and then multiply by size of screen
             # so something at -1 becomes 0/2=0 (left side) and +1 becomes 2/2=1 (right side)
             # something at 1 then becomes the size of the screen
-            projPoints[0].x *= .5 * display.width; projPoints[0].y *= .5 * display.height
-            projPoints[1].x *= .5 * display.width; projPoints[1].y *= .5 * display.height
-            projPoints[2].x *= .5 * display.width; projPoints[2].y *= .5 * display.height
+            triProjected.points[0].x *= .5 * display.width
+            triProjected.points[0].y *= .5 * display.height
+            triProjected.points[1].x *= .5 * display.width
+            triProjected.points[1].y *= .5 * display.height
+            triProjected.points[2].x *= .5 * display.width
+            triProjected.points[2].y *= .5 * display.height
 
             # 6. Draw
             if paintersAlgorithm == False:
                 # draw immediatel
-                fillTriangle(display, projPoints, color);
-                drawTriangle(display, projPoints, (0,0,0), 1)
+                fillTriangle(display, triProjected.points, color);
+                drawTriangle(display, triProjected.points, (0,0,0), 1)
             else:
-                painterTriangles.append([projPoints, color]); # pair of triangle and its lighting color
+                painterTriangles.append([triProjected.points, color]); # pair of triangle and its lighting color
 
     if paintersAlgorithm == True:
         # sort our painter triangles by their average z position
