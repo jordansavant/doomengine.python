@@ -329,7 +329,7 @@ class Mesh(object):
 
 # START GAME
 
-display = Display(640, 480)
+display = Display(1024, 768)
 listener = EventListener()
 #pygame.mouse.set_visible(False)
 #pygame.event.set_grab(True)
@@ -420,7 +420,7 @@ meshObj.loadFromObjFile("resources/axis.obj");
 
 # Define a camera with a position in the world of 0,0,0
 vCamera = Vector3(0, 0, 0) # location of camera in world space
-vLookDir = Vector3(0, 0, 1) # direction camera is looking
+vLookDir = Vector3(0, 0, 0) # direction camera is looking
 yaw = 0 # FPS camera rotation in XZ
 
 
@@ -494,7 +494,7 @@ def on_d_up():
     global inputTurnRight; inputTurnRight = False
 listener.onKeyUp(pygame.K_d, on_d_up)
 
-ascensionSpeed = 3.0
+ascensionSpeed = 6.0
 
 timeLapsed = 0
 deltaTime = 1/60
@@ -514,10 +514,9 @@ while True:
         renderOffsetZ = 3.0
 
     if inputAscend:
-        vCamera.y -= ascensionSpeed * deltaTime # move up
-    if inputDescend:
         vCamera.y += ascensionSpeed * deltaTime # move up
-
+    if inputDescend:
+        vCamera.y -= ascensionSpeed * deltaTime # move up
     vForward = Vector3.Multiply(vLookDir, ascensionSpeed * deltaTime);
     if (inputForward):
         vCamera = Vector3.Add(vCamera, vForward)
@@ -547,7 +546,7 @@ while True:
     matWorld = Matrix4x4.MultiplyMatrix4x4(matWorld, matTrans) # Transform by Translation
 
     # create "point at" matrix for camer
-    vUp = Vector3(0, 1, 0)
+    vUp = Vector3(0, -1, 0)
     vTarget = Vector3(0, 0, 1)
     matCameraRotation = Matrix4x4.MakeRotationY(yaw)
     vLookDir = Matrix4x4.MultiplyVector(matCameraRotation, vTarget)
@@ -579,10 +578,10 @@ while True:
         if (Vector3.DotProduct(normal, cameraRay) < 0):
 
             # Lets add some lighting for the triangle since its not culled
-            lightDir = Vector3(0, -.5, -1) # create a light coming out of the camera
+            lightDir = Vector3(0, 1, -1) # create a light coming out of the camera
             lightDir = Vector3.Normalize(lightDir)
             dot = Vector3.DotProduct(normal, lightDir)
-            l = max(0, min(255, int(255.0 * dot)))
+            l = max(25, min(255, int(255.0 * dot))) # global lighting some
 
             # lets shade a color by this amount
             color = (l, l, l);
