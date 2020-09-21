@@ -297,9 +297,35 @@ class Matrix4x4(object):
 class Mesh(object):
     def __init__(self):
         self.triangles = []
-    def loadFromObjFile(self, filename):
+    @classmethod
+    def loadCube(cls):
+        # define triangle points in clockwise direction for a cube
+        meshCube = cls()
+        # south
+        meshCube.triangles.append(Triangle.fromPointList([0,0,0, 0,1,0, 1,1,0]))
+        meshCube.triangles.append(Triangle.fromPointList([0,0,0, 1,1,0, 1,0,0]))
+        # east
+        meshCube.triangles.append(Triangle.fromPointList([1,0,0, 1,1,0, 1,1,1]))
+        meshCube.triangles.append(Triangle.fromPointList([1,0,0, 1,1,1, 1,0,1]))
+        # north
+        meshCube.triangles.append(Triangle.fromPointList([1,0,1, 1,1,1, 0,1,1]))
+        meshCube.triangles.append(Triangle.fromPointList([1,0,1, 0,1,1, 0,0,1]))
+        # west
+        meshCube.triangles.append(Triangle.fromPointList([0,0,1, 0,1,1, 0,1,0]))
+        meshCube.triangles.append(Triangle.fromPointList([0,0,1, 0,1,0, 0,0,0]))
+        # top
+        meshCube.triangles.append(Triangle.fromPointList([0,1,0, 0,1,1, 1,1,1]))
+        meshCube.triangles.append(Triangle.fromPointList([0,1,0, 1,1,1, 1,1,0]))
+        # bottom
+        meshCube.triangles.append(Triangle.fromPointList([1,0,1, 0,0,1, 0,0,0]))
+        meshCube.triangles.append(Triangle.fromPointList([1,0,1, 0,0,0, 1,0,0]))
+        return meshCube
+
+    @classmethod
+    def loadFromObjFile(cls, filename):
         # OBJ files are 3D model files
         # capable of loading from an obj file
+        mesh = cls()
         vertCache = []
         reType = re.compile('^([a-z0-9#]) ')
         reVert = re.compile('^v ([0-9.-]+) ([0-9.-]+) ([0-9.-]+)$')
@@ -307,6 +333,8 @@ class Mesh(object):
         with open(filename) as objFile:
             for line in objFile:
                 typeMatches = reType.match(line)
+                if (typeMatches == None):
+                    continue
                 # Load Vertex data
                 if (typeMatches[1] == 'v'):
                     vertMatches = reVert.match(line)
@@ -325,7 +353,17 @@ class Mesh(object):
                     v1 = vertCache[i1 - 1]
                     v2 = vertCache[i2 - 1]
                     v3 = vertCache[i3 - 1]
-                    self.triangles.append(Triangle.fromVectors(v1, v2, v3))
+                    mesh.triangles.append(Triangle.fromVectors(v1, v2, v3))
+        return mesh
+
+
+def drawTriangle(display, points, color, lineWidth):
+    display.drawLine([[points[0].x, points[0].y], [points[1].x, points[1].y]], color, lineWidth)
+    display.drawLine([[points[1].x, points[1].y], [points[2].x, points[2].y]], color, lineWidth)
+    display.drawLine([[points[2].x, points[2].y], [points[0].x, points[0].y]], color, lineWidth)
+
+def fillTriangle(display, points, color):
+    display.drawPolygon([[points[0].x, points[0].y], [points[1].x, points[1].y], [points[2].x, points[2].y]], color, 0)
 
 # START GAME
 
@@ -366,7 +404,47 @@ listener = EventListener()
 # it is rendered
 #
 # Rotating Space with a "Point At" System
+# *lots of math around moving everything in the world to new positions
+#  that I need to restudya lot
 #
+#
+# Clipping:
+# We clip first in the Frustrums zNear and zFar range (unscaled so from 0 to 1)
+# Then we clip in the screen space after those triangles have been culled
+#
+# General clipping process:
+# We compare the triangle with a plane, ie zNear or a screen edge
+# each triangle will fall into one of four categories:
+# 1. all three points are beyond the plane and the triangle can be completely culled
+# 2. all thee points are within the plane and the triangle is kept as is
+# 3. two points live beyond, one within we must calculate the intersection points of the
+#    plane and the two sides that pass the plane and form a single smaller triangle from
+#    those new points
+# 4. one point lives beyond, two within, this creates a quadrangle if cut directly because
+#    cutting at the plane leaves four points, so the four points need to be subdivided into
+#    two triangles, first is the first intersection point and the two original interior points
+#    the second is the new interesection point, one original interior and a new intersection point
+#
+# Triangle rastering updates:
+# During screen space clipping we compare the triangles against the screen edges after their 2d
+# projection is complete.
+# For each triangle we need to run the clipping process against all four planes of the screen
+# and when we do each plane comparison may generate new triangles from clipping it. It is very
+# possible to have a triangle exceed multiple planes (like at the corner of the screen) so by
+# clipping on the first plane, subsequent created triangles must be clipped against the remaining
+# planes
+#
+# Fortunately when we clip one triangle against that plane, the newly created sub triangles do not
+# need to be compared against that plane again, nor against any previoulsy compared plane of the
+# original parent triangle because they _have_ to have been clipped safely. So the resulting
+# algorithim for clipping for final rendering is:
+#
+# 1. Loop over all projected triangles
+# 2. Put the next triangle in a Queue
+# 3. Loop over the 4 screen planes
+# 4. Dequeue the next triangle
+# 5. Clip against plane and put new triangles at back of queue
+# 6. After all planes and all queued triangles are complete loop over Queue and render triangles
 
 
 # Perspective Projection matrix for camera
@@ -376,78 +454,32 @@ fov = 90
 projectionMatrix = Matrix4x4.MakeProjection(fov, display.aspectRatio, zNear, zFar)
 
 
-# CUBE DEFINITION
-# define triangle points in clockwise direction for a cube
-# south
-t1  = Triangle.fromPointList([0,0,0, 0,1,0, 1,1,0])
-t2  = Triangle.fromPointList([0,0,0, 1,1,0, 1,0,0])
-# east
-t3  = Triangle.fromPointList([1,0,0, 1,1,0, 1,1,1])
-t4  = Triangle.fromPointList([1,0,0, 1,1,1, 1,0,1])
-# north
-t5  = Triangle.fromPointList([1,0,1, 1,1,1, 0,1,1])
-t6  = Triangle.fromPointList([1,0,1, 0,1,1, 0,0,1])
-# west
-t7  = Triangle.fromPointList([0,0,1, 0,1,1, 0,1,0])
-t8  = Triangle.fromPointList([0,0,1, 0,1,0, 0,0,0])
-# top
-t9  = Triangle.fromPointList([0,1,0, 0,1,1, 1,1,1])
-t10 = Triangle.fromPointList([0,1,0, 1,1,1, 1,1,0])
-# bottom
-t11 = Triangle.fromPointList([1,0,1, 0,0,1, 0,0,0])
-t12 = Triangle.fromPointList([1,0,1, 0,0,0, 1,0,0])
-
-meshCube = Mesh()
-meshCube.triangles.append(t1)
-meshCube.triangles.append(t2)
-meshCube.triangles.append(t3)
-meshCube.triangles.append(t4)
-meshCube.triangles.append(t5)
-meshCube.triangles.append(t6)
-meshCube.triangles.append(t7)
-meshCube.triangles.append(t8)
-meshCube.triangles.append(t9)
-meshCube.triangles.append(t10)
-meshCube.triangles.append(t11)
-meshCube.triangles.append(t12)
-
-
 # OBJECT FILE DEFINITION
-meshObj = Mesh();
-#meshObj.loadFromObjFile("resources/ocl_VideoShip.obj");
-meshObj.loadFromObjFile("resources/axis.obj");
+meshes = []
+meshes.append(Mesh.loadCube())
+meshes.append(Mesh.loadFromObjFile("resources/ocl_axis.obj"))
+meshes.append(Mesh.loadFromObjFile("resources/ocl_VideoShip.obj"))
+meshes.append(Mesh.loadFromObjFile("resources/ocl_teapot.obj"))
+# meshes.append(Mesh.loadFromObjFile("resources/ocl_mountains.obj")) # performance is TERRIBLE with my non-optimized python engine, this will be a good test file for improvements
 
+
+# give us a small title
+font = pygame.font.Font(None, 28)
+titletext = font.render("Camera Movement and Clipping with Subtriangles (press UP for mode)", 1, (50, 50, 50))
+textpos = titletext.get_rect(bottom = display.height - 10, centerx = display.width/2)
 
 # Define a camera with a position in the world of 0,0,0
 vCamera = Vector3(0, 0, 0) # location of camera in world space
 vLookDir = Vector3(0, 0, 0) # direction camera is looking
 yaw = 0 # FPS camera rotation in XZ
-
-
-def drawTriangle(display, points, color, lineWidth):
-    display.drawLine([[points[0].x, points[0].y], [points[1].x, points[1].y]], color, lineWidth)
-    display.drawLine([[points[1].x, points[1].y], [points[2].x, points[2].y]], color, lineWidth)
-    display.drawLine([[points[2].x, points[2].y], [points[0].x, points[0].y]], color, lineWidth)
-def fillTriangle(display, points, color):
-    display.drawPolygon([[points[0].x, points[0].y], [points[1].x, points[1].y], [points[2].x, points[2].y]], color, 0)
-
-# give us a small title
-font = pygame.font.Font(None, 28)
-titletext = font.render("Math utilities and code refactored (press up for mode)", 1, (50, 50, 50));
-textpos = titletext.get_rect(bottom = display.height - 10, centerx = display.width/2)
-
-
-# Which shape are we rendering in this demo?
-#renderMesh = meshCube
-#renderOffsetZ = 3.0
-renderMesh = meshObj
 renderOffsetZ = 8.0
+
 
 # visualizer mode for cube and obj
 mode = 0
-max_modes = 3
+max_modes = len(meshes)
 def mode_up():
-    global renderMesh, renderOffsetZ, mode, max_modes
+    global mode, max_modes
     mode = (mode + 1) % max_modes
 listener.onKeyUp(pygame.K_UP, mode_up)
 
@@ -494,7 +526,8 @@ def on_d_up():
     global inputTurnRight; inputTurnRight = False
 listener.onKeyUp(pygame.K_d, on_d_up)
 
-ascensionSpeed = 6.0
+moveSpeed = 6.0
+turnSpeed = 4.0
 
 timeLapsed = 0
 deltaTime = 1/60
@@ -503,29 +536,21 @@ while True:
     listener.update()
 
     # listen to in put changes
-    if mode == 0:
-        renderMesh = meshObj
-        renderOffsetZ = 8.0
-    elif mode == 1:
-        renderMesh = meshObj
-        renderOffsetZ = 8.0
-    elif mode == 2:
-        renderMesh = meshCube
-        renderOffsetZ = 3.0
+    renderMesh = meshes[mode]
 
     if inputAscend:
-        vCamera.y += ascensionSpeed * deltaTime # move up
+        vCamera.y += moveSpeed * deltaTime # move up
     if inputDescend:
-        vCamera.y -= ascensionSpeed * deltaTime # move up
-    vForward = Vector3.Multiply(vLookDir, ascensionSpeed * deltaTime);
+        vCamera.y -= moveSpeed * deltaTime # move up
+    vForward = Vector3.Multiply(vLookDir, moveSpeed * deltaTime);
     if (inputForward):
         vCamera = Vector3.Add(vCamera, vForward)
     if (inputBackward):
         vCamera = Vector3.Subtract(vCamera, vForward)
     if (inputTurnLeft):
-        yaw -= ascensionSpeed * deltaTime
+        yaw -= turnSpeed * deltaTime
     if (inputTurnRight):
-        yaw += ascensionSpeed * deltaTime
+        yaw += turnSpeed * deltaTime
 
     display.start()
 
