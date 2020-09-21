@@ -9,7 +9,7 @@ class Vector3(object):
         self.z = z
         self.w = w # w component for sensible matrix math
     def clone(self):
-        return Vector3(self.x, self.y, self.z)
+        return Vector3(self.x, self.y, self.z, self.w)
     def __str__(self):
         return "Vector3(" +str(self.x) + "," + str(self.y) + "," + str(self.z) + ")"
     def __repr__(self):
@@ -43,6 +43,16 @@ class Vector3(object):
         y = v1.z * v2.x - v1.x * v2.z
         z = v1.x * v2.y - v1.y * v2.x
         return Vector3(x, y, z)
+    @staticmethod
+    def IntersectPlane(vPlaneP, vPlaneN, vLineStart, vLineEnd):
+        vPlaneN = Vector3.Normalize(vPlaneN)
+        planeD = 0 - Vector3.DotProduct(vPlaneN, vPlaneP)
+        a2d = Vector3.DotProduct(vLineStart, vPlaneN)
+        b2d = Vector3.DotProduct(vLineEnd, vPlaneN)
+        t = (0 - planeD - a2d) / (b2d - a2d)
+        lineStartToEnd = Vector3.Subtract(vLineEnd, vLineStart)
+        lineToIntersect = Vector3.Multiply(lineStartToEnd, t)
+        return Vector3.Add(vLineStart, lineToIntersect)
 
 class Triangle(object):
     def __init__(self):
@@ -52,6 +62,7 @@ class Triangle(object):
         c = Triangle()
         for i, p in enumerate(self.points):
             c.points[i] = p.clone()
+        c.color = self.color
         return c
 
     @classmethod
@@ -64,6 +75,84 @@ class Triangle(object):
         t = cls()
         t.points = [v1, v2, v3]
         return t
+    @staticmethod
+    def ClipAgainstPlane(vPlaneP, vPlaneN, triangle):
+        # ensure plane normal is normal
+        vPlaneN = Vector3.Normalize(vPlaneN)
+        # define a distance from point to plane function, plane normal must be normalized
+        def dist(p, vPlaneP, vPlaneN):
+            n = Vector3.Normalize(p)
+            return (vPlaneN.x * p.x + vPlaneN.y * p.y + vPlaneN.z * p.z - Vector3.DotProduct(vPlaneN, vPlaneP))
+
+        # Get signed distance of each point in triangle to plane
+        d0 = dist(triangle.points[0], vPlaneP, vPlaneN)
+        d1 = dist(triangle.points[1], vPlaneP, vPlaneN)
+        d2 = dist(triangle.points[2], vPlaneP, vPlaneN)
+
+        insidePoints = [None, None, None]
+        outsidePoints = [None, None, None]
+        insidePointCount = 0
+        outsidePointCount = 0
+
+        # classify if points are inside or outside the plane and group them as such
+        if d0 >= 0:
+            insidePoints[insidePointCount] = triangle.points[0]
+            insidePointCount += 1
+        else:
+            outsidePoints[outsidePointCount] = triangle.points[0]
+            outsidePointCount += 1
+        if d1 >= 0:
+            insidePoints[insidePointCount] = triangle.points[1]
+            insidePointCount += 1
+        else:
+            outsidePoints[outsidePointCount] = triangle.points[1]
+            outsidePointCount += 1
+        if d2 >= 0:
+            insidePoints[insidePointCount] = triangle.points[2]
+            insidePointCount += 1
+        else:
+            outsidePoints[outsidePointCount] = triangle.points[2]
+            outsidePointCount += 1
+
+        # classify them into how to clip them
+        if insidePointCount == 0:
+            # all outside, clip entire triangle
+            return []
+        elif insidePointCount == 3:
+            # all inside, return entire triangle alone
+            return [triangle]
+        elif insidePointCount == 1 and outsidePointCount == 2:
+            # since two lie outside the plane, the triangle becomes a smaller triangle
+            newTriangle = Triangle()
+            newTriangle.color = triangle.color
+            newTriangle.color = (triangle.color[0],0,0)
+            # inside point is valid so keep it
+            newTriangle.points[0] = insidePoints[0]
+            # but two new points are at intersection of plane
+            newTriangle.points[1] = Vector3.IntersectPlane(vPlaneP, vPlaneN, insidePoints[0], outsidePoints[0])
+            newTriangle.points[2] = Vector3.IntersectPlane(vPlaneP, vPlaneN, insidePoints[0], outsidePoints[1])
+            return [newTriangle]
+        elif insidePointCount == 2 and outsidePointCount == 1:
+            # since two lie inside and one outside it becomes a quad once clipped
+            # so that quad needs to subdivide into 2 triangles
+            newTriangle1 = Triangle()
+            newTriangle1.color = triangle.color
+            newTriangle1.color = (triangle.color[0], triangle.color[1], 0)
+            newTriangle2 = Triangle()
+            newTriangle2.color = triangle.color
+            newTriangle2.color = (triangle.color[0], 0, triangle.color[2])
+            # first triangle is two inside points connected to one intersection point
+            newTriangle1.points[0] = insidePoints[0]
+            newTriangle1.points[1] = insidePoints[1]
+            newTriangle1.points[2] = Vector3.IntersectPlane(vPlaneP, vPlaneN, insidePoints[0], outsidePoints[0])
+            # second triangle is one inside point, new intersection point and intersection point above
+            newTriangle2.points[0] = insidePoints[1]
+            newTriangle2.points[1] = newTriangle1.points[2]
+            newTriangle2.points[2] = Vector3.IntersectPlane(vPlaneP, vPlaneN, insidePoints[1], outsidePoints[0])
+            return [newTriangle1, newTriangle2]
+
+
+
 
 class Matrix4x4(object):
     def __init__(self):
@@ -184,8 +273,8 @@ class Matrix4x4(object):
     def QuickInverse(m): # only works for rotation and translation matrices
         matrix = Matrix4x4()
         matrix.m[0][0] = m.m[0][0]
-        matrix.m[0][0] = m.m[0][0]
         matrix.m[0][1] = m.m[1][0]
+        matrix.m[0][0] = m.m[0][0]
         matrix.m[0][2] = m.m[2][0]
         matrix.m[0][3] = 0.0
 
@@ -248,6 +337,37 @@ listener = EventListener()
 # OCL 1 was about creating the Perspective Matrix
 # OCL 2 was complex 3d objects, depth sorting and hiding faces
 # OCL 3 is camera work and clipping
+
+# CAMERAS
+#
+# Understanding the Dot Product better
+#
+# Dot Product is the amount of projection from one vector on to another
+#         v1 (unit vector)
+#         /:
+#        / :
+#       /  :
+#      /   :
+#     /    :
+#    /_____:_______ v2 (unit vector)
+#    -- d --
+#       d is how much v1 has projected on to v2
+#
+# In trig you could take the angle between v2 and v1 as theta
+# costheta) = d / length v1
+# length v1 * cos(theta) = d
+#
+# With a dot product we can solve as d = (v1 dot v2) / length v2 (to normalize)
+# since we use dot products on normalized vetors we dont have to "/ length v2"
+#
+# For camera its easiest for it to be represented as an obect in the world
+# and when we go to render, create a translation and rotation matrix from the
+# inverse of the camera's position and rotation to apply to the world before
+# it is rendered
+#
+# Rotating Space with a "Point At" System
+#
+
 
 # Perspective Projection matrix for camera
 zNear = 0.1
@@ -321,7 +441,6 @@ textpos = titletext.get_rect(bottom = display.height - 10, centerx = display.wid
 #renderOffsetZ = 3.0
 renderMesh = meshObj
 renderOffsetZ = 8.0
-paintersAlgorithm = False
 
 # visualizer mode for cube and obj
 mode = 0
@@ -333,12 +452,10 @@ listener.onKeyUp(pygame.K_UP, mode_up)
 
 inputAscend = False
 inputDescend = False
-inputTurnLeft = False
-inputTurnRight = False
 inputForward = False
 inputBackward = False
-inputStrafeLeft = False
-inputStrafeRight = False
+inputTurnLeft = False
+inputTurnRight = False
 def on_z_down():
     global inputAscend; inputAscend = True
 listener.onKeyDown(pygame.K_z, on_z_down)
@@ -363,6 +480,18 @@ listener.onKeyDown(pygame.K_s, on_s_down)
 def on_s_up():
     global inputBackward; inputBackward = False
 listener.onKeyUp(pygame.K_s, on_s_up)
+def on_a_down():
+    global inputTurnLeft; inputTurnLeft = True
+listener.onKeyDown(pygame.K_a, on_a_down)
+def on_a_up():
+    global inputTurnLeft; inputTurnLeft = False
+listener.onKeyUp(pygame.K_a, on_a_up)
+def on_d_down():
+    global inputTurnRight; inputTurnRight = True
+listener.onKeyDown(pygame.K_d, on_d_down)
+def on_d_up():
+    global inputTurnRight; inputTurnRight = False
+listener.onKeyUp(pygame.K_d, on_d_up)
 
 ascensionSpeed = 3.0
 
@@ -376,15 +505,12 @@ while True:
     if mode == 0:
         renderMesh = meshObj
         renderOffsetZ = 8.0
-        paintersAlgorithm = True
     elif mode == 1:
         renderMesh = meshObj
         renderOffsetZ = 8.0
-        paintersAlgorithm = False
     elif mode == 2:
         renderMesh = meshCube
         renderOffsetZ = 3.0
-        paintersAlgorithm = False
 
     if inputAscend:
         vCamera.y -= ascensionSpeed * deltaTime # move up
@@ -396,14 +522,20 @@ while True:
         vCamera = Vector3.Add(vCamera, vForward)
     if (inputBackward):
         vCamera = Vector3.Subtract(vCamera, vForward)
+    if (inputTurnLeft):
+        yaw -= ascensionSpeed * deltaTime
+    if (inputTurnRight):
+        yaw += ascensionSpeed * deltaTime
 
     display.start()
 
     display.drawText(titletext, textpos)
 
     # rotation values
-    matRotZ = Matrix4x4.MakeRotationZ(timeLapsed / 2)
-    matRotX = Matrix4x4.MakeRotationX(timeLapsed)
+    theta = 0
+    # theta += deltaTime
+    matRotZ = Matrix4x4.MakeRotationZ(theta / 2)
+    matRotX = Matrix4x4.MakeRotationX(theta)
 
     # translation values
     matTrans = Matrix4x4.MakeTranslation(0, 0, renderOffsetZ)
@@ -446,18 +578,13 @@ while True:
         if (Vector3.DotProduct(normal, cameraRay) < 0):
 
             # Lets add some lighting for the triangle since its not culled
-            lightDir = Vector3(0, 0, -1) # create a light coming out of the camera
+            lightDir = Vector3(0, -.5, -1) # create a light coming out of the camera
             lightDir = Vector3.Normalize(lightDir)
             dot = Vector3.DotProduct(normal, lightDir)
             l = max(0, min(255, int(255.0 * dot)))
 
             # lets shade a color by this amount
-            if mode == 0:
-                color = (0, l, 0);
-            elif mode == 1:
-                color = (l, l, 0);
-            else:
-                color = (l, 0, l);
+            color = (l, l, l);
             triTransformed.color = color
 
             # Convert world space to view Space
@@ -467,57 +594,85 @@ while True:
             triViewed.points[2] = Matrix4x4.MultiplyVector(matView, triTransformed.points[2])
             triViewed.color = triTransformed.color
 
-            # Project our points to our perspective from World Space to Screen Space
-            triProjected = Triangle()
-            triProjected.color = triTransformed.color
-            triProjected.points[0] = Matrix4x4.MultiplyVector(projectionMatrix, triViewed.points[0])
-            triProjected.points[1] = Matrix4x4.MultiplyVector(projectionMatrix, triViewed.points[1])
-            triProjected.points[2] = Matrix4x4.MultiplyVector(projectionMatrix, triViewed.points[2])
+            # Clip our triangles against our near and far Z frustrums
+            clippedTriangles = Triangle.ClipAgainstPlane(Vector3(0,0,.25), Vector3(0,0,1), triViewed)
 
-            # Need to scale into view by dividing by the original Z depth that is now stored in the w component
-            triProjected.points[0] = Vector3.Divide(triProjected.points[0], triProjected.points[0].w)
-            triProjected.points[1] = Vector3.Divide(triProjected.points[1], triProjected.points[1].w)
-            triProjected.points[2] = Vector3.Divide(triProjected.points[2], triProjected.points[2].w)
+            for clippedTriangle in clippedTriangles:
 
-            # Scale into viewport
-            # points between -1 and -1 are within our screens FoV
-            # so we want something at 0,0 to be at the center of the view, -1,0 at left, 0,1 at bottom etc
-            # start by shifting the normalized x,y points to the range 0-2
-            offsetView = Vector3(1, 1, 0)
-            triProjected.points[0] = Vector3.Add(triProjected.points[0], offsetView)
-            triProjected.points[1] = Vector3.Add(triProjected.points[1], offsetView)
-            triProjected.points[2] = Vector3.Add(triProjected.points[2], offsetView)
-            # divide the points by 2 and then multiply by size of screen
-            # so something at -1 becomes 0/2=0 (left side) and +1 becomes 2/2=1 (right side)
-            # something at 1 then becomes the size of the screen
-            triProjected.points[0].x *= .5 * display.width
-            triProjected.points[0].y *= .5 * display.height
-            triProjected.points[1].x *= .5 * display.width
-            triProjected.points[1].y *= .5 * display.height
-            triProjected.points[2].x *= .5 * display.width
-            triProjected.points[2].y *= .5 * display.height
+                # Project our points to our perspective from World Space to Screen Space
+                triProjected = Triangle()
+                triProjected.color = triTransformed.color
+                triProjected.points[0] = Matrix4x4.MultiplyVector(projectionMatrix, clippedTriangle.points[0])
+                triProjected.points[1] = Matrix4x4.MultiplyVector(projectionMatrix, clippedTriangle.points[1])
+                triProjected.points[2] = Matrix4x4.MultiplyVector(projectionMatrix, clippedTriangle.points[2])
 
-            # 6. Draw
-            if paintersAlgorithm == False:
-                # draw immediately
-                fillTriangle(display, triProjected.points, triProjected.color);
-                drawTriangle(display, triProjected.points, (0,0,0), 1)
-            else:
-                # draw after being depth sorted
+                # Need to scale into view by dividing by the original Z depth that is now stored in the w component
+                triProjected.points[0] = Vector3.Divide(triProjected.points[0], triProjected.points[0].w)
+                triProjected.points[1] = Vector3.Divide(triProjected.points[1], triProjected.points[1].w)
+                triProjected.points[2] = Vector3.Divide(triProjected.points[2], triProjected.points[2].w)
+
+                # Scale into viewport
+                # points between -1 and -1 are within our screens FoV
+                # so we want something at 0,0 to be at the center of the view, -1,0 at left, 0,1 at bottom etc
+                # start by shifting the normalized x,y points to the range 0-2
+                offsetView = Vector3(1, 1, 0)
+                triProjected.points[0] = Vector3.Add(triProjected.points[0], offsetView)
+                triProjected.points[1] = Vector3.Add(triProjected.points[1], offsetView)
+                triProjected.points[2] = Vector3.Add(triProjected.points[2], offsetView)
+                # divide the points by 2 and then multiply by size of screen
+                # so something at -1 becomes 0/2=0 (left side) and +1 becomes 2/2=1 (right side)
+                # something at 1 then becomes the size of the screen
+                triProjected.points[0].x *= .5 * display.width
+                triProjected.points[0].y *= .5 * display.height
+                triProjected.points[1].x *= .5 * display.width
+                triProjected.points[1].y *= .5 * display.height
+                triProjected.points[2].x *= .5 * display.width
+                triProjected.points[2].y *= .5 * display.height
+
                 painterTriangles.append(triProjected);
 
-    if paintersAlgorithm == True:
-        # sort our painter triangles by their average z position
-        def sortMethod(triangle):
-            # get average z values from trianglea
-            zAvg = (triangle.points[0].z + triangle.points[1].z + triangle.points[2].z) / 3
-            return zAvg
-        painterTriangles.sort(key=sortMethod, reverse=True)
+    # sort our painter triangles by their average z position
+    def sortMethod(triangle):
+        # get average z values from trianglea
+        zAvg = (triangle.points[0].z + triangle.points[1].z + triangle.points[2].z) / 3
+        return zAvg
+    painterTriangles.sort(key=sortMethod, reverse=True)
 
-        for triangle in painterTriangles:
+    for triangle in painterTriangles:
+        # clip triangles against screen edges (z clipping already done above)
+        # since this can generate more triangles to render we will use a queue
+        tQueue = []
+        tQueue.append(triangle)
+        newTriangleCount = 1
+
+        for p in range(0, 4):
+            trisToAdd = 0
+            while newTriangleCount > 0:
+                test = tQueue.pop(0)
+                newTriangleCount -= 1
+                # clip against screen planes, we only need to test each subsequent
+                # plane against subsequent new triangles because all triangles after
+                # a clip are inside the plane
+                newTriangles = []
+                if p == 0:
+                    newTriangles = Triangle.ClipAgainstPlane(Vector3(0,0,0), Vector3(0,1,0), test)
+                elif p == 1:
+                    newTriangles = Triangle.ClipAgainstPlane(Vector3(0,display.height - 1,0), Vector3(0,-1,0), test)
+                elif p == 2:
+                    newTriangles = Triangle.ClipAgainstPlane(Vector3(0,0,0), Vector3(1,0,0), test)
+                elif p == 3:
+                    newTriangles = Triangle.ClipAgainstPlane(Vector3(display.width - 1,0,0), Vector3(-1,0,0), test)
+
+                # append newly created triangles to queue so they can be
+                # clipped against planes
+                for t in newTriangles:
+                    tQueue.append(t)
+            newTriangleCount = len(tQueue)
+
+        for final in tQueue:
             # draw in order of far to close
-            fillTriangle(display, triangle.points, triangle.color);
-            drawTriangle(display, triangle.points, (0,0,0), 1)
+            fillTriangle(display, final.points, final.color);
+            drawTriangle(display, final.points, (0,0,0), 1)
 
     display.end()
     time.sleep(1 / 60)
