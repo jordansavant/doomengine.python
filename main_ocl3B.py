@@ -414,7 +414,8 @@ meshCube.triangles.append(t12)
 
 # OBJECT FILE DEFINITION
 meshObj = Mesh();
-meshObj.loadFromObjFile("resources/ocl_VideoShip.obj");
+#meshObj.loadFromObjFile("resources/ocl_VideoShip.obj");
+meshObj.loadFromObjFile("resources/axis.obj");
 
 
 # Define a camera with a position in the world of 0,0,0
