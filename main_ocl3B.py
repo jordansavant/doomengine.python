@@ -54,6 +54,7 @@ class Vector3(object):
         lineToIntersect = Vector3.Multiply(lineStartToEnd, t)
         return Vector3.Add(vLineStart, lineToIntersect)
 
+
 class Triangle(object):
     def __init__(self):
         self.points = [None, None, None] # 3 Vector3's
@@ -150,8 +151,6 @@ class Triangle(object):
             newTriangle2.points[1] = newTriangle1.points[2]
             newTriangle2.points[2] = Vector3.IntersectPlane(vPlaneP, vPlaneN, insidePoints[1], outsidePoints[0])
             return [newTriangle1, newTriangle2]
-
-
 
 
 class Matrix4x4(object):
@@ -294,6 +293,7 @@ class Matrix4x4(object):
         matrix.m[3][3] = 1.0
         return matrix
 
+
 class Mesh(object):
     def __init__(self):
         self.triangles = []
@@ -362,15 +362,11 @@ def drawTriangle(display, points, color, lineWidth):
     display.drawLine([[points[1].x, points[1].y], [points[2].x, points[2].y]], color, lineWidth)
     display.drawLine([[points[2].x, points[2].y], [points[0].x, points[0].y]], color, lineWidth)
 
+
 def fillTriangle(display, points, color):
     display.drawPolygon([[points[0].x, points[0].y], [points[1].x, points[1].y], [points[2].x, points[2].y]], color, 0)
 
-# START GAME
 
-display = Display(1024, 768)
-listener = EventListener()
-#pygame.mouse.set_visible(False)
-#pygame.event.set_grab(True)
 
 # OCL 1 was about creating the Perspective Matrix
 # OCL 2 was complex 3d objects, depth sorting and hiding faces
@@ -447,35 +443,40 @@ listener = EventListener()
 # 6. After all planes and all queued triangles are complete loop over Queue and render triangles
 
 
-# Perspective Projection matrix for camera
+# START GAME
+display = Display(1024, 768)
+listener = EventListener()
+#pygame.mouse.set_visible(False)
+#pygame.event.set_grab(True)
+
+# PERSPECTIVE PROJECTION MATRIX FOR CAMERA
 zNear = 0.1
 zFar = 1000.0
 fov = 90
 projectionMatrix = Matrix4x4.MakeProjection(fov, display.aspectRatio, zNear, zFar)
 
-
-# OBJECT FILE DEFINITION
+# MESHES
 meshes = []
 meshes.append(Mesh.loadCube())
 meshes.append(Mesh.loadFromObjFile("resources/ocl_axis.obj"))
-meshes.append(Mesh.loadFromObjFile("resources/ocl_VideoShip.obj"))
+meshes.append(Mesh.loadFromObjFile("resources/ocl_spaceship.obj"))
 meshes.append(Mesh.loadFromObjFile("resources/ocl_teapot.obj"))
 # meshes.append(Mesh.loadFromObjFile("resources/ocl_mountains.obj")) # performance is TERRIBLE with my non-optimized python engine, this will be a good test file for improvements
-
 
 # give us a small title
 font = pygame.font.Font(None, 28)
 titletext = font.render("Camera Movement and Clipping with Subtriangles (press UP for mode)", 1, (50, 50, 50))
 textpos = titletext.get_rect(bottom = display.height - 10, centerx = display.width/2)
 
-# Define a camera with a position in the world of 0,0,0
+# CAMERA PROPERTIES
 vCamera = Vector3(0, 0, 0) # location of camera in world space
 vLookDir = Vector3(0, 0, 0) # direction camera is looking
 yaw = 0 # FPS camera rotation in XZ
 renderOffsetZ = 8.0
+moveSpeed = 6.0
+turnSpeed = 4.0
 
-
-# visualizer mode for cube and obj
+# INPUT LISTENErS
 mode = 0
 max_modes = len(meshes)
 def mode_up():
@@ -526,17 +527,14 @@ def on_d_up():
     global inputTurnRight; inputTurnRight = False
 listener.onKeyUp(pygame.K_d, on_d_up)
 
-moveSpeed = 6.0
-turnSpeed = 4.0
 
+# GAME LOOP
 timeLapsed = 0
 deltaTime = 1/60
 while True:
 
+    # INPUT UPDATE
     listener.update()
-
-    # listen to in put changes
-    renderMesh = meshes[mode]
 
     if inputAscend:
         vCamera.y += moveSpeed * deltaTime # move up
@@ -552,9 +550,9 @@ while True:
     if (inputTurnRight):
         yaw += turnSpeed * deltaTime
 
-    display.start()
 
-    display.drawText(titletext, textpos)
+    # UPDATE
+    renderMesh = meshes[mode]
 
     # rotation values
     theta = 0
@@ -662,6 +660,12 @@ while True:
         zAvg = (triangle.points[0].z + triangle.points[1].z + triangle.points[2].z) / 3
         return zAvg
     painterTriangles.sort(key=sortMethod, reverse=True)
+
+
+    # DRAW
+    display.start()
+
+    display.drawText(titletext, textpos)
 
     for triangle in painterTriangles:
         # clip triangles against screen edges (z clipping already done above)
