@@ -488,6 +488,8 @@ inputAscend = False
 inputDescend = False
 inputForward = False
 inputBackward = False
+inputStrafeLeft = False
+inputStrafeRight = False
 inputTurnLeft = False
 inputTurnRight = False
 def on_z_down():
@@ -502,6 +504,7 @@ listener.onKeyDown(pygame.K_x, on_x_down)
 def on_x_up():
     global inputDescend; inputDescend = False
 listener.onKeyUp(pygame.K_x, on_x_up)
+
 def on_w_down():
     global inputForward; inputForward = True
 listener.onKeyDown(pygame.K_w, on_w_down)
@@ -515,18 +518,35 @@ def on_s_up():
     global inputBackward; inputBackward = False
 listener.onKeyUp(pygame.K_s, on_s_up)
 def on_a_down():
-    global inputTurnLeft; inputTurnLeft = True
+    global inputStrafeLeft; inputStrafeLeft = True
 listener.onKeyDown(pygame.K_a, on_a_down)
 def on_a_up():
-    global inputTurnLeft; inputTurnLeft = False
+    global inputStrafeLeft; inputStrafeLeft = False
 listener.onKeyUp(pygame.K_a, on_a_up)
 def on_d_down():
-    global inputTurnRight; inputTurnRight = True
+    global inputStrafeRight; inputStrafeRight = True
 listener.onKeyDown(pygame.K_d, on_d_down)
 def on_d_up():
-    global inputTurnRight; inputTurnRight = False
+    global inputStrafeRight; inputStrafeRight = False
 listener.onKeyUp(pygame.K_d, on_d_up)
 
+def on_left_down():
+    global inputTurnLeft; inputTurnLeft = True
+listener.onKeyDown(pygame.K_LEFT, on_left_down)
+def on_left_up():
+    global inputTurnLeft; inputTurnLeft = False
+listener.onKeyUp(pygame.K_LEFT, on_left_up)
+def on_right_down():
+    global inputTurnRight; inputTurnRight = True
+listener.onKeyDown(pygame.K_RIGHT, on_right_down)
+def on_right_up():
+    global inputTurnRight; inputTurnRight = False
+listener.onKeyUp(pygame.K_RIGHT, on_right_up)
+
+def rotate2d(x, y, rads):
+    cos = math.cos(rads)
+    sin = math.sin(rads)
+    return [(x * cos) - (y * sin), (x * sin) + (y * cos)]
 
 # GAME LOOP
 timeLapsed = 0
@@ -537,14 +557,26 @@ while True:
     listener.update()
 
     if inputAscend:
-        vCamera.y += moveSpeed * deltaTime # move up
+        vCamera.y += moveSpeed * deltaTime
     if inputDescend:
-        vCamera.y -= moveSpeed * deltaTime # move up
-    vForward = Vector3.Multiply(vLookDir, moveSpeed * deltaTime);
+        vCamera.y -= moveSpeed * deltaTime
+
+    vForward = Vector3.Multiply(vLookDir, moveSpeed * deltaTime)
+    # calculate left strafe
+    # option 1, forcing horizontal strafing only, rotate a vector comprised of forward x and forward z by Pi/2
+    # option 2, calculate normal of Z vector and Y vector
+    #vLeftP = rotate2d(vForward.x, vForward.z, math.pi/2)
     if (inputForward):
         vCamera = Vector3.Add(vCamera, vForward)
     if (inputBackward):
         vCamera = Vector3.Subtract(vCamera, vForward)
+    if (inputStrafeLeft):
+        vLeft = Vector3.CrossProduct(vForward, Vector3(0, 1, 0))
+        vCamera = Vector3.Subtract(vCamera, vLeft)
+    if (inputStrafeRight):
+        vLeft = Vector3.CrossProduct(vForward, Vector3(0, 1, 0))
+        vCamera = Vector3.Add(vCamera, vLeft)
+
     if (inputTurnLeft):
         yaw -= turnSpeed * deltaTime
     if (inputTurnRight):
@@ -569,7 +601,7 @@ while True:
     matWorld = Matrix4x4.MultiplyMatrix4x4(matWorld, matTrans) # Transform by Translation
 
     # create "point at" matrix for camer
-    vUp = Vector3(0, -1, 0)
+    vUp = Vector3(0, -1, 0) # set y to negative 1 because screen coords of y are positive going down
     vTarget = Vector3(0, 0, 1)
     matCameraRotation = Matrix4x4.MakeRotationY(yaw)
     vLookDir = Matrix4x4.MultiplyVector(matCameraRotation, vTarget)
