@@ -49,6 +49,7 @@ class Vector3(object):
         planeD = 0 - Vector3.DotProduct(vPlaneN, vPlaneP)
         a2d = Vector3.DotProduct(vLineStart, vPlaneN)
         b2d = Vector3.DotProduct(vLineEnd, vPlaneN)
+        # t is a normalized value between 0 and 1 where the intersection occurs between the points
         t = (0 - planeD - a2d) / (b2d - a2d)
         lineStartToEnd = Vector3.Subtract(vLineEnd, vLineStart)
         lineToIntersect = Vector3.Multiply(lineStartToEnd, t)
