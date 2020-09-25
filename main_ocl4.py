@@ -1,6 +1,7 @@
-import pygame, engine_ocl4, math, time, re
+import pygame, engine_ocl4, math, time, re, PIL
 from engine_ocl4.display import Display
 from engine_ocl4.eventlistener import EventListener
+from PIL import Image
 
 class Vector2(object): # for textures
     def __init__(self, u, v, w=1):
@@ -415,7 +416,7 @@ def drawTriangle(display, points, color, lineWidth):
 def fillTriangle(display, points, color):
     display.drawPolygon([[points[0].x, points[0].y], [points[1].x, points[1].y], [points[2].x, points[2].y]], color, 0)
 
-def rasterizeTriangle(display, x1, y1, u1, v1, w1,  x2, y2, u2, v2, w2,  x3, y3, u3, v3, w3,  texture):
+def rasterizeTriangle(display, x1, y1, u1, v1, w1,  x2, y2, u2, v2, w2,  x3, y3, u3, v3, w3, img, texture):
     x1 = int(x1); y1 = int(y1)
     x2 = int(x2); y2 = int(y2)
     x3 = int(x3); y3 = int(y3)
@@ -510,7 +511,11 @@ def rasterizeTriangle(display, x1, y1, u1, v1, w1,  x2, y2, u2, v2, w2,  x3, y3,
                 tex_u = (1.0 - t) * tex_su + t * tex_eu
                 tex_v = (1.0 - t) * tex_sv + t * tex_ev
                 tex_w = (1.0 - t) * tex_sw + t * tex_ew
-                display.drawPixel([j,i], (233, 122, 1))
+
+                texX = int(tex_u * img.size[0]) - 1
+                texY = int(tex_v * img.size[1]) - 1
+                pixel = texture[texX, texY]
+                display.drawPixel([j,i], (pixel[0], pixel[1], pixel[2])) #(233, 122, 1))
                 #if (tex_w > pDepthBuffer[i*ScreenWidth() + j]):
                     #DrawPoint(j, i, tex->SampleGlyph(tex_u / tex_w, tex_v / tex_w), tex->SampleColour(tex_u / tex_w, tex_v / tex_w))
                     #pDepthBuffer[i*ScreenWidth() + j] = tex_w
@@ -569,7 +574,10 @@ def rasterizeTriangle(display, x1, y1, u1, v1, w1,  x2, y2, u2, v2, w2,  x3, y3,
                 tex_v = (1.0 - t) * tex_sv + t * tex_ev
                 tex_w = (1.0 - t) * tex_sw + t * tex_ew
 
-                display.drawPixel([j,i], (123,65,122))
+                texX = int(tex_u * img.size[0]) - 1
+                texY = int(tex_v * img.size[1]) - 1
+                pixel = texture[texX, texY]
+                display.drawPixel([j,i], (pixel[0], pixel[1], pixel[2])) #(233, 122, 1))
                 #if (tex_w > pfDepthBuffer[i*ScreenWidth() + j]):
                     #DrawPoint(j, i, tex->SampleGlyph(tex_u / tex_w, tex_v / tex_w), tex->SampleColour(tex_u / tex_w, tex_v / tex_w))
                     #pDepthBuffer[i*ScreenWidth() + j] = tex_w
@@ -579,79 +587,14 @@ def rasterizeTriangle(display, x1, y1, u1, v1, w1,  x2, y2, u2, v2, w2,  x3, y3,
 # OCL 1 was about creating the Perspective Matrix
 # OCL 2 was complex 3d objects, depth sorting and hiding faces
 # OCL 3 is camera work and clipping
-
-# CAMERAS
-#
-# Understanding the Dot Product better
-#
-# Dot Product is the amount of projection from one vector on to another
-#         v1 (unit vector)
-#         /:
-#        / :
-#       /  :
-#      /   :
-#     /    :
-#    /_____:_______ v2 (unit vector)
-#    -- d --
-#       d is how much v1 has projected on to v2
-#
-# In trig you could take the angle between v2 and v1 as theta
-# costheta) = d / length v1
-# length v1 * cos(theta) = d
-#
-# With a dot product we can solve as d = (v1 dot v2) / length v2 (to normalize)
-# since we use dot products on normalized vetors we dont have to "/ length v2"
-#
-# For camera its easiest for it to be represented as an obect in the world
-# and when we go to render, create a translation and rotation matrix from the
-# inverse of the camera's position and rotation to apply to the world before
-# it is rendered
-#
-# Rotating Space with a "Point At" System
-# *lots of math around moving everything in the world to new positions
-#  that I need to restudya lot
-#
-#
-# Clipping:
-# We clip first in the Frustrums zNear and zFar range (unscaled so from 0 to 1)
-# Then we clip in the screen space after those triangles have been culled
-#
-# General clipping process:
-# We compare the triangle with a plane, ie zNear or a screen edge
-# each triangle will fall into one of four categories:
-# 1. all three points are beyond the plane and the triangle can be completely culled
-# 2. all thee points are within the plane and the triangle is kept as is
-# 3. two points live beyond, one within we must calculate the intersection points of the
-#    plane and the two sides that pass the plane and form a single smaller triangle from
-#    those new points
-# 4. one point lives beyond, two within, this creates a quadrangle if cut directly because
-#    cutting at the plane leaves four points, so the four points need to be subdivided into
-#    two triangles, first is the first intersection point and the two original interior points
-#    the second is the new interesection point, one original interior and a new intersection point
-#
-# Triangle rastering updates:
-# During screen space clipping we compare the triangles against the screen edges after their 2d
-# projection is complete.
-# For each triangle we need to run the clipping process against all four planes of the screen
-# and when we do each plane comparison may generate new triangles from clipping it. It is very
-# possible to have a triangle exceed multiple planes (like at the corner of the screen) so by
-# clipping on the first plane, subsequent created triangles must be clipped against the remaining
-# planes
-#
-# Fortunately when we clip one triangle against that plane, the newly created sub triangles do not
-# need to be compared against that plane again, nor against any previoulsy compared plane of the
-# original parent triangle because they _have_ to have been clipped safely. So the resulting
-# algorithim for clipping for final rendering is:
-#
-# 1. Loop over all projected triangles
-# 2. Put the next triangle in a Queue
-# 3. Loop over the 4 screen planes
-# 4. Dequeue the next triangle
-# 5. Clip against plane and put new triangles at back of queue
-# 6. After all planes and all queued triangles are complete loop over Queue and render triangles
-
+# OCL 4 is about texture loading and depth buffering -- Python really starts to fall apart here as a full 3D engine in CPU
 
 # START GAME
+# load test texture
+img = Image.open('resources/doomtex.png') # Can be many different formats.
+pix = img.load()
+
+# load display
 display = Display(1024, 768)
 listener = EventListener()
 #pygame.mouse.set_visible(False)
@@ -953,7 +896,7 @@ while True:
             #drawTriangle(display, final.points, (0,0,0), 1)
             rasterizeTriangle(display, final.points[0].x, final.points[0].y, final.texels[0].u, final.texels[0].v, final.texels[0].w,
 				       final.points[1].x, final.points[1].y, final.texels[1].u, final.texels[1].v, final.texels[1].w,
-				       final.points[2].x, final.points[2].y, final.texels[2].u, final.texels[2].v, final.texels[2].w, False)
+				       final.points[2].x, final.points[2].y, final.texels[2].u, final.texels[2].v, final.texels[2].w, img, pix)
             drawTriangle(display, final.points, (255,255,255), 1)
 
     display.end()

@@ -2,7 +2,7 @@
 
 ## Built with
 - Python 3.7.1
-- pygame, numpy, pyopengl
+- pygame, numpy, pyopengl, pillow
 
 ## OS X Homebrew Install
 - `pygame 2.0.0.dev4 (SDL 2.0.10, python 3.8.1)`
@@ -22,6 +22,9 @@
 - Get a DOOM WAD file. Comes with any original install of Doom or Doom 2.
 - Put wad file in `wads/` dir
 - Run with `python3 main_diy.py wads/DOOM.wad [map]` where optionally `[map]` is a doom map name: eg `E1M1`
+
+## Running OCL Projects
+- Pygame and Pillow only required
 
 
 ## Old OS X Install w/ venv (old have not done this one in a while)
