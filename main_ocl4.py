@@ -165,11 +165,17 @@ class Triangle(object):
             # but two new points are at intersection of plane
             t = Vector3.CalcIntersection(vPlaneP, vPlaneN, insidePoints[0], outsidePoints[0])
             newTriangle.points[1] = Vector3.IntersectPlane(vPlaneP, vPlaneN, insidePoints[0], outsidePoints[0])
-            newTriangle.texels[1] = Vector2(t * (outsideTexels[0].u - insideTexels[0].u) + insideTexels[0].u, t * (outsideTexels[0].v - insideTexels[0].v) + insideTexels[0].v)
+            newTriangle.texels[1] = Vector2(
+                    t * (outsideTexels[0].u - insideTexels[0].u) + insideTexels[0].u,
+                    t * (outsideTexels[0].v - insideTexels[0].v) + insideTexels[0].v,
+                    t * (outsideTexels[0].w - insideTexels[0].w) + insideTexels[0].w)
 
             t = Vector3.CalcIntersection(vPlaneP, vPlaneN, insidePoints[0], outsidePoints[1])
             newTriangle.points[2] = Vector3.IntersectPlane(vPlaneP, vPlaneN, insidePoints[0], outsidePoints[1])
-            newTriangle.texels[2] = Vector2(t * (outsideTexels[1].u - insideTexels[0].u) + insideTexels[0].u, t * (outsideTexels[1].v - insideTexels[0].v) + insideTexels[0].v)
+            newTriangle.texels[2] = Vector2(
+                    t * (outsideTexels[1].u - insideTexels[0].u) + insideTexels[0].u,
+                    t * (outsideTexels[1].v - insideTexels[0].v) + insideTexels[0].v,
+                    t * (outsideTexels[1].w - insideTexels[0].w) + insideTexels[0].w)
             return [newTriangle]
         elif insidePointCount == 2 and outsidePointCount == 1:
             # since two lie inside and one outside it becomes a quad once clipped
@@ -189,7 +195,10 @@ class Triangle(object):
             newTriangle1.texels[1] = insideTexels[1]
             t = Vector3.CalcIntersection(vPlaneP, vPlaneN, insidePoints[0], outsidePoints[0])
             newTriangle1.points[2] = Vector3.IntersectPlane(vPlaneP, vPlaneN, insidePoints[0], outsidePoints[0])
-            newTriangle1.texels[2] = Vector2(t * (outsideTexels[0].u - insideTexels[0].u) + insideTexels[0].u, t * (outsideTexels[0].v - insideTexels[0].v) + insideTexels[0].v)
+            newTriangle1.texels[2] = Vector2(
+                    t * (outsideTexels[0].u - insideTexels[0].u) + insideTexels[0].u,
+                    t * (outsideTexels[0].v - insideTexels[0].v) + insideTexels[0].v,
+                    t * (outsideTexels[0].w - insideTexels[0].w) + insideTexels[0].w)
 
             # second triangle is one inside point, new intersection point and intersection point above
             newTriangle2.points[0] = insidePoints[1]
@@ -198,7 +207,10 @@ class Triangle(object):
             newTriangle2.texels[1] = newTriangle1.texels[2]
             t = Vector3.CalcIntersection(vPlaneP, vPlaneN, insidePoints[0], outsidePoints[0])
             newTriangle2.points[2] = Vector3.IntersectPlane(vPlaneP, vPlaneN, insidePoints[1], outsidePoints[0])
-            newTriangle2.texels[2] = Vector2(t * (outsideTexels[0].u - insideTexels[1].u) + insideTexels[1].u, t * (outsideTexels[0].v - insideTexels[1].v) + insideTexels[1].v)
+            newTriangle2.texels[2] = Vector2(
+                    t * (outsideTexels[0].u - insideTexels[1].u) + insideTexels[1].u,
+                    t * (outsideTexels[0].v - insideTexels[1].v) + insideTexels[1].v,
+                    t * (outsideTexels[0].w - insideTexels[1].w) + insideTexels[1].w)
 
             return [newTriangle1, newTriangle2]
 
@@ -416,7 +428,7 @@ def drawTriangle(display, points, color, lineWidth):
 def fillTriangle(display, points, color):
     display.drawPolygon([[points[0].x, points[0].y], [points[1].x, points[1].y], [points[2].x, points[2].y]], color, 0)
 
-def rasterizeTriangle(display, x1, y1, u1, v1, w1,  x2, y2, u2, v2, w2,  x3, y3, u3, v3, w3, img, texture):
+def rasterizeTriangle(display, x1, y1, u1, v1, w1,  x2, y2, u2, v2, w2,  x3, y3, u3, v3, w3, color, img, texture):
     x1 = int(x1); y1 = int(y1)
     x2 = int(x2); y2 = int(y2)
     x3 = int(x3); y3 = int(y3)
@@ -515,7 +527,8 @@ def rasterizeTriangle(display, x1, y1, u1, v1, w1,  x2, y2, u2, v2, w2,  x3, y3,
                 texX = int(tex_u * img.size[0]) - 1
                 texY = int(tex_v * img.size[1]) - 1
                 pixel = texture[texX, texY]
-                display.drawPixel([j,i], (pixel[0], pixel[1], pixel[2])) #(233, 122, 1))
+                lumens = color[0] / 255; # sample original lighting luminosity
+                display.drawPixel([j,i], (pixel[0] * lumens, pixel[1] * lumens, pixel[2] * lumens)) #(233, 122, 1))
                 #if (tex_w > pDepthBuffer[i*ScreenWidth() + j]):
                     #DrawPoint(j, i, tex->SampleGlyph(tex_u / tex_w, tex_v / tex_w), tex->SampleColour(tex_u / tex_w, tex_v / tex_w))
                     #pDepthBuffer[i*ScreenWidth() + j] = tex_w
@@ -577,7 +590,8 @@ def rasterizeTriangle(display, x1, y1, u1, v1, w1,  x2, y2, u2, v2, w2,  x3, y3,
                 texX = int(tex_u * img.size[0]) - 1
                 texY = int(tex_v * img.size[1]) - 1
                 pixel = texture[texX, texY]
-                display.drawPixel([j,i], (pixel[0], pixel[1], pixel[2])) #(233, 122, 1))
+                lumens = color[0] / 255; # sample original lighting luminosity
+                display.drawPixel([j,i], (pixel[0] * lumens, pixel[1] * lumens, pixel[2] * lumens)) #(233, 122, 1))
                 #if (tex_w > pfDepthBuffer[i*ScreenWidth() + j]):
                     #DrawPoint(j, i, tex->SampleGlyph(tex_u / tex_w, tex_v / tex_w), tex->SampleColour(tex_u / tex_w, tex_v / tex_w))
                     #pDepthBuffer[i*ScreenWidth() + j] = tex_w
@@ -787,10 +801,10 @@ while True:
         if (Vector3.DotProduct(normal, cameraRay) < 0):
 
             # Lets add some lighting for the triangle since its not culled
-            lightDir = Vector3(0, 1, -1) # create a light coming out of the camera
+            lightDir = Vector3(.5, .5, -1) # create a light coming out of the camera
             lightDir = Vector3.Normalize(lightDir)
             dot = Vector3.DotProduct(normal, lightDir)
-            l = max(25, min(255, int(255.0 * dot))) # global lighting some
+            l = max(50, min(255, int(255.0 * dot))) # global lighting some
 
             # lets shade a color by this amount
             color = (l, l, l);
@@ -814,9 +828,13 @@ while True:
                 # Project our points to our perspective from World Space to Screen Space
                 triProjected = Triangle()
                 triProjected.color = clippedTriangle.color
+
+                # copy texture
                 triProjected.texels[0] = clippedTriangle.texels[0]
                 triProjected.texels[1] = clippedTriangle.texels[1]
                 triProjected.texels[2] = clippedTriangle.texels[2]
+
+                # copy points
                 triProjected.points[0] = Matrix4x4.MultiplyVector(projectionMatrix, clippedTriangle.points[0])
                 triProjected.points[1] = Matrix4x4.MultiplyVector(projectionMatrix, clippedTriangle.points[1])
                 triProjected.points[2] = Matrix4x4.MultiplyVector(projectionMatrix, clippedTriangle.points[2])
@@ -825,6 +843,19 @@ while True:
                 triProjected.points[0] = Vector3.Divide(triProjected.points[0], triProjected.points[0].w)
                 triProjected.points[1] = Vector3.Divide(triProjected.points[1], triProjected.points[1].w)
                 triProjected.points[2] = Vector3.Divide(triProjected.points[2], triProjected.points[2].w)
+
+                # scale texture
+                triProjected.texels[0].u = triProjected.texels[0].u / triProjected.points[0].w;
+                triProjected.texels[1].u = triProjected.texels[1].u / triProjected.points[1].w;
+                triProjected.texels[2].u = triProjected.texels[2].u / triProjected.points[2].w;
+
+                triProjected.texels[0].v = triProjected.texels[0].v / triProjected.points[0].w;
+                triProjected.texels[1].v = triProjected.texels[1].v / triProjected.points[1].w;
+                triProjected.texels[2].v = triProjected.texels[2].v / triProjected.points[2].w;
+
+                triProjected.texels[0].w = 1.0 / triProjected.points[0].w;
+                triProjected.texels[1].w = 1.0 / triProjected.points[1].w;
+                triProjected.texels[2].w = 1.0 / triProjected.points[2].w;
 
                 # Scale into viewport
                 # points between -1 and -1 are within our screens FoV
@@ -896,8 +927,9 @@ while True:
             #drawTriangle(display, final.points, (0,0,0), 1)
             rasterizeTriangle(display, final.points[0].x, final.points[0].y, final.texels[0].u, final.texels[0].v, final.texels[0].w,
 				       final.points[1].x, final.points[1].y, final.texels[1].u, final.texels[1].v, final.texels[1].w,
-				       final.points[2].x, final.points[2].y, final.texels[2].u, final.texels[2].v, final.texels[2].w, img, pix)
-            drawTriangle(display, final.points, (255,255,255), 1)
+				       final.points[2].x, final.points[2].y, final.texels[2].u, final.texels[2].v, final.texels[2].w,
+                                       final.color, img, pix)
+            #drawTriangle(display, final.points, (255,255,255), 1)
 
     display.end()
     time.sleep(1 / 60)
