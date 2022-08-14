@@ -4,6 +4,23 @@
 - Python 3.7.1
 - pygame, numpy, pyopengl, pillow
 
+## Windows (Most Recent)
+
+I resurrected this in Aug 2022 and built on windows with these steps
+- Install python 3 via MS Store
+- on cmd line using pip.exe to install
+    - pygame, PyOpenGL, numpy (for main_opengl, main_diy and main)
+    - Pillow (for main_ocl4.py)
+
+## Whats in this Repo?
+
+Read further below for lower level details but in this repo you will find 4 main iterations of DOOM and 3D Engine exploration:
+
+- `python.exe main.py` runs the original demo often seen on YouTube using 2D Pygame rendering to create the 3D illusion of a 2.5 engine. The point of this code was the Binary Space Partitioning work.
+- `python.exe main_opengl.py` runs the same demo but with OpenGL 3D to do the rendering part, so its a way better experience since its GPU based and not CPU based.
+- `python.exe main_ocl4.py` is the last rendition of the great OCL series on youtube of building a 3D rendering engine from scratch, though its all CPU software rendering. Its slow but can load 3D models from blender and can be ported to anything to have a 3D engine.
+- `python.exe main_diy.py` this followed the DIY Doom github project through chapter 19 where the original DOOM engine was rebuilt to load original DOOM Wads and follows original DOOM rendering process. I recreated in Python and it uses 2D pygame rendering for the 2.5 projection.
+
 ## OS X Homebrew Install
 - `pygame 2.0.0.dev4 (SDL 2.0.10, python 3.8.1)`
 - Install Python 3.8 and dependencies
