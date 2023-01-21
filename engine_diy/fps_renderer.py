@@ -5,7 +5,7 @@ from engine_diy.segment_range import SolidSegmentRange
 from engine_diy.map import *
 
 class FpsRenderer(object):
-    def __init__(self, map, player, game, fov, width, height, xOffset, yOffset):
+    def __init__(self, map, player, game, fov, width, height, xOffset, yOffset, scale):
         self.map = map
         self.player = player
         self.game = game
@@ -15,6 +15,8 @@ class FpsRenderer(object):
         self.f_height = height
         self.f_xOffset = xOffset
         self.f_yOffset = yOffset
+
+        self.scale = scale
 
         self.wallColors = {} # helper to map a texture to a single color (until textures are added)
         self.onSegInspect = None # function pointer for helping to visualize segs in fps viewport
@@ -1590,13 +1592,13 @@ class FpsRenderer(object):
 
     def doomhistory_drawSection(self, sectionList, rgba):
         for i,line in enumerate(sectionList):
-            drawStart = [line.x1 + self.f_xOffset, line.y1 + self.f_yOffset]
-            drawEnd = [line.x2 + self.f_xOffset, line.y2 + self.f_yOffset]
+            drawStart = [(line.x1 + self.f_xOffset) * self.scale, (line.y1 + self.f_yOffset) * self.scale]
+            drawEnd =   [(line.x2 + self.f_xOffset) * self.scale, (line.y2 + self.f_yOffset) * self.scale]
             if self.doomhistory_lineMode:
-                if i % 4 == 0:
-                    self.game.drawLine(drawStart, drawEnd, rgba, 2)
+                if i % (self.scale * 2) == 0:
+                    self.game.drawLine(drawStart, drawEnd, rgba, self.scale * 2)
             else:
-                self.game.drawLine(drawStart, drawEnd, rgba, 1)
+                self.game.drawLine(drawStart, drawEnd, rgba, self.scale)
 
     def doomhistory_renderSubsector(self, subsector):
         # iterate segs in subsector

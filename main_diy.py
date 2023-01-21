@@ -120,7 +120,8 @@ fpsWinWidth = 480 # 320
 fpsWinHeight = 300 # 200
 fpsWinOffX = 20
 fpsWinOffY = 20
-fpsRenderer = FpsRenderer(map, player, game, fov, fpsWinWidth, fpsWinHeight, fpsWinOffX, fpsWinOffY)
+scale = 1
+fpsRenderer = FpsRenderer(map, player, game, fov, fpsWinWidth, fpsWinHeight, fpsWinOffX, fpsWinOffY, scale)
 
 # render helpers
 mode = 13 # polygon version
